@@ -17,11 +17,13 @@ Including another URLconf
 from django.contrib import admin
 
 from django.urls import path, include
-from users import views as user_views
+from django.conf.urls.static import static
+from django.conf import settings
+# from courses import views as course_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', user_views.user_list, name='home'),
+    path('', include('courses.urls')),  # default to users app for home page
     path('users/', include('users.urls')),
     path('problems/', include('problems.urls')),
     path('contests/', include('contests.urls')),
@@ -29,4 +31,4 @@ urlpatterns = [
     path('discussions/', include('discussions.urls')),
     path('premium/', include('premium.urls')),
     path('study-plans/', include('study_plans.urls')),
-]
+] + static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
