@@ -4,78 +4,84 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-7 col-lg-5">
-
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-body p-4">
 
-                    <h3 class="text-center mb-4">Create Account</h3>
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
 
+                    {% if otp_sent %}
+                    <!-- ── Step 2: OTP Input ── -->
+                    <h3 class="text-center mb-2">Verify Your Email</h3>
+                    <p class="text-center text-muted small mb-4">
+                        OTP sent to <strong>{{ email }}</strong>
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Enter OTP</label>
+                            <input type="text" name="otp" class="form-control form-control-lg text-center"
+                                   maxlength="6" placeholder="------" autofocus>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" name="verify-otp" class="btn btn-success btn-lg">
+                                Verify & Create Account
+                            </button>
+                        </div>
+                    </form>
+
+                    {% else %}
+                    <!-- ── Step 1: Registration Form ── -->
+                    <h3 class="text-center mb-4">Create Account</h3>
                     <form method="post">
                         {% csrf_token %}
 
-                        <!-- Username -->
                         <div class="mb-3">
                             {{ form.user_name.label_tag }}
                             {{ form.user_name }}
-                            <div class="text-danger small">
-                                {{ form.user_name.errors }}
-                            </div>
+                            <div class="text-danger small">{{ form.user_name.errors }}</div>
                         </div>
 
-                        <!-- Email -->
                         <div class="mb-3">
                             {{ form.email.label_tag }}
                             {{ form.email }}
-                            <div class="text-danger small">
-                                {{ form.email.errors }}
-                            </div>
+                            <div class="text-danger small">{{ form.email.errors }}</div>
                         </div>
 
-                        <!-- Mobile -->
                         <div class="mb-3">
                             {{ form.mobile_no.label_tag }}
                             {{ form.mobile_no }}
-                            <div class="text-danger small">
-                                {{ form.mobile_no.errors }}
-                            </div>
+                            <div class="text-danger small">{{ form.mobile_no.errors }}</div>
                         </div>
 
-                        <!-- Password -->
                         <div class="mb-3">
                             {{ form.password1.label_tag }}
                             {{ form.password1 }}
-                            <div class="text-danger small">
-                                {{ form.password1.errors }}
-                            </div>
+                            <div class="text-danger small">{{ form.password1.errors }}</div>
                         </div>
 
-                        <!-- Confirm Password -->
                         <div class="mb-3">
                             {{ form.password2.label_tag }}
                             {{ form.password2 }}
-                            <div class="text-danger small">
-                                {{ form.password2.errors }}
-                            </div>
+                            <div class="text-danger small">{{ form.password2.errors }}</div>
                         </div>
 
-                        <!-- Submit -->
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                Register
+                            <button type="submit" name="send-otp" class="btn btn-primary btn-lg">
+                                Send OTP
                             </button>
                         </div>
-
                     </form>
 
-                    <!-- Footer -->
                     <p class="text-center mt-3 mb-0">
                         Already have an account?
                         <a href="{% url 'users:login' %}" class="text-decoration-none">Login</a>
                     </p>
+                    {% endif %}
 
                 </div>
             </div>
-
         </div>
     </div>
 </div>

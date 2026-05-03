@@ -20,6 +20,8 @@ from django.urls import path, include
 from users import views as user_views
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', user_views.user_list, name='home'),
     path('users/', include('users.urls')),
     path('problems/', include('problems.urls')),
     path('contests/', include('contests.urls')),
