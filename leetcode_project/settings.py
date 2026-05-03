@@ -148,4 +148,4 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST_USER = 'your_email@gmail.com'
 # EMAIL_HOST_PASSWORD = 'your_app_password'
 
-DEFAULT_FROM_EMAIL = 'test@gmail.com'
+DEFAULT_FROM_EMAIL = 'bashabyte@gmail.com'  # put your own email here

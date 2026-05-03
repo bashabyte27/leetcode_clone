@@ -74,8 +74,9 @@ class RegisterForm(UserCreationForm):
 
 # ─────────────────────── Login Form ──────────────────────────────
 
-class LoginForm(AuthenticationForm):
-    username = forms.EmailField(       # AuthenticationForm calls it username internally
+class LoginForm(forms.Form):
+    username = None  # ← removes the parent's username field    
+    email = forms.EmailField(       # AuthenticationForm calls it username internally
         label='Email',
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
@@ -90,23 +91,35 @@ class LoginForm(AuthenticationForm):
             'placeholder': 'Enter your password'
         })
     )
+    def __init__(self, request=None, *args, **kwargs):
+        self.request = request  # ← stores request on the form
+        self.user_cache = None
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+    # Only validate email format/existence
+        email = self.cleaned_data.get('email')
+        if not Users.objects.filter(email=email).exists():
+            raise forms.ValidationError('No account found with this email.')
+        return email
+
+    def clean_password(self):
+        # Only validate password is not empty etc.
+        password = self.cleaned_data.get('password')
+        if len(password) < 6:
+            raise forms.ValidationError('Password too short.')
+        return password
 
     def clean(self):
-        email = self.cleaned_data.get('username')  # AuthenticationForm stores it as username
+        # Cross-field logic lives here — both fields available
+        email = self.cleaned_data.get('email')
         password = self.cleaned_data.get('password')
 
         if email and password:
-            self.user_cache = authenticate(
-                self.request,
-                username=email,
-                password=password
-            )
+            self.user_cache = authenticate(self.request, email=email, password=password)
             if self.user_cache is None:
                 raise forms.ValidationError('Invalid email or password.')
-            if not self.user_cache.is_active:
-                raise forms.ValidationError('This account is inactive.')
         return self.cleaned_data
-    
     
 class ForgotPasswordForm(forms.Form):
     email = forms.EmailField(
@@ -130,3 +143,19 @@ class ForgotPasswordForm(forms.Form):
             'placeholder': 'Confirm new password'
         })
     )
+    otp = forms.CharField(
+        required=False,   # not required on step 1 (get-otp)
+        max_length=6,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control text-center',
+            'placeholder': '------',
+            'maxlength': '6',
+        })
+    )
+
+    def clean(self):
+        p1 = self.cleaned_data.get('new_password1')
+        p2 = self.cleaned_data.get('new_password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Passwords do not match.')
+        return self.cleaned_data
