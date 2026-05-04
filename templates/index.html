@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CodeMaster — Master Coding. Land Your Dream Job.</title>
+
+    <!-- Bootstrap 5 CSS + Icons + Google Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Django static files -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body>
+
+    <!-- ================= STICKY DARK NAVBAR ================= -->
+    <nav class="navbar navbar-expand-lg sticky-top dark-navbar" id="mainNavbar">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-code brand-icon"></i>
+                <span class="brand-text">CodeMaster</span>
+            </a>
+            <div class="ms-auto d-flex gap-3 nav-buttons">
+                <a href="/users/login/" class="btn btn-outline-login rounded-pill">Login</a>
+                <a href="/users/register/" class="btn btn-primary-custom rounded-pill">Create Account</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+
+        <!-- ================= HERO SECTION with Floating Code Particles ================= -->
+        <section class="hero-section" id="heroSection">
+            <div class="hero-floating-code" id="floatingCodeContainer"></div>
+            <div class="container hero-content position-relative">
+                <div class="row justify-content-center text-center">
+                    <div class="col-lg-10 col-xl-8">
+                        <h1 class="hero-title">Master Coding.<br>Land Your Dream Job.</h1>
+                        <p class="hero-subtitle mt-3">
+                            Python · Java · DSA · PostgreSQL · System Design · Full Stack (Django + DRF) · Generative AI · Agentic AI · Machine Learning · API Development
+                        </p>
+                        <div class="hero-buttons mt-4 d-flex flex-wrap gap-3 justify-content-center">
+                            <a href="/users/register/" class="btn btn-primary-custom btn-lg rounded-pill px-4 py-3 shadow-glow">Start Learning Free <i class="fas fa-arrow-right ms-2"></i></a>
+                            <a href="/problems/" class="btn btn-outline-light btn-lg rounded-pill px-4 py-3">Browse Problems <i class="fas fa-code-branch ms-2"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-overlay-gradient"></div>
+        </section>
+
+        <!-- ================= STATS SECTION (Animated Counters) ================= -->
+        <section class="stats-section" id="statsSection">
+            <div class="container">
+                <div class="row g-4 text-center">
+                    <div class="col-md-3 col-6">
+                        <div class="stat-card">
+                            <i class="fas fa-code stat-icon"></i>
+                            <div class="stat-number" data-target="500">0</div>
+                            <div class="stat-label">Practice Problems</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="stat-card">
+                            <i class="fas fa-book-open stat-icon"></i>
+                            <div class="stat-number" data-target="10">0</div>
+                            <div class="stat-label">Expert Courses</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="stat-card">
+                            <i class="fas fa-user-graduate stat-icon"></i>
+                            <div class="stat-number" data-target="50000">0</div>
+                            <div class="stat-label">Active Students</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="stat-card">
+                            <i class="fas fa-chart-line stat-icon"></i>
+                            <div class="stat-number" data-target="95">0</div>
+                            <div class="stat-label">Placement Rate (%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= COURSES SECTION (10 cards) ================= -->
+        <section class="courses-section reveal-on-scroll">
+            <div class="container">
+                <div class="section-header text-center mb-5">
+                    <h2 class="section-title">Everything You Need to Succeed</h2>
+                    <div class="title-divider"></div>
+                </div>
+                <div class="row g-4">
+                    <!-- Python Programming -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fab fa-python"></i></div>
+                            <h3 class="course-name">Python Programming</h3>
+                            <p class="course-desc">Basics to advanced: OOP, decorators, generators, real-world projects.</p>
+                            <span class="badge difficulty-badge beginner-adv">All Levels</span>
+                        </div>
+                    </div>
+                    <!-- Java Programming -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fab fa-java"></i></div>
+                            <h3 class="course-name">Java Programming</h3>
+                            <p class="course-desc">Multithreading, JVM internals, collections, and design patterns.</p>
+                            <span class="badge difficulty-badge intermediate">Intermediate</span>
+                        </div>
+                    </div>
+                    <!-- DSA -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-code-branch"></i></div>
+                            <h3 class="course-name">Data Structures & Algorithms</h3>
+                            <p class="course-desc">Arrays, graphs, DP, trees — crack any coding interview.</p>
+                            <span class="badge difficulty-badge advanced">Advanced</span>
+                        </div>
+                    </div>
+                    <!-- PostgreSQL DB -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-database"></i></div>
+                            <h3 class="course-name">Database Management (PostgreSQL)</h3>
+                            <p class="course-desc">ACID, indexing, query optimization, and database design.</p>
+                            <span class="badge difficulty-badge beginner">Beginner</span>
+                        </div>
+                    </div>
+                    <!-- System Design -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-cogs"></i></div>
+                            <h3 class="course-name">System Design</h3>
+                            <p class="course-desc">Scalability, microservices, load balancing, and high availability.</p>
+                            <span class="badge difficulty-badge advanced">Advanced</span>
+                        </div>
+                    </div>
+                    <!-- Full Stack Django DRF -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fab fa-python"></i><i class="fas fa-layer-group"></i></div>
+                            <h3 class="course-name">Full Stack: Django & DRF</h3>
+                            <p class="course-desc">REST APIs, authentication, frontend integration, deployment.</p>
+                            <span class="badge difficulty-badge advanced">Advanced</span>
+                        </div>
+                    </div>
+                    <!-- Generative AI -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-robot"></i></div>
+                            <h3 class="course-name">Generative AI</h3>
+                            <p class="course-desc">LLMs, prompt engineering, GPT, diffusion models.</p>
+                            <span class="badge difficulty-badge advanced">Advanced</span>
+                        </div>
+                    </div>
+                    <!-- Agentic AI -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-brain"></i></div>
+                            <h3 class="course-name">Agentic AI</h3>
+                            <p class="course-desc">Autonomous agents, multi-agent systems and LLM orchestration.</p>
+                            <span class="badge difficulty-badge advanced">Advanced</span>
+                        </div>
+                    </div>
+                    <!-- Machine Learning -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-chart-line"></i></div>
+                            <h3 class="course-name">Machine Learning</h3>
+                            <p class="course-desc">Scikit-learn, TensorFlow, regression, classification, neural nets.</p>
+                            <span class="badge difficulty-badge advanced">Advanced</span>
+                        </div>
+                    </div>
+                    <!-- API Development with DRF -->
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="course-card">
+                            <div class="course-icon"><i class="fas fa-plug"></i></div>
+                            <h3 class="course-name">API Dev (Django REST)</h3>
+                            <p class="course-desc">Build production-grade RESTful APIs, testing & documentation.</p>
+                            <span class="badge difficulty-badge intermediate">Intermediate</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= FEATURES SECTION (6 core) ================= -->
+        <section class="features-section reveal-on-scroll">
+            <div class="container">
+                <div class="section-header text-center mb-5">
+                    <h2 class="section-title">Why CodeMaster?</h2>
+                    <div class="title-divider"></div>
+                </div>
+                <div class="row g-5">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-puzzle-piece"></i></div>
+                            <h3>Practice Problems</h3>
+                            <p>500+ curated challenges with real-time judge & discussion.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-trophy"></i></div>
+                            <h3>Live Contests</h3>
+                            <p>Weekly ranked contests with prizes and global leaderboards.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-chalkboard-user"></i></div>
+                            <h3>Full Courses</h3>
+                            <p>10+ industry-vetted tracks, video + interactive coding labs.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-certificate"></i></div>
+                            <h3>Certificate on Completion</h3>
+                            <p>Verified shareable certificates for every finished course.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-lightbulb"></i></div>
+                            <h3>AI Powered Hints</h3>
+                            <p>Smart hints and code suggestions using generative AI.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-chart-simple"></i></div>
+                            <h3>Progress Tracking</h3>
+                            <p>Analytics dashboard to monitor your coding journey.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HOW IT WORKS (3 steps) ================= -->
+        <section class="howitworks-section reveal-on-scroll">
+            <div class="container">
+                <div class="section-header text-center mb-5">
+                    <h2 class="section-title">Your Path to Success</h2>
+                    <div class="title-divider"></div>
+                </div>
+                <div class="steps-wrapper">
+                    <div class="row gy-5">
+                        <div class="col-md-4 step-col">
+                            <div class="step-item">
+                                <div class="step-number">1</div>
+                                <div class="step-icon"><i class="fas fa-user-plus"></i></div>
+                                <h4>Create Account</h4>
+                                <p>Sign up in seconds and unlock the entire platform.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 step-col">
+                            <div class="step-item">
+                                <div class="step-number">2</div>
+                                <div class="step-icon"><i class="fas fa-laptop-code"></i></div>
+                                <h4>Learn & Practice</h4>
+                                <p>Study courses & solve real coding problems daily.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 step-col">
+                            <div class="step-item">
+                                <div class="step-number">3</div>
+                                <div class="step-icon"><i class="fas fa-rocket"></i></div>
+                                <h4>Get Hired</h4>
+                                <p>Showcase certificates, ace interviews, land your dream job.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-connector d-none d-md-block"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TESTIMONIALS SECTION ================= -->
+        <section class="testimonials-section reveal-on-scroll">
+            <div class="container">
+                <div class="section-header text-center mb-5">
+                    <h2 class="section-title">What Our Students Say</h2>
+                    <div class="title-divider"></div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="testimonial-card">
+                            <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                            <p class="testimonial-text">"CodeMaster transformed my career. The DSA course and contests are on another level — I cleared FAANG interviews!"</p>
+                            <div class="testimonial-author">— Sarah Johnson</div>
+                            <div class="testimonial-role">Senior Software Engineer @ Google</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="testimonial-card">
+                            <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                            <p class="testimonial-text">"The AI track is mind-blowing! From zero to building my own LLM app in weeks. Best platform I've ever used."</p>
+                            <div class="testimonial-author">— Alex Chen</div>
+                            <div class="testimonial-role">ML Engineer @ OpenAI</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="testimonial-card">
+                            <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                            <p class="testimonial-text">"Full-stack course helped me build production apps. The community & hints feature is a game changer."</p>
+                            <div class="testimonial-author">— Michael Brown</div>
+                            <div class="testimonial-role">Lead Developer @ Stripe</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CTA BANNER ================= -->
+        <section class="cta-banner reveal-on-scroll">
+            <div class="container text-center">
+                <div class="cta-card">
+                    <h2 class="cta-title">Ready to Start Your Coding Journey?</h2>
+                    <p class="cta-sub">Join 50,000+ developers who mastered their skills with CodeMaster.</p>
+                    <a href="/users/register/" class="btn btn-primary-custom btn-lg rounded-pill px-5 py-3 mt-3 shadow-glow">Join for Free <i class="fas fa-arrow-right ms-2"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= FOOTER ================= -->
+        <footer class="main-footer">
+            <div class="container">
+                <div class="row gy-4">
+                    <div class="col-md-5">
+                        <div class="footer-logo">
+                            <i class="fas fa-code"></i> <span>CodeMaster</span>
+                        </div>
+                        <p class="footer-tagline">The ultimate coding ecosystem — courses, contests, and career prep.</p>
+                        <div class="social-placeholder"></div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <h5>Quick Links</h5>
+                        <ul class="footer-links">
+                            <li><a href="/problems/">Problems</a></li>
+                            <li><a href="/courses/">Courses</a></li>
+                            <li><a href="#">Contests</a></li>
+                            <li><a href="/users/login/">Login</a></li>
+                            <li><a href="/users/register/">Register</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <h5>Resources</h5>
+                        <ul class="footer-links">
+                            <li><a href="#">Documentation</a></li>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Support</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom text-center pt-4 mt-4">
+                    <p>&copy; 2025 CodeMaster. All rights reserved. Master coding, transform your future.</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Bootstrap JS Bundle (for scrollspy/hamburger potential but needed for some mobile interactions) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JavaScript -->
+    {% load static %}
+    <script src="{% static 'js/landing.js' %}"></script>
+</body>
+</html>

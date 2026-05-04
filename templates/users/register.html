@@ -1,58 +1,127 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-7 col-lg-5">
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-body p-4">
+<div class="container-fluid p-0 h-100 auth-body">
+    <div class="row g-0 h-100">
 
-                    {% if error %}
-                        <div class="alert alert-danger">{{ error }}</div>
-                    {% endif %}
-
-                    <h3 class="text-center mb-4">Create Account</h3>
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            {{ form.user_name.label_tag }}
-                            {{ form.user_name }}
-                            <div class="text-danger small">{{ form.user_name.errors }}</div>
-                        </div>
-                        <div class="mb-3">
-                            {{ form.email.label_tag }}
-                            {{ form.email }}
-                            <div class="text-danger small">{{ form.email.errors }}</div>
-                        </div>
-                        <div class="mb-3">
-                            {{ form.mobile_no.label_tag }}
-                            {{ form.mobile_no }}
-                            <div class="text-danger small">{{ form.mobile_no.errors }}</div>
-                        </div>
-                        <div class="mb-3">
-                            {{ form.password1.label_tag }}
-                            {{ form.password1 }}
-                            <div class="text-danger small">{{ form.password1.errors }}</div>
-                        </div>
-                        <div class="mb-3">
-                            {{ form.password2.label_tag }}
-                            {{ form.password2 }}
-                            <div class="text-danger small">{{ form.password2.errors }}</div>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" name="send-otp" class="btn btn-primary btn-lg">
-                                Send OTP
-                            </button>
-                        </div>
-                    </form>
-
-                    <p class="text-center mt-3 mb-0">
-                        Already have an account?
-                        <a href="{% url 'users:login' %}" class="text-decoration-none">Login</a>
-                    </p>
-
+        <!-- LEFT SIDE: Animated background + testimonials (hidden on mobile) -->
+        <div class="col-lg-6 d-none d-lg-flex left-panel">
+            <div class="floating-code-bg" id="floatingCodeBg"></div>
+            <div class="left-content">
+                <div class="logo-wrapper">
+                    <img src="{% static 'images/logo.png' %}" alt="BashaByte Logo" height="45">
                 </div>
+                <div class="left-text">
+                    <h1 class="tagline">Start Your Coding Journey! 🚀</h1>
+                    <p class="subtag">Join 50,000+ developers already learning on BashaByte</p>
+                    <div class="testimonials mt-4">
+                        <div class="testimonial-item">“The best platform for DSA – I cracked my dream job!” – Priya S.</div>
+                        <div class="testimonial-item">“AI hints and contests are game changers.” – Rahul M.</div>
+                        <div class="testimonial-item">“Full‑stack course made me job‑ready in 3 months.” – Anjali K.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: Registration Form with OTP -->
+        <div class="col-lg-6 right-panel d-flex align-items-center justify-content-center">
+            <div class="form-card fade-slide-up">
+                <div class="text-center mb-4 d-lg-none">
+                    <img src="{% static 'images/logo.png' %}" alt="BashaByte Logo" height="40">
+                </div>
+                <h2 class="form-title">Create Your Account</h2>
+                <p class="form-subtitle">
+                    Already have an account?
+                    <a href="{% url 'users:login' %}" class="auth-link">Login</a>
+                </p>
+
+                <!-- Django messages / non-field errors -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-danger">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger shake-error">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <form method="POST" action="" id="registerForm" novalidate>
+                    {% csrf_token %}
+
+                    <!-- user_name -->
+                    <div class="input-group-icon mb-3">
+                        <span class="input-icon"><i class="fas fa-user-circle"></i></span>
+                        <input type="text" name="user_name" id="id_user_name" class="form-control auth-input" placeholder="Username" value="{{ form.user_name.value|default:'' }}" required>
+                        <div class="text-danger small mt-1">{{ form.user_name.errors }}</div>
+                    </div>
+
+                    <!-- email -->
+                    <div class="input-group-icon mb-3">
+                        <span class="input-icon"><i class="fas fa-envelope"></i></span>
+                        <input type="email" name="email" id="id_email" class="form-control auth-input" placeholder="Email Address" value="{{ form.email.value|default:'' }}" required>
+                        <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+                    </div>
+
+                    <!-- mobile_no -->
+                    <div class="input-group-icon mb-3">
+                        <span class="input-icon"><i class="fas fa-phone-alt"></i></span>
+                        <input type="tel" name="mobile_no" id="id_mobile_no" class="form-control auth-input" placeholder="Mobile Number" value="{{ form.mobile_no.value|default:'' }}" required>
+                        <div class="text-danger small mt-1">{{ form.mobile_no.errors }}</div>
+                    </div>
+
+                    <!-- password1 (with strength meter) -->
+                    <div class="input-group-icon mb-2">
+                        <span class="input-icon"><i class="fas fa-key"></i></span>
+                        <input type="password" name="password1" id="id_password1" class="form-control auth-input" placeholder="Password" required>
+                        <span class="toggle-password" toggle-target="#id_password1">
+                            <i class="far fa-eye-slash"></i>
+                        </span>
+                    </div>
+                    <div class="password-strength mb-3">
+                        <div class="strength-bar" id="strengthBar"></div>
+                        <small class="strength-text" id="strengthText">Enter a strong password</small>
+                    </div>
+                    <div class="text-danger small">{{ form.password1.errors }}</div>
+
+                    <!-- password2 with match icon -->
+                    <div class="input-group-icon mb-3">
+                        <span class="input-icon"><i class="fas fa-check-circle"></i></span>
+                        <input type="password" name="password2" id="id_password2" class="form-control auth-input" placeholder="Confirm Password" required>
+                        <span class="toggle-password" toggle-target="#id_password2">
+                            <i class="far fa-eye-slash"></i>
+                        </span>
+                        <span id="passwordMatchIcon" class="match-icon"></span>
+                    </div>
+                    <div class="text-danger small">{{ form.password2.errors }}</div>
+
+                    <!-- Terms & Conditions -->
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="termsCheck" required>
+                        <label class="form-check-label" for="termsCheck">I agree to the <a href="#">Terms and Conditions</a></label>
+                    </div>
+
+                    <!-- Submit button (Send OTP) -->
+                    <button type="submit" name="send-otp" class="btn btn-auth-primary w-100">Send OTP <i class="fas fa-paper-plane ms-2"></i></button>
+
+                    <div class="divider my-4">or continue with</div>
+                    <div class="social-buttons d-flex gap-3">
+                        <button type="button" class="btn btn-outline-social flex-grow-1"><i class="fab fa-google"></i> Google</button>
+                        <button type="button" class="btn btn-outline-social flex-grow-1"><i class="fab fa-github"></i> GitHub</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}  {# ← removed the stray {% endif %} that was here #}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,258 @@
+/* problems.css – CodeMaster Problems Page (LeetCode dark style) */
+:root {
+    --bg-dark: #1A1A2E;
+    --card-bg: #16213E;
+    --sidebar-bg: #0F3460;
+    --primary: #FFA116;
+    --accent-green: #00B894;
+    --accent-orange: #FFA116;
+    --accent-red: #FF5252;
+    --text-white: #FFFFFF;
+    --text-light: #EBEBF5;
+    --border-color: #3D3D3D;
+    --hover-row: rgba(255, 161, 22, 0.08);
+}
+
+body {
+    background-color: var(--bg-dark);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-light);
+}
+
+/* Table wrapper */
+.table-wrapper {
+    background: var(--card-bg);
+    border-radius: 20px;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+}
+.problems-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+.problems-table thead th {
+    background: #0F0F1A;
+    padding: 1rem 1.2rem;
+    font-weight: 600;
+    color: var(--text-white);
+    border-bottom: 2px solid var(--primary);
+    text-align: left;
+}
+.problems-table tbody tr {
+    border-bottom: 1px solid rgba(61, 61, 61, 0.4);
+    transition: background 0.2s;
+    cursor: pointer;
+}
+.problems-table tbody tr:hover {
+    background: var(--hover-row);
+}
+.problems-table td {
+    padding: 0.9rem 1.2rem;
+}
+.problem-title-link {
+    color: var(--text-white);
+    text-decoration: none;
+    font-weight: 500;
+}
+.problem-title-link:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+.difficulty-badge {
+    display: inline-block;
+    padding: 0.25rem 0.9rem;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.difficulty-badge.easy { background: #2E7D32; color: #E8F5E9; }
+.difficulty-badge.medium { background: #F57C00; color: #FFF3E0; }
+.difficulty-badge.hard { background: #C62828; color: #FFEBEE; }
+
+/* Filter card */
+.filter-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 1.2rem;
+    border: 1px solid var(--border-color);
+}
+.search-wrapper {
+    position: relative;
+}
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+}
+.search-input {
+    background: #1E1E2F;
+    border: 1px solid var(--border-color);
+    color: white;
+    padding-left: 2.5rem;
+    border-radius: 40px;
+}
+.search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(255, 161, 22, 0.2);
+    background: #252540;
+}
+.filter-btn {
+    background: #252540;
+    border: none;
+    padding: 0.4rem 1.3rem;
+    border-radius: 40px;
+    color: var(--text-light);
+    transition: 0.2s;
+}
+.filter-btn.active, .filter-btn:hover {
+    background: var(--primary);
+    color: #1A1A2E;
+    font-weight: 600;
+}
+.status-select {
+    background: #1E1E2F;
+    border-color: var(--border-color);
+    color: white;
+    border-radius: 40px;
+}
+
+/* Pagination */
+.pagination-custom .page-item .page-link {
+    background: #252540;
+    border: none;
+    color: var(--text-light);
+    margin: 0 4px;
+    border-radius: 30px;
+}
+.pagination-custom .page-item.active .page-link {
+    background: var(--primary);
+    color: #1A1A2E;
+}
+.pagination-info {
+    color: #BBBBCC;
+    font-size: 0.9rem;
+}
+
+/* Sidebar Cards */
+.sidebar-card {
+    background: var(--sidebar-bg);
+    border-radius: 24px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    color: white;
+}
+/* Circular progress (CSS only) */
+.circular-progress {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+.progress-ring {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary) 0deg, #2A2A4A 0deg);
+    mask: radial-gradient(transparent 62%, black 63%);
+    -webkit-mask: radial-gradient(transparent 62%, black 63%);
+}
+.progress-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+.progress-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    font-size: 1rem;
+    color: white;
+}
+.progress-item {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+.progress-label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+/* Study plan */
+.plan-item {
+    margin-bottom: 1.2rem;
+}
+.plan-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+}
+.progress-bar-custom {
+    background: #2A2A4A;
+    border-radius: 8px;
+    height: 6px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+.progress-fill-bar {
+    background: var(--primary);
+    height: 100%;
+    border-radius: 8px;
+}
+.start-plan-btn {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    border-radius: 30px;
+    padding: 0.2rem 1rem;
+    font-size: 0.75rem;
+    transition: 0.2s;
+}
+.start-plan-btn:hover {
+    background: var(--primary);
+    color: #1A1A2E;
+}
+/* Daily Challenge */
+.daily-challenge-card {
+    border-left: 5px solid var(--primary);
+}
+.daily-badge {
+    background: rgba(255, 161, 22, 0.2);
+    display: inline-block;
+    padding: 0.2rem 0.8rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    margin-bottom: 0.8rem;
+}
+.challenge-title {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.challenge-btn {
+    background: var(--primary);
+    color: #1A1A2E;
+    border-radius: 40px;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+}
+.no-results-message {
+    text-align: center;
+    padding: 2rem;
+    color: #AAAAAA;
+}
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar-card { margin-top: 1rem; }
+}

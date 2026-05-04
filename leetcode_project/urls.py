@@ -19,11 +19,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
+from django.views.generic import TemplateView
 # from courses import views as course_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('courses.urls')),  # default to users app for home page
+    path('', TemplateView.as_view(template_name='index.html'),name='home'),  # default to users app for home page
     path('users/', include('users.urls')),
     path('problems/', include('problems.urls')),
     path('contests/', include('contests.urls')),
