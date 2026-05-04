@@ -1,256 +1,182 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Problems | BashaByte — Master Coding</title>
 
-    <!-- Bootstrap 5 + Font Awesome + Google Fonts -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+{% block title %}Problems — BashaByte{% endblock %}
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/problem_list.css' %}">
-</head>
-<body class="problems-body">
-
-    <!-- STICKY NAVBAR (same as landing) -->
-    <nav class="navbar navbar-expand-lg sticky-top dark-navbar">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand" href="/">
-                <img src="{% static 'images/logo.png' %}" alt="BashaByte Logo" height="40">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarMain">
-                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link active" href="{% url 'problems:list' %}">Problems</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Courses</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Contests</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Study Plans</a></li>
-                </ul>
-                <div class="d-flex ms-auto">
-                    {% if request.user.is_authenticated %}
-                        <div class="dropdown">
-                            <button class="btn btn-outline-light dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle me-1"></i> {{ request.user.username }}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-dark">
-                                <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            </ul>
-                        </div>
-                    {% else %}
-                        <a href="{% url 'users:login' %}" class="btn btn-outline-login rounded-pill me-2">Login</a>
-                        <a href="{% url 'users:register' %}" class="btn btn-primary-custom rounded-pill">Register</a>
-                    {% endif %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row g-4">
+        <!-- MAIN CONTENT -->
+        <div class="col-lg-8 col-md-12">
+            <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+                <div>
+                    <h5 class="mb-0" style="color: var(--text-heading); font-weight: 700;">Problems</h5>
+                    <span class="text-lc-secondary" style="font-size: 13px;">Sharpen your skills with our curated problem set</span>
+                </div>
+                <div class="d-flex gap-3">
+                    <span class="text-lc-secondary"><i class="bi bi-database me-1"></i>Total: {{ total_problems|default:"0" }}</span>
+                    <span class="badge-easy">Easy: {{ easy_count|default:"0" }}</span>
+                    <span class="badge-medium">Medium: {{ medium_count|default:"0" }}</span>
+                    <span class="badge-hard">Hard: {{ hard_count|default:"0" }}</span>
                 </div>
             </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid px-4 py-4">
-        <div class="row g-4">
-
-            <!-- MAIN CONTENT (68%) -->
-            <div class="col-lg-8 col-md-12">
-                <!-- Page Header -->
-                <div class="page-header mb-4">
-                    <div class="d-flex flex-wrap justify-content-between align-items-end">
-                        <div>
-                            <h1 class="page-title">Problems</h1>
-                            <p class="page-subtitle">Sharpen your skills with our curated problem set</p>
-                        </div>
-                        <div class="problem-stats">
-                            <span><i class="fas fa-database me-1"></i>Total: {{ total_problems|default:"0" }}</span>
-                            <span class="easy">Easy: {{ easy_count|default:"0" }}</span>
-                            <span class="medium">Medium: {{ medium_count|default:"0" }}</span>
-                            <span class="hard">Hard: {{ hard_count|default:"0" }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sticky Filter Bar -->
-                <div class="filter-bar sticky-filter" id="filterBar">
-                    <div class="d-flex flex-wrap gap-3 align-items-center">
-                        <div class="difficulty-filters d-flex gap-2">
-                            <button class="filter-pill active" data-difficulty="all">All</button>
-                            <button class="filter-pill" data-difficulty="Easy">Easy</button>
-                            <button class="filter-pill" data-difficulty="Medium">Medium</button>
-                            <button class="filter-pill" data-difficulty="Hard">Hard</button>
-                        </div>
-                        <div class="search-wrapper ms-auto">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" id="problemSearch" class="form-control search-input" placeholder="Search problems...">
-                        </div>
-                        <div>
-                            <select id="statusFilter" class="form-select status-select">
-                                <option value="all">All</option>
-                                <option value="solved">Solved</option>
-                                <option value="unsolved">Unsolved</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Problems Table -->
-                <div class="table-wrapper">
-                    <table class="problems-table" id="problemsTable">
+            <div class="lc-card">
+                <div class="table-responsive">
+                    <table class="lc-table w-100">
                         <thead>
                             <tr>
-                                <th class="status-col">Status</th>
-                                <th class="order-col">#</th>
-                                <th class="title-col">Title</th>
-                                <th class="difficulty-col">Difficulty</th>
-                                <th class="acceptance-col">Acceptance</th>
+                                <th style="width:8%">Status</th>
+                                <th style="width:8%">#</th>
+                                <th>Title</th>
+                                <th style="width:15%">Difficulty</th>
+                                <th style="width:15%">Acceptance</th>
                             </tr>
                         </thead>
-                        <tbody id="problemsTbody">
+                        <tbody>
                             {% for problem in problems %}
-                            <tr class="problem-row"
-                                data-difficulty="{{ problem.difficulty }}"
-                                data-title="{{ problem.title|lower }}"
-                                data-status="{% if problem.is_solved %}solved{% else %}unsolved{% endif %}"
-                                onclick="window.location='/problems/{{ problem.slug }}/'">
-                                <td class="status-col">
+                            <tr onclick="window.location='/problems/{{ problem.slug }}/'" style="cursor: pointer;">
+                                <td class="text-center">
                                     {% if problem.is_solved %}
-                                        <i class="fas fa-check-circle solved-icon"></i>
+                                        <i class="bi bi-check-circle-fill" style="color: var(--easy-color);"></i>
                                     {% else %}
-                                        <i class="far fa-circle unsolved-icon"></i>
+                                        <i class="bi bi-circle" style="color: var(--text-secondary);"></i>
                                     {% endif %}
                                 </td>
-                                <td class="order-col">{{ problem.order_num|default:forloop.counter }}</td>
-                                <td class="title-col">
-                                    <a href="/problems/{{ problem.slug }}/" class="problem-title-link">{{ problem.title }}</a>
-                                </td>
+                                <td class="text-lc-secondary">{{ problem.order_num|default:forloop.counter }}</td>
+                                <td><a href="/problems/{{ problem.slug }}/" class="lc-link">{{ problem.title }}</a></td>
                                 <td class="difficulty-col">
-                                    <span class="difficulty-badge {{ problem.difficulty|lower }}">
+                                    <span class="badge-{{ problem.difficulty }}">
                                         {{ problem.get_difficulty_display }}
                                     </span>
                                 </td>
-                                <td class="acceptance-col">
-                                    <div class="acceptance-percent">{{ problem.acceptance_rate|default:"0" }}%</div>
-                                    <div class="acceptance-bar">
-                                        <div class="acceptance-fill" data-width="{{ problem.acceptance_rate|default:0 }}"></div>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="text-lc-secondary small">{{ problem.acceptance_rate|default:"0" }}%</span>
+                                        <div class="progress" style="height:4px; background-color:var(--bg-input);">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width:{{ problem.acceptance_rate|default:0 }}%; background-color:var(--orange);">
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="5" class="text-center py-5">🚀 No problems found yet.</td></tr>
+                            <tr><td colspan="5" class="text-center py-5 text-lc-secondary">No problems found yet.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                    <div id="noResultsMsg" class="no-results-message" style="display: none;">
-                        <i class="fas fa-frown-open"></i> No problems match your filters.
-                    </div>
                 </div>
+            </div>
 
-                <!-- Pagination -->
-                <div class="pagination-container mt-4">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center">
-                        <div class="pagination-info" id="paginationInfo">Showing 0 to 0 of 0 problems</div>
-                        <nav>
-                            <ul class="pagination pagination-custom" id="paginationList"></ul>
-                        </nav>
+            <!-- Pagination (uses problems:problem_list correctly – no arguments) -->
+            {% if is_paginated %}
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-lc-secondary small">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} problems
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link lc-link" href="?page=1">&laquo; First</a></li>
+                            <li class="page-item"><a class="page-link lc-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item active"><span class="page-link" style="background-color:var(--orange); border-color:var(--orange); color:#000;">{{ page_obj.number }}</span></li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link lc-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                            <li class="page-item"><a class="page-link lc-link" href="?page={{ paginator.num_pages }}">Last &raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT SIDEBAR (same as previous, hardcoded URLs where needed) -->
+        <div class="col-lg-4 col-md-12">
+            <div class="lc-card mb-4">
+                <h5 class="card-title mb-3" style="color: var(--text-heading);"><i class="bi bi-pie-chart me-2"></i> Your Progress</h5>
+                {% if request.user.is_authenticated %}
+                    <div class="text-center mb-3">
+                        <div style="width: 120px; height: 120px; margin: 0 auto; position: relative;">
+                            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%;">
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--bg-secondary)" stroke-width="3"/>
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--orange)" stroke-width="3" stroke-dasharray="{{ overall_progress_percent|default:'0' }}, 100" stroke-linecap="round"/>
+                                <text x="18" y="20.5" text-anchor="middle" fill="var(--text-primary)" font-size="6" font-weight="bold">{{ overall_progress_percent|default:"0" }}%</text>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-circle-fill" style="color: var(--easy-color); font-size: 10px;"></i> Easy</span>
+                            <span>{{ easy_solved|default:"0" }} / {{ easy_count|default:"0" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-circle-fill" style="color: var(--medium-color); font-size: 10px;"></i> Medium</span>
+                            <span>{{ medium_solved|default:"0" }} / {{ medium_count|default:"0" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-circle-fill" style="color: var(--hard-color); font-size: 10px;"></i> Hard</span>
+                            <span>{{ hard_solved|default:"0" }} / {{ hard_count|default:"0" }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-lock fs-1 text-lc-secondary mb-3 d-block"></i>
+                        <p class="text-lc-secondary">Login to track your progress</p>
+                        <a href="{% url 'users:login' %}" class="btn-lc-orange">Login</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if daily_challenge %}
+            <div class="lc-card mb-4" style="background: linear-gradient(135deg, var(--orange-bg) 0%, var(--bg-card) 100%);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span><i class="bi bi-fire" style="color: var(--orange);"></i> Daily Challenge</span>
+                    <span class="text-lc-secondary small">{{ today_date|date:"M j, Y" }}</span>
+                </div>
+                <h5 class="mb-2">{{ daily_challenge.title }}</h5>
+                <span class="badge-{{ daily_challenge.difficulty|lower }} mb-3">{{ daily_challenge.get_difficulty_display }}</span>
+                <a href="/problems/{{ daily_challenge.slug }}/" class="btn-lc-orange w-100 text-center">Solve Now <i class="bi bi-arrow-right ms-2"></i></a>
+            </div>
+            {% endif %}
+
+            <div class="lc-card mb-4">
+                <h5 class="card-title mb-3" style="color: var(--text-heading);"><i class="bi bi-book me-2"></i> Study Plans</h5>
+                <div class="plan-list">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1"><span>DSA Basics</span><span class="badge-easy" style="font-size:10px;">Beginner</span></div>
+                        <div class="progress" style="height:4px; background-color:var(--bg-input);"><div class="progress-bar" style="width:0%; background-color:var(--orange);"></div></div>
+                        <button class="btn-lc-outline w-100 mt-2" style="font-size:12px;">Start</button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1"><span>Interview Prep</span><span class="badge-medium" style="font-size:10px;">Intermediate</span></div>
+                        <div class="progress" style="height:4px; background-color:var(--bg-input);"><div class="progress-bar" style="width:0%; background-color:var(--orange);"></div></div>
+                        <button class="btn-lc-outline w-100 mt-2" style="font-size:12px;">Start</button>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1"><span>Python Mastery</span><span class="badge-easy" style="font-size:10px;">Beginner</span></div>
+                        <div class="progress" style="height:4px; background-color:var(--bg-input);"><div class="progress-bar" style="width:0%; background-color:var(--orange);"></div></div>
+                        <button class="btn-lc-outline w-100 mt-2" style="font-size:12px;">Start</button>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT SIDEBAR (32%) -->
-            <div class="col-lg-4 col-md-12">
-                <!-- User Progress Card -->
-                <div class="sidebar-card progress-card mb-4">
-                    <h3 class="card-title"><i class="fas fa-chart-pie me-2"></i> Your Progress</h3>
-                    {% if request.user.is_authenticated %}
-                        <div class="circular-progress-container">
-                            <div class="circular-progress" id="circularProgress">
-                                <div class="progress-ring"></div>
-                                <div class="progress-percent" id="progressPercent">0%</div>
-                            </div>
-                            <div class="progress-stats mt-3">
-                                <div class="stat-row easy"><i class="fas fa-circle"></i> Easy <span id="easySolvedStats">0</span>/{{ easy_count|default:"0" }}</div>
-                                <div class="stat-row medium"><i class="fas fa-circle"></i> Medium <span id="mediumSolvedStats">0</span>/{{ medium_count|default:"0" }}</div>
-                                <div class="stat-row hard"><i class="fas fa-circle"></i> Hard <span id="hardSolvedStats">0</span>/{{ hard_count|default:"0" }}</div>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-lock fa-3x mb-3 opacity-50"></i>
-                            <p>Login to track your progress</p>
-                            <a href="{% url 'users:login' %}" class="btn btn-outline-primary rounded-pill">Login</a>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Daily Challenge Card -->
-                {% if daily_challenge %}
-                <div class="sidebar-card daily-challenge mb-4">
-                    <div class="daily-header">
-                        <i class="fas fa-fire-flame-curved fire-icon"></i>
-                        <span>Daily Challenge</span>
-                        <span class="ms-auto small text-muted">{{ today_date|date:"M j, Y" }}</span>
-                    </div>
-                    <h4 class="challenge-title">{{ daily_challenge.title }}</h4>
-                    <span class="difficulty-badge {{ daily_challenge.difficulty|lower }} mb-3">{{ daily_challenge.get_difficulty_display }}</span>
-                    <a href="/problems/{{ daily_challenge.slug }}/" class="btn btn-challenge w-100">Solve Now <i class="fas fa-arrow-right ms-2"></i></a>
-                </div>
-                {% endif %}
-
-                <!-- Study Plan Card -->
-                <div class="sidebar-card study-plan mb-4">
-                    <h3 class="card-title"><i class="fas fa-book-open me-2"></i> Study Plans</h3>
-                    <div class="plan-list">
-                        <div class="plan-item">
-                            <div class="plan-head"><span>📘 DSA Basics</span><span class="badge bg-secondary">Beginner</span></div>
-                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 0%;"></div></div>
-                            <button class="btn-plan-start">Start</button>
-                        </div>
-                        <div class="plan-item">
-                            <div class="plan-head"><span>🎯 Interview Prep</span><span class="badge bg-warning text-dark">Intermediate</span></div>
-                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 0%;"></div></div>
-                            <button class="btn-plan-start">Start</button>
-                        </div>
-                        <div class="plan-item">
-                            <div class="plan-head"><span>🐍 Python Mastery</span><span class="badge bg-secondary">Beginner</span></div>
-                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 0%;"></div></div>
-                            <button class="btn-plan-start">Start</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top Tags Card -->
-                <div class="sidebar-card top-tags">
-                    <h3 class="card-title"><i class="fas fa-tags me-2"></i> Popular Topics</h3>
-                    <div class="tags-cloud" id="tagsCloud">
-                        <span class="topic-tag" data-tag="array">Array</span>
-                        <span class="topic-tag" data-tag="string">String</span>
-                        <span class="topic-tag" data-tag="dynamic programming">Dynamic Programming</span>
-                        <span class="topic-tag" data-tag="graph">Graph</span>
-                        <span class="topic-tag" data-tag="tree">Tree</span>
-                        <span class="topic-tag" data-tag="binary search">Binary Search</span>
-                        <span class="topic-tag" data-tag="stack">Stack</span>
-                        <span class="topic-tag" data-tag="queue">Queue</span>
-                        <span class="topic-tag" data-tag="sorting">Sorting</span>
-                    </div>
+            <div class="lc-card">
+                <h5 class="card-title mb-3" style="color: var(--text-heading);"><i class="bi bi-tags me-2"></i> Popular Topics</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge-easy" style="padding:6px 12px;">Array</span>
+                    <span class="badge-easy" style="padding:6px 12px;">String</span>
+                    <span class="badge-medium" style="padding:6px 12px;">Dynamic Programming</span>
+                    <span class="badge-medium" style="padding:6px 12px;">Graph</span>
+                    <span class="badge-hard" style="padding:6px 12px;">Tree</span>
+                    <span class="badge-easy" style="padding:6px 12px;">Binary Search</span>
+                    <span class="badge-easy" style="padding:6px 12px;">Stack</span>
+                    <span class="badge-easy" style="padding:6px 12px;">Queue</span>
+                    <span class="badge-easy" style="padding:6px 12px;">Sorting</span>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Bootstrap JS + custom JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/problem_list.js' %}"></script>
-    <script>
-        // Pass Django counts to JS for dynamic updates (solved stats)
-        window.problemCounts = {
-            easyTotal: {{ easy_count|default:0 }},
-            mediumTotal: {{ medium_count|default:0 }},
-            hardTotal: {{ hard_count|default:0 }}
-        };
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,86 +1,106 @@
 {% extends 'base.html' %}
 {% load tz %}
 
+{% block title %}Users — BashaByte{% endblock %}
+
 {% block content %}
 
-<div class="container mt-5">
-
+<div class="container-fluid px-4 py-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Users</h2>
-        <a href="{% url 'users:register' %}" class="btn btn-primary">
-            + Add User
+        <div>
+            <h5 class="mb-0" style="color: var(--text-heading); font-weight: 700;">Users</h5>
+            <span class="text-lc-secondary" style="font-size: 13px;">Manage all registered users</span>
+        </div>
+        <a href="{% url 'users:register' %}" class="btn-lc-orange py-2 px-3">
+            <i class="bi bi-plus-lg me-1"></i> Add User
         </a>
     </div>
 
-    <!-- Card -->
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body p-0">
-
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-
-                    <!-- Table Head -->
-                    <thead class="table-light">
-                        <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Mobile</th>
-                            <th>Premium</th>
-                            <th>Status</th>
-                            <th>Joined</th>
-                        </tr>
-                    </thead>
-
-                    <!-- Table Body -->
-                    <tbody>
-                        {% for user in users %}
-                        <tr>
-                            <td>
-                                <strong>{{ user.user_name }}</strong>
-                            </td>
-
-                            <td>{{ user.email }}</td>
-
-                            <td>
-                                {{ user.mobile_no|default:"—" }}
-                            </td>
-
-                            <td>
-                                {% if user.is_premium %}
-                                    <span class="badge bg-warning text-dark">Premium</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Free</span>
-                                {% endif %}
-                            </td>
-
-                            <td>
-                                {% if user.is_active %}
-                                    <span class="badge bg-success">Active</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-muted">
-                                {{ user.created_at|localtime|date:"M d, Y" }}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
-                                No users found
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-
-                </table>
-            </div>
-
+    <!-- Table Card -->
+    <div class="lc-card">
+        <div class="table-responsive">
+            <table class="lc-table w-100">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Mobile</th>
+                        <th>Plan</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td class="text-lc-secondary">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="
+                                    width: 28px;
+                                    height: 28px;
+                                    border-radius: 50%;
+                                    background-color: var(--orange-bg);
+                                    color: var(--orange);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 12px;
+                                    font-weight: 700;">
+                                    {{ user.user_name|first|upper }}
+                                </div>
+                                <span style="font-weight: 600;">{{ user.user_name }}</span>
+                            </div>
+                        </td>
+                        <td class="text-lc-secondary">{{ user.email }}</td>
+                        <td class="text-lc-secondary">{{ user.mobile_no|default:"—" }}</td>
+                        <td>
+                            {% if user.is_premium %}
+                                <span class="badge-medium">
+                                    <i class="bi bi-star-fill me-1"></i>Premium
+                                </span>
+                            {% else %}
+                                <span style="
+                                    background-color: var(--bg-secondary);
+                                    color: var(--text-secondary);
+                                    font-size: 12px;
+                                    font-weight: 500;
+                                    padding: 3px 8px;
+                                    border-radius: 4px;
+                                    display: inline-block;">
+                                    Free
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge-easy">
+                                    <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>Active
+                                </span>
+                            {% else %}
+                                <span class="badge-hard">
+                                    <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-lc-secondary" style="font-size: 13px;">
+                            {{ user.created_at|localtime|date:"M d, Y" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="bi bi-people fs-2 text-lc-secondary d-block mb-2"></i>
+                            <span class="text-lc-secondary">No users found</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-
 </div>
 
 {% endblock %}

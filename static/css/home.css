@@ -1,0 +1,143 @@
+/* ══════════════════════════════════════
+   BashaByte — Home Page Styles
+   Uses base.css variables only
+══════════════════════════════════════ */
+
+/* ── Hero Section ── */
+.hero-section {
+    padding: 80px 0 60px;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.hero-tag {
+    display: inline-block;
+    background-color: var(--orange-bg);
+    color: var(--orange);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--orange);
+}
+
+.hero-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.2;
+}
+
+.hero-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+/* ── Stats Section ── */
+.stats-section {
+    padding: 40px 0;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* ── General Section ── */
+.home-section {
+    padding: 60px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-heading);
+}
+
+/* ── Course Cards ── */
+.course-icon {
+    font-size: 24px;
+    color: var(--orange);
+}
+
+.course-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.course-desc {
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+/* ── Feature Cards ── */
+.feature-icon {
+    font-size: 20px;
+    color: var(--orange);
+    min-width: 32px;
+    margin-top: 2px;
+}
+
+/* ── Step Cards ── */
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--orange);
+    color: #000;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* ── CTA Section ── */
+.cta-section {
+    padding: 60px 0;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ── Footer ── */
+.lc-footer {
+    padding: 40px 0 24px;
+    background-color: var(--bg-navbar);
+}
+
+.footer-links li {
+    margin-bottom: 8px;
+}
+
+.footer-links a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.footer-links a:hover {
+    color: var(--orange);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .hero-title { font-size: 28px; }
+    .hero-section { padding: 50px 0 40px; }
+    .home-section { padding: 40px 0; }
+}

@@ -1,11 +1,12 @@
 import random, time
 from django.contrib.auth.hashers import make_password
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .forms import LoginForm, RegisterForm, ForgotPasswordForm
-from .models import Users
+from .models import Users, UserProfile, UserStats
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 
 
 def get_otp():
@@ -93,7 +94,7 @@ def login_view(request):
         form = LoginForm(request,data=request.POST)
         if form.is_valid():
             login(request, form.user_cache)
-            return redirect('users:user_list')  # fixed name
+            return redirect('problems:problem_list')  # fixed name
         else:
             return render(request,'users/login.html',{'form':form})
     return render(request, 'users/login.html', {'form': form})
@@ -120,7 +121,7 @@ def reset_password(request):
                 request.session['reset_otp'] = otp
                 request.session['reset_expires_at'] = time.time() + 300
                 request.session['reset_attempts'] = 0
-                # ✅ Store everything needed for step 2 in the session
+                # Store everything needed for step 2 in the session
                 request.session['pending_reset'] = {
                     'email':    email,
                     'password': make_password(form.cleaned_data['new_password1']),
@@ -136,7 +137,7 @@ def reset_password(request):
                     'form_action': 'reset-password',  # optional, for template routing
                 })
 
-        elif 'verify-otp' in request.POST:  # ✅ no form.is_valid() needed here
+        elif 'verify-otp' in request.POST:  # no form.is_valid() needed here
             entered_otp   = request.POST.get('otp', '').strip()
             pending_reset = request.session.get('pending_reset')
 
@@ -165,3 +166,28 @@ def reset_password(request):
                 })
 
     return render(request, 'users/forgot_password.html', {'form': form})
+
+@login_required
+def profile_view(request,username):
+    from_user = request.user
+    to_user = get_object_or_404(Users,user_name=username)
+    if from_user.user_name==to_user.user_name:
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        stats, is_created = UserStats.objects.get_or_create(user=request.user)
+        context = {
+            'profile':profile,
+            'stats':stats,
+            'editable':True
+        }
+        return render(request,"users/profile.html",context)
+    else:
+        to_user_profile, created = UserProfile.objects.get_or_create(user=to_user)
+        stats, is_created = UserStats.objects.get_or_create(user=to_user)
+        context = {
+            'profile':to_user_profile,
+            'stats':stats,
+            'editable':False
+        }
+
+        return render(request,'users/profile.html',context)
+

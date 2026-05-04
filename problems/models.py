@@ -209,7 +209,7 @@ class TestCase(models.Model):
     input_data = models.TextField()
     expected_output = models.TextField()
     is_sample = models.BooleanField(default=False)
-    # explanation is only relevant for sample test cases shown on the problem page
+    # explanation is only rele vant for sample test cases shown on the problem page
     explanation = models.TextField(blank=True, null=True)
     order_num = models.PositiveIntegerField()
 
