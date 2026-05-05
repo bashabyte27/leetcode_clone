@@ -10,10 +10,6 @@
       <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40">
     </div>
 
-    <!-- Lock icon and heading -->
-    <div class="text-center mb-2">
-      <i class="bi bi-box-arrow-in-right fs-2 text-lc-secondary"></i>
-    </div>
     <h3 class="text-center mb-1">Sign In to BashaByte</h3>
     <p class="text-center text-lc-secondary small mb-4">
       Enter your credentials to access your account
@@ -32,14 +28,13 @@
 
       <!-- Username / Email field -->
       <div class="mb-3">
-        <label for="id_username" class="form-label">Username or Email</label>
-        <input type="text" name="username" id="id_username" class="lc-input"
-               value="{{ form.username.value|default:'' }}"
-               placeholder="your_username@example.com" required>
-        {% if form.username.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.username.errors }}
-          </div>
+        <label for="id_username_or_email" class="form-label">Username or Email</label>
+        <input type="text" name="username_or_email" id="id_username_or_email"
+              class="lc-input"
+              value="{{ form.username_or_email.value|default:'' }}"
+              placeholder="Enter username or email" required>
+        {% if form.username_or_email.errors %}
+            {{ form.username_or_email.errors }}
         {% endif %}
       </div>
 

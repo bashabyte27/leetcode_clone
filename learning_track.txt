@@ -1,0 +1,4 @@
+5/05/26
+1.always check for the names you are writing in the html and when submitting the form what url
+it should direct to
+2.In login form when the user submitting the email or username in that case you should filter email 

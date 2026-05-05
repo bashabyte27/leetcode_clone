@@ -134,3 +134,43 @@ All other templates extend this base so the navbar is consistent across every pa
 - `render()` always returns 200, only `redirect()` returns 302 — that is normal and expected
 
 ---
+5/5/2026
+
+What is django?
+- Djnago is A High level python framework which is used to develop websites By providing high security and Robust Inbuilt features.
+- Django comes with built-in-batteries. Batteries in the sense Predefined authentication, validation, Forms, models and Admin logic.
+Where
+- It has its own Defined Architecture Which enables to build the Large scale websites.
+- Django follows a beautiful Architecture To spread the work.
+
+So Typically Django Follows below architecture.
+Browser --> Django server --> ursl --> View -->Django templates --> Browser
+                                        |
+                                      models
+By using Django models only You can wirte the database Querries. And It saves your time and energy
+where you dont have to waste your time to think and follow the sql ordinary syntax.
+
+- And To build Any websites By using Django For better practice You should follow MVT Architecture.
+Which means 
+1.First Build the models
+2.Then Talk with the models and get the data
+3.And Show the Logic and data to the ui by using Django Templates.
+
+Models:
+- Models is An Approach which is used to manipulate The databases By using Python language only 
+In similar terms It is an mediator between The Django and Any database
+
+
+Django Website -------> PostgreSql
+                   |
+                 models
+                 
+- Models is a scary name for the beginners. isnt it ?But actually it is way more simpler and Easier
+than sql. You can write any querry here in python only and There are so many enhanced functions are There
+which optimises the querry fetching work as well.
+
+
+
+
+
+

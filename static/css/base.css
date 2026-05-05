@@ -191,6 +191,7 @@ body {
     border-radius: 8px;
     box-shadow: var(--shadow);
     transition: background-color 0.2s ease;
+    padding: 24px;
 }
 
 .lc-card-hover:hover {
@@ -211,6 +212,8 @@ body {
     font-size: 14px;
     padding: 8px 12px;
     transition: border-color 0.15s ease;
+    width: 100%;
+    display: block;
 }
 .lc-input:focus {
     border-color: var(--orange) !important;

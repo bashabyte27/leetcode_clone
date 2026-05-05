@@ -1,0 +1,689 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ serial_no }}. {{ title }} — CodeArena</title>
+  <link rel="stylesheet" href="{% static 'css/problem.css' %}" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAVBAR
+  ════════════════════════════════════════════════════════ -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">BashaByte</a>
+    <span class="navbar-sep">/</span>
+    <span class="navbar-problem-title">{{ serial_no }}. {{ title }}</span>
+    <div class="navbar-actions">
+      <a href="/" class="nav-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Problems
+      </a>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN WORKSPACE
+  ════════════════════════════════════════════════════════ -->
+  <div class="workspace">
+
+    <!-- ── LEFT PANEL ──────────────────────────────────────── -->
+    <div class="left-panel" id="leftPanel">
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="description">Description</button>
+        <button class="tab-btn" data-tab="submissions">Submissions</button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+
+        <!-- ── Description Pane ─────────────────────────── -->
+        <div class="tab-pane active" id="tab-description">
+
+          <div class="problem-header">
+            <div class="problem-number"># {{ serial_no }}</div>
+            <h1 class="problem-title">{{ title }}</h1>
+            <div class="problem-meta">
+              <span class="difficulty-badge {{ problem.difficulty|lower }}">
+                {{ problem.difficulty }}
+              </span>
+              <span class="acceptance-rate">
+                Acceptance: {{ problem.acceptance_rate }}%
+              </span>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Problem Description (safe HTML from DB) -->
+          <div class="problem-description">
+            {{ description|safe }}
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Sample Test Cases -->
+          {% for case in sample_cases %}
+          <div class="example-block">
+            <div class="example-label">Example {{ forloop.counter }}</div>
+            <div class="example-row">
+              <div class="example-key">Input</div>
+              <div class="example-val">{{ case.input_data }}</div>
+            </div>
+            <div class="example-row" style="margin-top:8px;">
+              <div class="example-key">Output</div>
+              <div class="example-val">{{ case.expected_output }}</div>
+            </div>
+            {% if case.explanation %}
+            <div class="example-explanation">
+              <strong>Explanation:</strong> {{ case.explanation }}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <!-- Tags -->
+          {% if tags %}
+          <div class="tags-section">
+            <div class="tags-title">Topics</div>
+            <div class="tags-list">
+              {% for tag in tags %}
+              <span class="tag-chip">{{ tag }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+        <!-- /Description Pane -->
+
+        <!-- ── Submissions Pane ──────────────────────────── -->
+        <div class="tab-pane" id="tab-submissions">
+          <div class="empty-state" id="submissionsEmpty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <p>No submissions yet.<br/>Submit your code to see results here.</p>
+          </div>
+          <div id="submissionsTable" style="display:none;">
+            <div class="submission-row submission-header">
+              <span>Verdict</span>
+              <span>Language</span>
+              <span>Runtime</span>
+              <span>Time</span>
+            </div>
+            <div id="submissionsBody"></div>
+          </div>
+        </div>
+        <!-- /Submissions Pane -->
+
+      </div>
+      <!-- /Tab Content -->
+    </div>
+    <!-- /Left Panel -->
+
+    <!-- ── RESIZER ──────────────────────────────────────────── -->
+    <div class="resizer" id="resizer"></div>
+
+    <!-- ── RIGHT PANEL ─────────────────────────────────────── -->
+    <div class="right-panel" id="rightPanel">
+
+      <!-- Editor Toolbar -->
+      <div class="editor-toolbar">
+        <select class="lang-select" id="languageSelect">
+          <option value="python">Python 3</option>
+          <option value="cpp">C++</option>
+          <option value="java">Java</option>
+        </select>
+        <button class="toolbar-btn" id="resetBtn" title="Reset to default code">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.49"/>
+          </svg>
+          Reset
+        </button>
+      </div>
+
+      <!-- Monaco Editor -->
+      <div class="editor-wrapper">
+        <div id="monaco-editor"></div>
+      </div>
+
+      <!-- ── Bottom Panel ─────────────────────────────────── -->
+      <div class="bottom-panel" id="bottomPanel">
+
+        <!-- Bottom Tab Bar -->
+        <div class="bottom-tabs">
+          <button class="bottom-tab active" data-btab="testcase">Test Cases</button>
+          <button class="bottom-tab" data-btab="output">Output</button>
+          <button class="toggle-panel-btn" id="togglePanelBtn" title="Toggle panel">▾</button>
+        </div>
+
+        <!-- Bottom Content -->
+        <div class="bottom-content" id="bottomContent">
+
+          <!-- Test Cases Pane -->
+          <div class="bottom-pane active" id="btab-testcase">
+            {% if sample_cases %}
+
+            <!-- Serialized sample cases for JS (avoids template-in-JS pitfalls) -->
+            <script id="sampleCasesJson" type="application/json">
+              [{% for case in sample_cases %}{"input":{{ case.input_data|escapejs|json_script:"" }},"output":{{ case.expected_output|escapejs|json_script:"" }}}{% if not forloop.last %},{% endif %}{% endfor %}]
+            </script>
+
+            <div class="test-case-tabs" id="tcTabs">
+              {% for case in sample_cases %}
+              <button
+                class="test-case-tab {% if forloop.first %}active{% endif %}"
+                data-tc="{{ forloop.counter0 }}"
+              >Case {{ forloop.counter }}</button>
+              {% endfor %}
+            </div>
+
+            <div id="tcDisplay">
+              <div class="tc-field">
+                <div class="tc-label">Input</div>
+                <textarea class="tc-input" id="tcInput" rows="2" readonly></textarea>
+              </div>
+              <div class="tc-field">
+                <div class="tc-label">Expected Output</div>
+                <textarea class="tc-input" id="tcExpected" rows="1" readonly></textarea>
+              </div>
+            </div>
+
+            {% else %}
+            <p class="placeholder-text">No test cases available.</p>
+            {% endif %}
+          </div>
+          <!-- /Test Cases Pane -->
+
+          <!-- Output Pane -->
+          <div class="bottom-pane" id="btab-output">
+            <p class="placeholder-text" id="outputPlaceholder">
+              Run your code to see the output here.
+            </p>
+            <div id="outputResults" style="display:none;">
+              <div class="verdict-banner" id="verdictBanner"></div>
+              <div class="output-block">
+                <div class="output-label">Your Output</div>
+                <div class="output-val" id="outputActual"></div>
+              </div>
+              <div class="output-block" id="outputExpectedBlock">
+                <div class="output-label">Expected Output</div>
+                <div class="output-val" id="outputExpected"></div>
+              </div>
+              <div class="output-block" id="outputStderrBlock" style="display:none;">
+                <div class="output-label">Stderr / Error</div>
+                <div class="output-val stderr" id="outputStderr"></div>
+              </div>
+            </div>
+          </div>
+          <!-- /Output Pane -->
+
+        </div>
+        <!-- /Bottom Content -->
+      </div>
+      <!-- /Bottom Panel -->
+
+      <!-- Action Bar -->
+      <div class="action-bar">
+        <button class="btn-run" id="runBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Run
+        </button>
+        <button class="btn-submit" id="submitBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Submit
+        </button>
+      </div>
+
+    </div>
+    <!-- /Right Panel -->
+
+  </div>
+  <!-- /Workspace -->
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MONACO CDN
+  ════════════════════════════════════════════════════════ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+
+  <script id="pageConfig" type="application/json">
+    {
+      "runUrl":    "{% url 'submissions:run_code'    problem.slug %}",
+      "submitUrl": "{% url 'submissions:submit_code' problem.slug %}"
+    }
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       UTILITIES
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    /* Read page config */
+    const _cfg       = JSON.parse(document.getElementById('pageConfig').textContent);
+    const RUN_URL    = _cfg.runUrl;
+    const SUBMIT_URL = _cfg.submitUrl;
+
+    /* CSRF — always read from cookie, never from DOM text */
+    function getCsrfToken() {
+      const match = document.cookie
+        .split(';')
+        .map(function (c) { return c.trim(); })
+        .find(function (c) { return c.startsWith('csrftoken='); });
+      return match ? decodeURIComponent(match.split('=')[1]) : '';
+    }
+
+    /* Toast */
+    var _toastTimer;
+    var toastEl = document.getElementById('toast');
+
+    function showToast(msg, type) {
+      clearTimeout(_toastTimer);
+      toastEl.textContent = msg;
+      toastEl.className   = 'toast show' + (type ? ' ' + type : '');
+      _toastTimer = setTimeout(function () {
+        toastEl.className = 'toast';
+      }, 3000);
+    }
+
+    /* Panel collapse state (declared here so renderRunOutput can reference it) */
+    var panelCollapsed  = false;
+    var bottomPanel     = document.getElementById('bottomPanel');
+    var togglePanelBtn  = document.getElementById('togglePanelBtn');
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       LEFT PANEL TABS
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-pane').forEach(function (p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        var pane = document.getElementById('tab-' + btn.dataset.tab);
+        if (pane) pane.classList.add('active');
+      });
+    });
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TEST CASE TABS
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      var jsonEl = document.getElementById('sampleCasesJson');
+      if (!jsonEl) return;
+
+      var cases    = JSON.parse(jsonEl.textContent);
+      var tcInput   = document.getElementById('tcInput');
+      var tcExpected = document.getElementById('tcExpected');
+
+      function loadCase(idx) {
+        var c = cases[idx];
+        if (!c) return;
+        tcInput.value    = c.input;
+        tcExpected.value = c.output;
+      }
+
+      loadCase(0);
+
+      document.querySelectorAll('.test-case-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.test-case-tab').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          loadCase(parseInt(btn.dataset.tc, 10));
+        });
+      });
+    })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       BOTTOM PANEL — TABS + COLLAPSE
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    /* Bottom tab switching */
+    document.querySelectorAll('.bottom-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.bottom-tab').forEach(function (b) { b.classList.remove('active'); });
+        document.querySelectorAll('.bottom-pane').forEach(function (p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        var pane = document.getElementById('btab-' + btn.dataset.btab);
+        if (pane) pane.classList.add('active');
+      });
+    });
+
+    /* Collapse / expand */
+    togglePanelBtn.addEventListener('click', function () {
+      panelCollapsed = !panelCollapsed;
+      bottomPanel.classList.toggle('collapsed', panelCollapsed);
+      togglePanelBtn.textContent = panelCollapsed ? '▴' : '▾';
+      if (window._monacoEditor) window._monacoEditor.layout();
+    });
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       RESIZER
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      var resizer   = document.getElementById('resizer');
+      var leftPanel = document.getElementById('leftPanel');
+      var dragging  = false;
+      var startX, startW;
+
+      resizer.addEventListener('mousedown', function (e) {
+        dragging = true;
+        startX   = e.clientX;
+        startW   = leftPanel.offsetWidth;
+        resizer.classList.add('dragging');
+        document.body.style.cursor     = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        var newW = Math.min(Math.max(startW + (e.clientX - startX), 280), window.innerWidth * 0.70);
+        leftPanel.style.width = newW + 'px';
+        if (window._monacoEditor) window._monacoEditor.layout();
+      });
+
+      document.addEventListener('mouseup', function () {
+        if (!dragging) return;
+        dragging = false;
+        resizer.classList.remove('dragging');
+        document.body.style.cursor     = '';
+        document.body.style.userSelect = '';
+      });
+    })();
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MONACO EDITOR
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    var DEFAULT_CODE = {
+      python: 'def solution():\n    # Write your solution here\n    pass\n',
+      cpp:    '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}\n',
+      java:   'import java.util.*;\n\npublic class Solution {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}\n'
+    };
+
+    require.config({
+      paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }
+    });
+
+    require(['vs/editor/editor.main'], function () {
+
+      monaco.editor.defineTheme('arena-dark', {
+        base:    'vs-dark',
+        inherit: true,
+        rules:   [],
+        colors: {
+          'editor.background':              '#1a1a1a',
+          'editor.lineHighlightBackground': '#262626',
+          'editorLineNumber.foreground':    '#444444',
+          'editorCursor.foreground':        '#00b8a3',
+          'editor.selectionBackground':     '#00b8a340'
+        }
+      });
+
+      var editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+        value:               DEFAULT_CODE.python,
+        language:            'python',
+        theme:               'arena-dark',
+        fontSize:            13,
+        fontFamily:          "'JetBrains Mono', 'Fira Code', monospace",
+        fontLigatures:       true,
+        minimap:             { enabled: false },
+        scrollBeyondLastLine: false,
+        lineNumbers:         'on',
+        renderLineHighlight: 'line',
+        automaticLayout:     true,
+        tabSize:             4,
+        padding:             { top: 12 }
+      });
+
+      window._monacoEditor = editor;
+
+      /* Language switcher */
+      document.getElementById('languageSelect').addEventListener('change', function () {
+        var lang = this.value;
+        monaco.editor.setModelLanguage(editor.getModel(), lang);
+        editor.setValue(DEFAULT_CODE[lang]);
+      });
+
+      /* Reset button */
+      document.getElementById('resetBtn').addEventListener('click', function () {
+        var lang = document.getElementById('languageSelect').value;
+        editor.setValue(DEFAULT_CODE[lang]);
+        showToast('Editor reset to default.', '');
+      });
+    });
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       OUTPUT RENDERERS
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    function switchToOutputTab() {
+      document.querySelectorAll('.bottom-tab').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.bottom-pane').forEach(function (p) { p.classList.remove('active'); });
+      document.querySelector('[data-btab="output"]').classList.add('active');
+      document.getElementById('btab-output').classList.add('active');
+
+      if (panelCollapsed) {
+        panelCollapsed = false;
+        bottomPanel.classList.remove('collapsed');
+        togglePanelBtn.textContent = '▾';
+        if (window._monacoEditor) window._monacoEditor.layout();
+      }
+    }
+
+    function renderRunOutput(data) {
+      switchToOutputTab();
+
+      document.getElementById('outputPlaceholder').style.display   = 'none';
+      document.getElementById('outputResults').style.display       = 'block';
+      document.getElementById('outputExpectedBlock').style.display = 'block';
+
+      var banner      = document.getElementById('verdictBanner');
+      var actualEl    = document.getElementById('outputActual');
+      var expectedEl  = document.getElementById('outputExpected');
+      var stderrBlock = document.getElementById('outputStderrBlock');
+      var stderrEl    = document.getElementById('outputStderr');
+
+      /* Reset state */
+      actualEl.className  = 'output-val';
+      banner.className    = 'verdict-banner';
+      stderrBlock.style.display = 'none';
+
+      if (data.status === 'error' || data.stderr) {
+        banner.textContent = data.verdict || 'Runtime Error';
+        banner.className   = 'verdict-banner show re';
+        actualEl.textContent = data.output || '';
+        if (data.stderr) {
+          stderrBlock.style.display = 'block';
+          stderrEl.textContent = data.stderr;
+        }
+      } else {
+        actualEl.textContent  = data.output   || '(empty)';
+        expectedEl.textContent = data.expected || '';
+
+        if (typeof data.passed === 'boolean') {
+          if (data.passed) {
+            banner.textContent = '✓ Correct Output';
+            banner.className   = 'verdict-banner show ac';
+            actualEl.classList.add('correct');
+          } else {
+            banner.textContent = '✗ Wrong Answer';
+            banner.className   = 'verdict-banner show wa';
+            actualEl.classList.add('wrong');
+          }
+        } else {
+          banner.textContent = 'Execution Complete';
+          banner.className   = 'verdict-banner show';
+        }
+      }
+    }
+
+    var VERDICT_MAP = {
+      'accepted':             { label: '✓ Accepted',                cls: 'ac'  },
+      'wrong answer':         { label: '✗ Wrong Answer',            cls: 'wa'  },
+      'time limit exceeded':  { label: '⏱ Time Limit Exceeded',     cls: 'tle' },
+      'runtime error':        { label: '⚡ Runtime Error',           cls: 're'  },
+      'compile error':        { label: '⚙ Compilation Error',       cls: 'ce'  },
+      'memory limit exceeded':{ label: '📦 Memory Limit Exceeded',  cls: 'tle' }
+    };
+
+    function renderSubmitOutput(data) {
+      switchToOutputTab();
+
+      document.getElementById('outputPlaceholder').style.display   = 'none';
+      document.getElementById('outputResults').style.display       = 'block';
+      document.getElementById('outputExpectedBlock').style.display = 'none';
+
+      var banner   = document.getElementById('verdictBanner');
+      var actualEl = document.getElementById('outputActual');
+      actualEl.className = 'output-val';
+      banner.className   = 'verdict-banner show';
+
+      var verdictKey = (data.verdict || '').toLowerCase();
+      var mapped     = VERDICT_MAP[verdictKey] || { label: data.verdict || 'Judged', cls: '' };
+      banner.textContent = mapped.label;
+      if (mapped.cls) banner.classList.add(mapped.cls);
+
+      actualEl.textContent = data.message || data.output || '';
+
+      /* Add row to Submissions tab */
+      addSubmissionRow(data, verdictKey, mapped);
+    }
+
+    function addSubmissionRow(data, verdictKey, mapped) {
+      var empty = document.getElementById('submissionsEmpty');
+      var table = document.getElementById('submissionsTable');
+      var body  = document.getElementById('submissionsBody');
+
+      if (empty) empty.style.display = 'none';
+      table.style.display = 'block';
+
+      var verdictClass = verdictKey === 'accepted'
+        ? 'verdict-ac'
+        : (verdictKey.startsWith('wrong') ? 'verdict-wa' : 'verdict-tle');
+
+      var langEl  = document.getElementById('languageSelect');
+      var langText = langEl.options[langEl.selectedIndex].text;
+      var now      = new Date().toLocaleTimeString();
+
+      var row = document.createElement('div');
+      row.className = 'submission-row';
+      row.innerHTML =
+        '<span class="' + verdictClass + '">' + (mapped.label || data.verdict) + '</span>' +
+        '<span style="color:var(--text-secondary)">' + langText + '</span>' +
+        '<span style="color:var(--text-muted);font-size:12px;">' + (data.runtime || '—') + '</span>' +
+        '<span style="color:var(--text-muted);font-size:12px;">' + now + '</span>';
+
+      body.insertBefore(row, body.firstChild);
+    }
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════
+       API CALLS — Run & Submit
+  ════════════════════════════════════════════════════════ -->
+  <script>
+    function callApi(url, btnEl, loadingLabel, onSuccess) {
+      if (!window._monacoEditor) {
+        showToast('Editor not ready yet.', 'error');
+        return;
+      }
+
+      var code     = window._monacoEditor.getValue();
+      var language = document.getElementById('languageSelect').value;
+      var csrf     = getCsrfToken();
+
+      if (!code.trim()) {
+        showToast('Write some code first!', 'error');
+        return;
+      }
+
+      var origHTML      = btnEl.innerHTML;
+      btnEl.disabled    = true;
+      btnEl.innerHTML   = '<span class="spinner"></span> ' + loadingLabel;
+
+      fetch(url, {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken':  csrf
+        },
+        body: JSON.stringify({ code: code, language: language })
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (txt) {
+            showToast('Server error ' + res.status, 'error');
+            console.error('API error body:', txt);
+            throw new Error('HTTP ' + res.status);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        onSuccess(data);
+      })
+      .catch(function (err) {
+        if (err.message.indexOf('HTTP') === -1) {
+          showToast('Network error. Try again.', 'error');
+        }
+        console.error('Fetch error:', err);
+      })
+      .finally(function () {
+        btnEl.disabled  = false;
+        btnEl.innerHTML = origHTML;
+      });
+    }
+
+    /* Run */
+    document.getElementById('runBtn').addEventListener('click', function () {
+      var btn = this;
+      callApi(RUN_URL, btn, 'Running…', function (data) {
+        renderRunOutput(data);
+        var isCorrect = data.passed === true;
+        var isWrong   = data.passed === false;
+        showToast(
+          isCorrect ? '✓ Output matched!' : (isWrong ? '✗ Wrong output' : 'Run complete.'),
+          isWrong ? 'error' : 'success'
+        );
+      });
+    });
+
+    /* Submit */
+    document.getElementById('submitBtn').addEventListener('click', function () {
+      var btn = this;
+      callApi(SUBMIT_URL, btn, 'Submitting…', function (data) {
+        renderSubmitOutput(data);
+        var isAC = (data.verdict || '').toLowerCase() === 'accepted';
+        showToast(
+          isAC ? '✓ Accepted!' : '✗ ' + (data.verdict || 'Judged'),
+          isAC ? 'success' : 'error'
+        );
+      });
+    });
+  </script>
+
+</body>
+</html>

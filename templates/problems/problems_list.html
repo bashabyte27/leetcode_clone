@@ -35,7 +35,7 @@
                         </thead>
                         <tbody>
                             {% for problem in problems %}
-                            <tr onclick="window.location='/problems/{{ problem.slug }}/'" style="cursor: pointer;">
+                                <tr style="cursor: pointer;">
                                 <td class="text-center">
                                     {% if problem.is_solved %}
                                         <i class="bi bi-check-circle-fill" style="color: var(--easy-color);"></i>
@@ -44,7 +44,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-lc-secondary">{{ problem.order_num|default:forloop.counter }}</td>
-                                <td><a href="/problems/{{ problem.slug }}/" class="lc-link">{{ problem.title }}</a></td>
+                                <td><a href="{% url 'problems:problem' problem.slug %}" class="lc-link">{{ problem.title }}</a></td>
                                 <td class="difficulty-col">
                                     <span class="badge-{{ problem.difficulty }}">
                                         {{ problem.get_difficulty_display }}

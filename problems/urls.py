@@ -4,4 +4,5 @@ app_name = 'problems'
 
 urlpatterns = [
     path('', views.problem_list, name='problem_list'),
+    path('<slug:problemname>',views.problem_detail,name='problem')
 ]

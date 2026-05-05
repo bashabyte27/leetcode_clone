@@ -5,8 +5,9 @@ from .forms import LoginForm, RegisterForm, ForgotPasswordForm
 from .models import Users, UserProfile, UserStats
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+import os
 
 
 def get_otp():
@@ -37,6 +38,7 @@ def register_view(request):
             form = RegisterForm(request.POST)
             if form.is_valid():
                 otp = get_otp()
+                print(otp)
                 request.session['otp'] = otp
                 request.session['otp_expires_at'] = time.time() + 300
                 request.session['otp_attempts'] = 0
@@ -57,8 +59,9 @@ def register_view(request):
                 })
 
         elif 'verify-otp' in request.POST:
-            entered_otp  = request.POST.get('otp', '').strip()
+            entered_otp  = request.POST.get('otp_code', '').strip()
             pending_user = request.session.get('pending_user')
+            print(entered_otp)
 
             status, msg = verify_otp(
                 entered_otp=entered_otp,
@@ -101,9 +104,8 @@ def login_view(request):
 
 
 def logout_view(request):
-    from django.contrib.auth import logout
     logout(request)
-    return redirect('users:login')
+    return redirect('home')
 
 
 def reset_password(request):

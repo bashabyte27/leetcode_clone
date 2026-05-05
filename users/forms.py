@@ -3,6 +3,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password, check_password
 from .models import Users
 
 
@@ -73,14 +74,13 @@ class RegisterForm(UserCreationForm):
 
 
 # ─────────────────────── Login Form ──────────────────────────────
-
 class LoginForm(forms.Form):
-    username = None  # ← removes the parent's username field    
-    email = forms.EmailField(       # AuthenticationForm calls it username internally
-        label='Email',
-        widget=forms.EmailInput(attrs={
+
+    username_or_email = forms.CharField(
+        label='Username or Email',
+        widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter your email',
+            'placeholder': 'Enter username or email',
             'autofocus': True,
         })
     )
@@ -91,34 +91,39 @@ class LoginForm(forms.Form):
             'placeholder': 'Enter your password'
         })
     )
+
     def __init__(self, request=None, *args, **kwargs):
-        self.request = request  # ← stores request on the form
+        self.request = request
         self.user_cache = None
         super().__init__(*args, **kwargs)
 
-    def clean_email(self):
-    # Only validate email format/existence
-        email = self.cleaned_data.get('email')
-        if not Users.objects.filter(email=email).exists():
-            raise forms.ValidationError('No account found with this email.')
-        return email
-
-    def clean_password(self):
-        # Only validate password is not empty etc.
-        password = self.cleaned_data.get('password')
-        if len(password) < 6:
-            raise forms.ValidationError('Password too short.')
-        return password
-
     def clean(self):
-        # Cross-field logic lives here — both fields available
-        email = self.cleaned_data.get('email')
+        username_or_email = self.cleaned_data.get('username_or_email')
         password = self.cleaned_data.get('password')
 
-        if email and password:
-            self.user_cache = authenticate(self.request, email=email, password=password)
+        if username_or_email and password:
+            # Check if it looks like email or username
+            if '@' in username_or_email:
+                # It is email — find user by email first
+                try:
+                    user_obj = Users.objects.get(email=username_or_email)
+                    username_or_email = user_obj.email
+                except Users.DoesNotExist:
+                    raise forms.ValidationError('No account found with this email.')
+            else:
+                # It is username — check if exists
+                if not Users.objects.filter(user_name=username_or_email).exists():
+                    raise forms.ValidationError('No account found with this username.')
+
+            # Now authenticate using username
+            self.user_cache = authenticate(
+                self.request,
+                username=username_or_email,
+                password=password
+            )
             if self.user_cache is None:
-                raise forms.ValidationError('Invalid email or password.')
+                raise forms.ValidationError('Invalid credentials. Please try again.')
+
         return self.cleaned_data
     
 class ForgotPasswordForm(forms.Form):

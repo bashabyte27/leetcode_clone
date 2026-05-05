@@ -30,4 +30,4 @@ def problem_detail(request, problemname):
         'tags': tags,
         'sample_cases': sample_cases,
     }
-    return render(request, 'problems/problem.html', context)
+    return render(request, 'problems/problem_detail.html', context)
