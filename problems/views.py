@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Problem, TestCase
+from django.http import HttpResponse
 
 def problem_list(request):
     problems = Problem.objects.filter(is_active=True)  # recommended to add filter
@@ -31,3 +32,10 @@ def problem_detail(request, problemname):
         'sample_cases': sample_cases,
     }
     return render(request, 'problems/problem_detail.html', context)
+
+def get_solution(request):
+    return HttpResponse("Under Development")
+
+def problem_get_list(request):
+    return HttpResponse("Under Processing")
+    
