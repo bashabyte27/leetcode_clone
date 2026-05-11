@@ -1,0 +1,32 @@
+{% load static %}
+
+<div class="drawer-search">
+  <input
+    type="text"
+    id="drawer-search-input"
+    placeholder="Search questions..."
+    autocomplete="off"
+  >
+</div>
+
+<div class="problems-list">
+  {% for prob in all_problems %}
+  <a
+    href="/problems/{{ prob.slug }}"
+    class="problem-row{% if prob.id in solved_ids %} solved{% endif %}"
+  >
+    <span class="prob-check">
+      {% if prob.id in solved_ids %}✓{% endif %}
+    </span>
+    <span class="prob-num-title">{{ prob.order_num }}. {{ prob.title }}</span>
+    <span class="prob-diff
+      {% if prob.difficulty == 'easy' %}diff-easy
+      {% elif prob.difficulty == 'medium' %}diff-medium
+      {% else %}diff-hard{% endif %}">
+      {{ prob.get_difficulty_display }}
+    </span>
+  </a>
+  {% empty %}
+  <div class="empty-state">No problems found.</div>
+  {% endfor %}
+</div>

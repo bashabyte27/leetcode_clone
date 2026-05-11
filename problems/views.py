@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Problem, TestCase
 from django.http import HttpResponse
+from submissions.models import Submission
 
 def problem_list(request):
     problems = Problem.objects.filter(is_active=True)  # recommended to add filter
@@ -33,9 +34,30 @@ def problem_detail(request, problemname):
     }
     return render(request, 'problems/problem_detail.html', context)
 
-def get_solution(request):
-    return HttpResponse("Under Development")
 
 def problem_get_list(request):
+    #left side view of problems list
     return HttpResponse("Under Processing")
-    
+
+def discussion(request,problemname):
+    #for every problem one discussion table
+    return HttpResponse("Discussion tab is Under development")
+
+
+def editorial(request, problemname):
+    problem = get_object_or_404(Problem, slug=problemname)
+    editorial = getattr(problem, 'editorial', None)
+    return render(request, 'problems/partials/editorial.html', {'editorial': editorial})
+
+def submission_history(request, problemname):
+    submissions = Submission.objects.filter(
+        user=request.user, problem__slug=problemname
+    ).order_by('-created_at')
+    return render(request, 'problems/partials/submissions.html', {'submissions': submissions})
+
+def get_solution(request, problemname):
+    return HttpResponse("solution under development")
+
+def problem_page(request):
+    all_problems = Problem.objects.all()
+    return render(request,'problems/partials/problem_list.html',{'all_problems':all_problems})

@@ -1,385 +1,348 @@
-
 {% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block extra_head %}
-{# Anti-flash theme script — MUST run before any CSS is parsed #}
-<script>(function(){var t=localStorage.getItem('editorTheme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/problem_detail.css' %}">
-{% endblock %}
+  {# Anti-flash: read theme from localStorage before CSS renders #}
+  <script>(function(){var t=localStorage.getItem('editorTheme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 
-{% block content %}
-<div class="problem-page" id="problem-page">
+  {# Google Fonts #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/problem_detail.css' %}">
+</head>
+<body>
 
-  {# ─── Problem List Slide-In Panel ──────────────────────────────── #}
-  <div id="pl-backdrop" class="pl-backdrop" aria-hidden="true"></div>
-  <aside id="pl-panel" class="pl-panel" aria-label="Problem list navigation">
-    <div class="pl-header">
-      <div class="pl-header-left">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        <span class="pl-title">Problem List</span>
-      </div>
-      <button id="pl-close" class="icon-btn" aria-label="Close problem list">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<div id="problem-page">
+
+  <!-- ════════════════════════════════
+       TOP NAVBAR
+  ════════════════════════════════ -->
+  <nav id="top-navbar">
+
+    <!-- LEFT ZONE -->
+    <div class="navbar-left">
+      <!-- Logo -->
+      <span class="nav-logo">LC</span>
+
+      <!-- Problem list drawer trigger -->
+      <button id="btn-problem-list" >
+        ☰ Problem List
+      </button>
+
+      <span class="nav-sep">|</span>
+
+      <!-- Prev arrow -->
+      {% if prev_problem %}
+        <a href="/problems/{{ prev_problem.slug }}" class="nav-icon-btn" title="Previous problem">←</a>
+      {% else %}
+        <span class="nav-icon-btn disabled" title="No previous problem">←</span>
+      {% endif %}
+
+      <!-- Next arrow -->
+      {% if next_problem %}
+        <a href="/problems/{{ next_problem.slug }}" class="nav-icon-btn" title="Next problem">→</a>
+      {% else %}
+        <span class="nav-icon-btn disabled" title="No next problem">→</span>
+      {% endif %}
+
+      <!-- Shuffle -->
+      <a href="/problems/" class="nav-icon-btn" title="Random problem">⇄</a>
+    </div>
+
+    <!-- CENTER ZONE -->
+    <div class="navbar-center">
+      <!-- Run button -->
+      <button id="btn-run" title="Run code">
+        <span class="btn-label">▶ Run</span>
+        <span class="btn-spinner teal"></span>
+      </button>
+
+      <!-- Submit button -->
+      <button id="btn-submit" title="Submit code">
+        <span class="btn-label">⬆ Submit</span>
+        <span class="btn-spinner"></span>
       </button>
     </div>
 
-    <div class="pl-search-row">
-      <svg class="pl-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="pl-search" type="search" placeholder="Search problems…" autocomplete="off" spellcheck="false">
+    <!-- RIGHT ZONE -->
+    <div class="navbar-right">
+      <!-- Theme toggle -->
+      <button id="btn-theme-toggle" class="nav-icon-btn" title="Toggle theme">☀</button>
+
+      <!-- Difficulty badge -->
+      {% if problem.difficulty == 'easy' %}
+        <span class="badge-easy">Easy</span>
+      {% elif problem.difficulty == 'medium' %}
+        <span class="badge-medium">Medium</span>
+      {% else %}
+        <span class="badge-hard">Hard</span>
+      {% endif %}
+
+      <!-- Settings -->
+      <button class="nav-icon-btn" title="Settings">⚙</button>
+
+      <!-- FIX 3: Timer changed from <span> to <button> so it is clickable -->
+      <button id="timer-display" class="nav-icon-btn" title="Click to start/pause timer">00:00</button>
+
+      <!-- User avatar -->
+      {% if request.user.is_authenticated %}
+        <span class="user-avatar" title="{{ request.user.username }}">
+          {{ request.user.username|first|upper }}
+        </span>
+      {% endif %}
     </div>
+  </nav>
 
-    <div class="pl-filter-row">
-      <button class="pl-filter active" data-diff="all">All</button>
-      <button class="pl-filter easy"   data-diff="easy">Easy</button>
-      <button class="pl-filter medium" data-diff="medium">Medium</button>
-      <button class="pl-filter hard"   data-diff="hard">Hard</button>
-    </div>
+  <!-- ════════════════════════════════
+       MAIN CONTENT (left + resize + right)
+  ════════════════════════════════ -->
+  <div id="main-content">
 
-    <div id="pl-list" class="pl-list">
-      <div class="pl-loading">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
-        Loading problems…
-      </div>
-    </div>
-  </aside>
+    <!-- ─────────────────────────
+         LEFT PANEL
+    ───────────────────────── -->
+    <div id="left-panel">
+      <div class="left-panel-scroll">
 
-  {# ─── Top Toolbar ────────────────────────────────────────────────── #}
-  <header class="toolbar" role="banner">
-    <div class="toolbar-left">
-      <button id="toggle-pl" class="icon-btn toolbar-icon-btn" title="Toggle problem list" aria-label="Toggle problem list" aria-expanded="false">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      </button>
-      <a href="{% url 'problems:problem_list' %}" class="toolbar-brand" title="Back to problems">
-        <span>BashaByte</span>
-      </a>
-    </div>
-
-    <div class="toolbar-center">
-      <button id="run-btn" class="toolbar-btn run-btn" aria-label="Run code">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-        Run
-      </button>
-      <button id="submit-btn" class="toolbar-btn submit-btn" aria-label="Submit solution">
-        Submit
-      </button>
-    </div>
-
-    <div class="toolbar-right">
-      <button id="theme-toggle" class="icon-btn toolbar-icon-btn" title="Toggle light/dark theme" aria-label="Toggle theme">
-        <svg id="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg id="icon-sun"  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      </button>
-    </div>
-  </header>
-
-  {# ─── Main Two-Panel Layout ───────────────────────────────────────── #}
-  <div class="main-layout" id="main-layout">
-
-    {# Left Panel #}
-    <section class="left-panel" id="left-panel" aria-label="Problem details">
-      <nav class="tab-bar" role="tablist" aria-label="Problem sections">
-        <button class="tab-btn active" role="tab" data-tab="description" aria-selected="true"  aria-controls="pane-description">Description</button>
-        <button class="tab-btn"        role="tab" data-tab="discussion"  aria-selected="false" aria-controls="pane-discussion">Discussion</button>
-        <button class="tab-btn"        role="tab" data-tab="solutions"   aria-selected="false" aria-controls="pane-solutions">Solutions</button>
-        <button class="tab-btn"        role="tab" data-tab="submissions" aria-selected="false" aria-controls="pane-submissions">Submissions</button>
-      </nav>
-
-      {# ── TAB: Description ── #}
-      <div class="tab-pane active" id="pane-description" role="tabpanel">
-        <div class="description-scroll">
-
-          <div class="prob-meta-row">
-            <h1 class="prob-title">{{ serial_no }}. {{ title }}</h1>
-            <span class="diff-badge diff-{{ problem.difficulty|lower }}">{{ problem.difficulty }}</span>
+        <!-- Problem Header -->
+        <div class="problem-header">
+          <div class="problem-title-row">
+            <h1>{{ serial_no }}. {{ title }}</h1>
+            {% if is_solved %}
+              <span class="solved-badge">✓ Solved</span>
+            {% endif %}
           </div>
 
-          {% if tags %}
-          <div class="tags-row">
-            {% for tag in tags %}
-            <span class="tag-chip">{{ tag }}</span>
-            {% endfor %}
-          </div>
-          {% endif %}
+          <!-- Pills row -->
+          <div class="problem-pills-row">
 
-          <div class="prob-description">{{ description|safe }}</div>
+            <!-- Difficulty pill (no dropdown, just a badge) -->
+            {% if problem.difficulty == 'easy' %}
+              <span class="pill-btn diff-easy">Easy</span>
+            {% elif problem.difficulty == 'medium' %}
+              <span class="pill-btn diff-medium">Medium</span>
+            {% else %}
+              <span class="pill-btn diff-hard">Hard</span>
+            {% endif %}
 
-          {% if sample_cases %}
-          <div class="examples-section">
-            {% for case in sample_cases %}
-            <div class="example-block">
-              <p class="example-title">Example {{ forloop.counter }}:</p>
-              <div class="example-io-block">
-                <div class="io-row">
-                  <span class="io-label">Input:</span>
-                  <code class="io-value">{{ case.input }}</code>
-                </div>
-                <div class="io-row">
-                  <span class="io-label">Output:</span>
-                  <code class="io-value">{{ case.expected_output }}</code>
-                </div>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %}
-
-        </div>
-      </div>
-
-      {# ── TAB: Discussion ── #}
-      <div class="tab-pane" id="pane-discussion" role="tabpanel">
-        <div class="discussion-scroll">
-
-          {% if user.is_authenticated %}
-          <div class="comment-compose-card">
-            <span class="comment-avatar">{{ user.username|slice:":1"|upper }}</span>
-            <div class="compose-inner">
-              <textarea id="new-comment-box"
-                        class="comment-textarea"
-                        placeholder="Share your approach or ask a question…"
-                        rows="3"
-                        aria-label="Write a comment"></textarea>
-              <div class="compose-footer">
-                <button id="post-comment-btn" class="btn-primary btn-sm">Post Comment</button>
-              </div>
-            </div>
-          </div>
-          {% else %}
-          <div class="auth-notice">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <a href="{% url 'login' %}">Log in</a> to join the discussion.
-          </div>
-          {% endif %}
-
-          <div id="comments-list" class="comments-list">
-            {% for comment in discussions %}
-            <div class="comment-card" data-id="{{ comment.id }}">
-              <div class="comment-header">
-                <span class="comment-avatar">{{ comment.user.username|slice:":1"|upper }}</span>
-                <span class="comment-username">{{ comment.user.username }}</span>
-                <span class="comment-dot">·</span>
-                <span class="comment-time" data-ts="{{ comment.created_at.isoformat }}">{{ comment.created_at|timesince }} ago</span>
-              </div>
-              <div class="comment-body">{{ comment.content }}</div>
-              <div class="comment-actions">
-                <button class="vote-btn upvote-btn{% if user in comment.upvotes.all %} voted{% endif %}"
-                        data-id="{{ comment.id }}" data-type="up"
-                        aria-label="Upvote">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,4 22,20 2,20"/></svg>
-                  <span class="vote-count">{{ comment.upvote_count }}</span>
-                </button>
-                <button class="vote-btn downvote-btn{% if user in comment.downvotes.all %} voted{% endif %}"
-                        data-id="{{ comment.id }}" data-type="down"
-                        aria-label="Downvote">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,20 22,4 2,4"/></svg>
-                  <span class="vote-count">{{ comment.downvote_count }}</span>
-                </button>
-                {% if user.is_authenticated %}
-                <button class="reply-toggle-btn" data-id="{{ comment.id }}" aria-expanded="false">Reply</button>
-                {% endif %}
-              </div>
-
-              {% if user.is_authenticated %}
-              <div class="reply-compose hidden" id="reply-compose-{{ comment.id }}">
-                <textarea class="comment-textarea reply-textarea"
-                          placeholder="Write a reply…"
-                          rows="2"
-                          aria-label="Write a reply"></textarea>
-                <div class="compose-footer">
-                  <button class="btn-primary btn-sm post-reply-btn" data-parent="{{ comment.id }}">Reply</button>
-                  <button class="btn-ghost btn-sm cancel-reply-btn" data-id="{{ comment.id }}">Cancel</button>
-                </div>
-              </div>
-              {% endif %}
-
-              {% if comment.replies.all %}
-              <div class="replies-container" id="replies-{{ comment.id }}">
-                {% for reply in comment.replies.all %}
-                <div class="comment-card reply-card" data-id="{{ reply.id }}">
-                  <div class="comment-header">
-                    <span class="comment-avatar sm">{{ reply.user.username|slice:":1"|upper }}</span>
-                    <span class="comment-username">{{ reply.user.username }}</span>
-                    <span class="comment-dot">·</span>
-                    <span class="comment-time" data-ts="{{ reply.created_at.isoformat }}">{{ reply.created_at|timesince }} ago</span>
-                  </div>
-                  <div class="comment-body">{{ reply.content }}</div>
-                  <div class="comment-actions">
-                    <button class="vote-btn upvote-btn{% if user in reply.upvotes.all %} voted{% endif %}"
-                            data-id="{{ reply.id }}" data-type="up">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,4 22,20 2,20"/></svg>
-                      <span class="vote-count">{{ reply.upvote_count }}</span>
-                    </button>
-                    <button class="vote-btn downvote-btn{% if user in reply.downvotes.all %} voted{% endif %}"
-                            data-id="{{ reply.id }}" data-type="down">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12,20 22,4 2,4"/></svg>
-                      <span class="vote-count">{{ reply.downvote_count }}</span>
-                    </button>
-                  </div>
-                </div>
+            <!-- FIX 4: Topics wrapped in pill-wrapper for correct dropdown positioning -->
+            <div class="pill-wrapper">
+              <button class="pill-btn" data-dropdown="topics-dropdown">Topics ▾</button>
+              <div class="pill-dropdown" id="topics-dropdown">
+                {% for tag in tags %}
+                  <span class="tag-pill">{{ tag.name }}</span>
+                {% empty %}
+                  <span class="dropdown-empty">No topics listed</span>
                 {% endfor %}
               </div>
-              {% else %}
-              <div class="replies-container hidden" id="replies-{{ comment.id }}"></div>
-              {% endif %}
+            </div>
 
+            <!-- FIX 4: Companies wrapped in pill-wrapper for correct dropdown positioning -->
+            <div class="pill-wrapper">
+              <button class="pill-btn" data-dropdown="companies-dropdown">Companies ▾</button>
+              <div class="pill-dropdown" id="companies-dropdown">
+                {% for company in companies %}
+                  <span class="company-pill">{{ company.name }}</span>
+                {% empty %}
+                  <span class="dropdown-empty">No companies listed</span>
+                {% endfor %}
+              </div>
             </div>
-            {% empty %}
-            <div class="empty-state" id="no-comments-msg">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              <p>No comments yet. Be the first!</p>
-            </div>
-            {% endfor %}
+
+            <!-- Hint button -->
+            {% if hints %}
+              <button class="pill-btn" id="btn-hint">
+                Hint ({{ hints.count }})
+              </button>
+            {% endif %}
+
+          </div>{# /problem-pills-row #}
+        </div>{# /problem-header #}
+
+        <!-- Hints revealed area -->
+        <div class="hints-area" id="hints-area"></div>
+
+        <!-- Hints data as JSON for JS -->
+        <script id="hints-data" type="application/json">
+          [{% for hint in hints %}"{{ hint.hint_text|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
+        </script>
+
+        <!-- ── TABS BAR ── -->
+        <div class="tabs-bar">
+          <button class="tab-btn active" data-tab="description"  id="btn-tab-description">Description</button>
+          <button class="tab-btn"        data-tab="editorial"    id="btn-tab-editorial">Editorial</button>
+          <button class="tab-btn"        data-tab="solutions"    id="btn-tab-solutions">Solutions</button>
+          <button class="tab-btn"        data-tab="submissions"  id="btn-tab-submissions">Submissions</button>
+        </div>
+
+        <!-- ── TAB 1: DESCRIPTION (server-rendered, no AJAX) ── -->
+        <div id="tab-description" class="tab-content active">
+
+          <div class="problem-statement">
+            {{ description|linebreaksbr }}
           </div>
 
-        </div>
-      </div>
-
-      {# ── TAB: Solutions ── #}
-      <div class="tab-pane" id="pane-solutions" role="tabpanel">
-        <div class="empty-state tab-empty">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          <p>Editorial solutions coming soon.</p>
-        </div>
-      </div>
-
-      {# ── TAB: Submissions ── #}
-      <div class="tab-pane" id="pane-submissions" role="tabpanel">
-        <div class="submissions-wrap">
-          <div id="submissions-loading" class="pl-loading" style="display:none">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
-            Loading submissions…
-          </div>
-          <table class="submissions-table" id="submissions-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>User</th>
-                <th>Language</th>
-                <th>Runtime</th>
-                <th>Memory</th>
-                <th>Submitted</th>
-              </tr>
-            </thead>
-            <tbody id="submissions-tbody">
-              <tr>
-                <td colspan="6" class="submissions-empty-row">
-                  Click this tab to load accepted submissions.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </section>
-
-    {# Drag Divider #}
-    <div class="drag-divider" id="drag-divider" aria-hidden="true" title="Drag to resize panels">
-      <div class="divider-handle"></div>
-    </div>
-
-    {# Right Panel — Monaco Editor #}
-    <section class="right-panel" id="right-panel" aria-label="Code editor">
-      <div class="editor-topbar">
-        <div class="editor-topbar-left">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          <span class="editor-label">Code</span>
-          <select id="lang-select" class="lang-select" aria-label="Select programming language">
-            <option value="python">Python 3</option>
-            <option value="javascript">JavaScript</option>
-            <option value="cpp">C++</option>
-            <option value="java">Java</option>
-            <option value="go">Go</option>
-            <option value="rust">Rust</option>
-            <option value="typescript">TypeScript</option>
-          </select>
-        </div>
-        <div class="editor-topbar-right">
-          <button id="reset-code-btn" class="editor-action-btn" title="Reset to starter code" aria-label="Reset code">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.07"/></svg>
-            Reset
-          </button>
-        </div>
-      </div>
-      <div id="monaco-editor" class="monaco-container" aria-label="Monaco code editor"></div>
-    </section>
-
-  </div>{# /.main-layout #}
-
-  {# ─── Bottom Result Panel ─────────────────────────────────────────── #}
-  <div class="bottom-panel collapsed" id="bottom-panel" aria-label="Test results">
-    <div class="bottom-panel-header">
-      <div class="result-subtabs" role="tablist" aria-label="Result views">
-        <button class="result-subtab active" role="tab" data-subtab="testcase" aria-selected="true">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          Testcase
-        </button>
-        <button class="result-subtab" role="tab" data-subtab="testresult" aria-selected="false">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Test Result
-        </button>
-      </div>
-      <button id="collapse-bottom" class="icon-btn" aria-label="Collapse result panel">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-    </div>
-
-    <div class="bottom-panel-body">
-
-      {# Sub-pane: Testcase (editable inputs) #}
-      <div class="result-pane active" id="pane-testcase" role="tabpanel">
-        <div class="testcase-cases" id="testcase-list">
           {% for case in sample_cases %}
-          <div class="testcase-item">
-            <label class="testcase-label">Case {{ forloop.counter }}</label>
-            <textarea class="testcase-input"
-                      data-expected="{{ case.expected_output }}"
-                      rows="2"
-                      spellcheck="false"
-                      aria-label="Test case {{ forloop.counter }} input">{{ case.input }}</textarea>
+          <div class="example-card">
+            <div class="example-label">Example {{ case.order_num }}:</div>
+            <div class="example-body">
+              <div>
+                <span class="ex-label">Input:</span>
+                <code>{{ case.input_data }}</code>
+              </div>
+              <div>
+                <span class="ex-label">Output:</span>
+                <code>{{ case.expected_output }}</code>
+              </div>
+              {% if case.explanation %}
+              <div>
+                <span class="ex-label">Explanation:</span>
+                {{ case.explanation }}
+              </div>
+              {% endif %}
+            </div>
           </div>
-          {% empty %}
-          <div class="empty-state small">No sample test cases for this problem.</div>
           {% endfor %}
-        </div>
-      </div>
 
-      {# Sub-pane: Test Result #}
-      <div class="result-pane" id="pane-testresult" role="tabpanel">
-        <div id="result-placeholder" class="result-empty">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <p>You must run your code first</p>
-        </div>
-        <div id="result-content" class="result-content-area" style="display:none"></div>
-      </div>
+          <!-- FIX 2: Removed problem.likes as Accepted count (it is thumbs-up, not submissions).
+               Only showing acceptance_rate and like/dislike counts which are correct. -->
+          <div class="stats-bar">
+            <span>Acceptance Rate <strong>{{ problem.acceptance_rate }}%</strong></span>
+            <span class="divider">|</span>
+            <span>👍 {{ problem.likes }} &nbsp; 👎 {{ problem.dislikes }}</span>
+          </div>
 
+        </div>{# /tab-description #}
+
+        <!-- ── TAB 2: EDITORIAL (lazy-loaded via AJAX) ── -->
+        <div id="tab-editorial" class="tab-content">
+          {# Injected by JS: fetch GET /problems/<slug>/editorial #}
+        </div>
+
+        <!-- ── TAB 3: SOLUTIONS (lazy-loaded via AJAX) ── -->
+        <div id="tab-solutions" class="tab-content">
+          {# Injected by JS: fetch GET /problems/<slug>/solutions #}
+        </div>
+
+        <!-- ── TAB 4: SUBMISSIONS (lazy-loaded via AJAX) ── -->
+        <div id="tab-submissions" class="tab-content">
+          {# Injected by JS: fetch GET /problems/<slug>/submissions #}
+        </div>
+
+      </div>{# /left-panel-scroll #}
+    </div>{# /left-panel #}
+
+    <!-- ─────────────────────────
+         VERTICAL RESIZE HANDLE
+    ───────────────────────── -->
+    <div id="resize-handle-vertical"></div>
+
+    <!-- ─────────────────────────
+         RIGHT PANEL
+    ───────────────────────── -->
+    <div id="right-panel">
+
+      <!-- ── EDITOR ZONE (top, resizable height) ── -->
+      <div id="editor-zone">
+
+        <!-- Editor toolbar -->
+        <div class="editor-toolbar">
+          <div class="editor-toolbar-left">
+            <select id="language-select">
+              <option value="python">Python3</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="javascript">JavaScript</option>
+              <option value="go">Go</option>
+              <option value="rust">Rust</option>
+            </select>
+            <span class="autosave-indicator">🔒 Auto</span>
+          </div>
+          <div class="editor-toolbar-right">
+            <button class="toolbar-icon-btn" title="Format code">⚌</button>
+            <button class="toolbar-icon-btn" title="Bookmark">🔖</button>
+            <button class="toolbar-icon-btn" id="btn-undo" title="Undo">↩</button>
+            <button class="toolbar-icon-btn" id="btn-fullscreen" title="Fullscreen">⛶</button>
+          </div>
+        </div>
+
+        <!-- Monaco editor mounts here -->
+        <div id="monaco-editor-container"></div>
+
+        <!-- Editor status bar -->
+        <div class="editor-status-bar">
+          <span id="editor-save-status" class="saved">✓ Saved</span>
+          <span id="editor-cursor-pos">Ln 1, Col 1</span>
+        </div>
+
+      </div>{# /editor-zone #}
+
+      <!-- ── HORIZONTAL RESIZE HANDLE ── -->
+      <div id="resize-handle-horizontal"></div>
+
+      <!-- ── TESTCASE / RESULT PANEL (bottom) ── -->
+      <div id="testcase-panel">
+
+        <!-- Panel tabs -->
+        <div class="testcase-tabs-bar">
+          <button class="testcase-tab-btn active" data-tctab="testcase">Testcase</button>
+          <button class="testcase-tab-btn"        data-tctab="result">Test Result</button>
+        </div>
+
+        <!-- Testcase tab -->
+        <div class="testcase-tab-content active" id="tc-tab-testcase">
+          <textarea
+            id="custom-input"
+            placeholder="Enter custom input here..."
+            rows="4"
+          >{% if sample_cases %}{{ sample_cases.0.input_data }}{% endif %}</textarea>
+        </div>
+
+        <!-- Test Result tab -->
+        <div class="testcase-tab-content" id="tc-tab-result">
+          <div id="test-result-content">
+            <div class="result-placeholder">You must run your code first</div>
+          </div>
+        </div>
+
+      </div>{# /testcase-panel #}
+
+    </div>{# /right-panel #}
+
+  </div>{# /main-content #}
+
+  <!-- ════════════════════════════════
+       PROBLEM LIST DRAWER
+  ════════════════════════════════ -->
+  <div id="drawer-backdrop"></div>
+  <div id="problem-list-drawer">
+    <div class="drawer-header">
+      <span>Problem List</span>
+      <button id="drawer-close">✕</button>
     </div>
-  </div>{# /.bottom-panel #}
+    <div id="drawer-content">
+      {# Injected by JS: fetch GET /problems/problems-panel/ #}
+    </div>
+  </div>
 
-</div>{# /.problem-page #}
+</div>{# /problem-page #}
 
-{# ─── Monaco CDN Bootstrap (one allowed inline script) ───────────── #}
-<script>var require={paths:{vs:'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs'}};</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js"></script>
-
-{# ─── Django Context → JS (combined with Monaco config) ──────────── #}
+<!-- JS globals — must be before problem_detail.js -->
 <script>
-  const PROBLEM_SLUG     = '{{ problem.slug }}';
-  const CSRF_TOKEN       = '{{ csrf_token }}';
-  const IS_AUTHENTICATED = {{ user.is_authenticated|lower }};
-  const SAMPLE_CASES     = {{ sample_cases_json|safe }};
-  const RUN_URL          = '{% url "submissions:run_code" problem.slug %}';
-  const SUBMIT_URL       = '{% url "submissions:submit_code" problem.slug %}';
-  const COMMENT_URL      = '{% url "discussions:post_comment" problem.slug %}';
-  const SOLUTIONS_URL    = '{% url "problems:get_solutions" problem.slug %}';
-  const PROB_PANEL_URL   = '{% url "problems:problem_list_panel" %}';
-  {% if user.is_authenticated %}
-  const REPLY_URL_BASE   = '/discussions/comment/';   // {id}/reply/
-  const VOTE_URL_BASE    = '/discussion/comment/';   // {id}/vote/
-  {% endif %}
+  const PROBLEM_SLUG     = "{{ problem.slug }}";
+  const IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
+  const CSRF_TOKEN       = "{{ csrf_token }}";
 </script>
+
+{# Monaco CDN — must load before problem_detail.js #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
 <script src="{% static 'js/problem_detail.js' %}"></script>
-{% endblock %}
+
+</body>
+</html>

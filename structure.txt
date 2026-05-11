@@ -1,0 +1,493 @@
+Folder PATH listing for volume Windows
+Volume serial number is CC1A-CF23
+C:.
+|   .env
+|   .gitignore
+|   learning_track.txt
+|   manage.py
+|   psycopg2-binary
+|   README.md
+|   structure.txt
+|   
++---contests
+|   |   admin.py
+|   |   apps.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           0002_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---courses
+|   |   admin.py
+|   |   apps.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---management
+|   |   |   __init__.py
+|   |   |   
+|   |   +---commands
+|   |   |   |   seed_courses.py
+|   |   |   |   update_courses.py
+|   |   |   |   __init__.py
+|   |   |   |   
+|   |   |   \---__pycache__
+|   |   |           seed_courses.cpython-311.pyc
+|   |   |           update_courses.cpython-311.pyc
+|   |   |           __init__.cpython-311.pyc
+|   |   |           
+|   |   \---__pycache__
+|   |           __init__.cpython-311.pyc
+|   |           
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---data
+|   \---problems
+|           import_data.xlsx
+|           
++---discussions
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           0002_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           forms.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---leetcode_project
+|   |   asgi.py
+|   |   mycreated_models.py
+|   |   settings.py
+|   |   urls.py
+|   |   wsgi.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           settings.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           wsgi.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---media
+|   \---courses
+|       +---attatchments
+|       +---thumbnails
+|       |       django.jpeg
+|       |       dsa.png
+|       |       python.png
+|       |       react.png
+|       |       sql.png
+|       |       system_design.jpeg
+|       |       
+|       \---videos
++---premium
+|   |   admin.py
+|   |   apps.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           0002_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---problems
+|   |   admin.py
+|   |   apps.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---management
+|   |   |   __init__.py
+|   |   |   
+|   |   +---commands
+|   |   |   |   import_problems.py
+|   |   |   |   __init__.py
+|   |   |   |   
+|   |   |   \---__pycache__
+|   |   |           import_problems.cpython-311.pyc
+|   |   |           __init__.cpython-311.pyc
+|   |   |           
+|   |   \---__pycache__
+|   |           __init__.cpython-311.pyc
+|   |           
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           0002_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---requirements
+|       base.txt
+|       development.txt
+|       production.txt
+|       
++---static
+|   +---courses
+|   +---css
+|   |       base.css
+|   |       home.css
+|   |       otp.css
+|   |       problem_detail.css
+|   |       
+|   +---images
+|   |       logo.png
+|   |       
+|   \---js
+|           problem_detail.js
+|           test.js
+|           
++---staticfiles
+|   +---admin
+|   |   +---css
+|   |   |   |   autocomplete.css
+|   |   |   |   base.css
+|   |   |   |   changelists.css
+|   |   |   |   dark_mode.css
+|   |   |   |   dashboard.css
+|   |   |   |   forms.css
+|   |   |   |   login.css
+|   |   |   |   nav_sidebar.css
+|   |   |   |   responsive.css
+|   |   |   |   responsive_rtl.css
+|   |   |   |   rtl.css
+|   |   |   |   unusable_password_field.css
+|   |   |   |   widgets.css
+|   |   |   |   
+|   |   |   \---vendor
+|   |   |       \---select2
+|   |   |               LICENSE-SELECT2.md
+|   |   |               select2.css
+|   |   |               select2.min.css
+|   |   |               
+|   |   +---img
+|   |   |   |   calendar-icons.svg
+|   |   |   |   icon-addlink.svg
+|   |   |   |   icon-alert.svg
+|   |   |   |   icon-calendar.svg
+|   |   |   |   icon-changelink.svg
+|   |   |   |   icon-clock.svg
+|   |   |   |   icon-deletelink.svg
+|   |   |   |   icon-hidelink.svg
+|   |   |   |   icon-no.svg
+|   |   |   |   icon-unknown-alt.svg
+|   |   |   |   icon-unknown.svg
+|   |   |   |   icon-viewlink.svg
+|   |   |   |   icon-yes.svg
+|   |   |   |   inline-delete.svg
+|   |   |   |   LICENSE
+|   |   |   |   README.txt
+|   |   |   |   search.svg
+|   |   |   |   selector-icons.svg
+|   |   |   |   sorting-icons.svg
+|   |   |   |   tooltag-add.svg
+|   |   |   |   tooltag-arrowright.svg
+|   |   |   |   
+|   |   |   \---gis
+|   |   |           move_vertex_off.svg
+|   |   |           move_vertex_on.svg
+|   |   |           
+|   |   \---js
+|   |       |   actions.js
+|   |       |   autocomplete.js
+|   |       |   calendar.js
+|   |       |   cancel.js
+|   |       |   change_form.js
+|   |       |   core.js
+|   |       |   filters.js
+|   |       |   inlines.js
+|   |       |   jquery.init.js
+|   |       |   nav_sidebar.js
+|   |       |   popup_response.js
+|   |       |   prepopulate.js
+|   |       |   prepopulate_init.js
+|   |       |   SelectBox.js
+|   |       |   SelectFilter2.js
+|   |       |   theme.js
+|   |       |   unusable_password_field.js
+|   |       |   urlify.js
+|   |       |   
+|   |       +---admin
+|   |       |       DateTimeShortcuts.js
+|   |       |       RelatedObjectLookups.js
+|   |       |       
+|   |       \---vendor
+|   |           +---jquery
+|   |           |       jquery.js
+|   |           |       jquery.min.js
+|   |           |       LICENSE.txt
+|   |           |       
+|   |           +---select2
+|   |           |   |   LICENSE.md
+|   |           |   |   select2.full.js
+|   |           |   |   select2.full.min.js
+|   |           |   |   
+|   |           |   \---i18n
+|   |           |           af.js
+|   |           |           ar.js
+|   |           |           az.js
+|   |           |           bg.js
+|   |           |           bn.js
+|   |           |           bs.js
+|   |           |           ca.js
+|   |           |           cs.js
+|   |           |           da.js
+|   |           |           de.js
+|   |           |           dsb.js
+|   |           |           el.js
+|   |           |           en.js
+|   |           |           es.js
+|   |           |           et.js
+|   |           |           eu.js
+|   |           |           fa.js
+|   |           |           fi.js
+|   |           |           fr.js
+|   |           |           gl.js
+|   |           |           he.js
+|   |           |           hi.js
+|   |           |           hr.js
+|   |           |           hsb.js
+|   |           |           hu.js
+|   |           |           hy.js
+|   |           |           id.js
+|   |           |           is.js
+|   |           |           it.js
+|   |           |           ja.js
+|   |           |           ka.js
+|   |           |           km.js
+|   |           |           ko.js
+|   |           |           lt.js
+|   |           |           lv.js
+|   |           |           mk.js
+|   |           |           ms.js
+|   |           |           nb.js
+|   |           |           ne.js
+|   |           |           nl.js
+|   |           |           pl.js
+|   |           |           ps.js
+|   |           |           pt-BR.js
+|   |           |           pt.js
+|   |           |           ro.js
+|   |           |           ru.js
+|   |           |           sk.js
+|   |           |           sl.js
+|   |           |           sq.js
+|   |           |           sr-Cyrl.js
+|   |           |           sr.js
+|   |           |           sv.js
+|   |           |           th.js
+|   |           |           tk.js
+|   |           |           tr.js
+|   |           |           uk.js
+|   |           |           vi.js
+|   |           |           zh-CN.js
+|   |           |           zh-TW.js
+|   |           |           
+|   |           \---xregexp
+|   |                   LICENSE.txt
+|   |                   xregexp.js
+|   |                   xregexp.min.js
+|   |                   
+|   +---css
+|   |       auth.css
+|   |       landing.css
+|   |       problems.css
+|   |       
+|   +---images
+|   |       logo.png
+|   |       
+|   \---js
+|           auth.js
+|           landing.js
+|           problems.js
+|           
++---study_plans
+|   |   admin.py
+|   |   apps.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           0002_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---submissions
+|   |   admin.py
+|   |   apps.py
+|   |   judge.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_initial.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-311.pyc
+|   |           0002_initial.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           admin.cpython-311.pyc
+|           apps.cpython-311.pyc
+|           judge.cpython-311.pyc
+|           models.cpython-311.pyc
+|           urls.cpython-311.pyc
+|           views.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---templates
+|   |   base.html
+|   |   index.html
+|   |   
+|   +---courses
+|   |       course_list.html
+|   |       
+|   +---problems
+|   |       problems_list.html
+|   |       problem_detail.html
+|   |       problem_page.html
+|   |       
+|   \---users
+|           forgot_password.html
+|           login.html
+|           otp_form.html
+|           profile.html
+|           register.html
+|           users_list.html
+|           
+\---users
+    |   admin.py
+    |   apps.py
+    |   forms.py
+    |   models.py
+    |   tests.py
+    |   urls.py
+    |   views.py
+    |   __init__.py
+    |   
+    +---migrations
+    |   |   0001_initial.py
+    |   |   __init__.py
+    |   |   
+    |   \---__pycache__
+    |           0001_initial.cpython-311.pyc
+    |           __init__.cpython-311.pyc
+    |           
+    \---__pycache__
+            admin.cpython-311.pyc
+            apps.cpython-311.pyc
+            forms.cpython-311.pyc
+            models.cpython-311.pyc
+            urls.cpython-311.pyc
+            views.cpython-311.pyc
+            __init__.cpython-311.pyc
+            

@@ -1,0 +1,44 @@
+{% load static %}
+{% if editorial and editorial.is_published %}
+
+  <div class="editorial-author-row">
+    <div class="editorial-logo-circle">LC</div>
+    <div>
+      <div class="editorial-author-name">
+        LeetCode <span class="editorial-verified">✓</span>
+      </div>
+      <div class="editorial-date">{{ editorial.created_at|date:"M d, Y" }}</div>
+    </div>
+  </div>
+
+  <div class="editorial-green-tag">EDITORIAL</div>
+
+  {% if editorial.video_url %}
+  <div class="video-card">
+    <iframe
+      src="{{ editorial.video_url }}"
+      frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  </div>
+  {% endif %}
+
+  <div class="editorial-content">
+    {{ editorial.content|safe }}
+  </div>
+
+  {% if editorial.time_complexity or editorial.space_complexity %}
+  <div class="complexity-box">
+    {% if editorial.time_complexity %}
+      <div>⏱ Time Complexity: <code>{{ editorial.time_complexity }}</code></div>
+    {% endif %}
+    {% if editorial.space_complexity %}
+      <div> Space Complexity: <code>{{ editorial.space_complexity }}</code></div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+{% else %}
+  <div class="empty-state">No editorial available for this problem yet.</div>
+{% endif %}

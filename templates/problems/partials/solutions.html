@@ -1,0 +1,54 @@
+{% load static %}
+
+<div class="solutions-filter-bar">
+  <input
+    type="text"
+    class="solutions-search"
+    placeholder="Search solutions..."
+    id="solutions-search-input"
+  >
+  <select class="solutions-sort">
+    <option value="upvotes">Most Votes</option>
+    <option value="newest">Newest</option>
+    <option value="oldest">Oldest</option>
+  </select>
+</div>
+
+{% if solutions %}
+  {% for solution in solutions %}
+  <div class="solution-card">
+    <div class="solution-author">
+      <div class="avatar">{{ solution.user.username|first|upper }}</div>
+      <span class="username">{{ solution.user.username }}</span>
+      <span class="dot">·</span>
+      <span class="time">{{ solution.created_at|timesince }} ago</span>
+    </div>
+    <div class="solution-title">{{ solution.title }}</div>
+    <div class="solution-tags">
+      {% for tag in solution.tags.all %}
+        <span class="tag-pill">{{ tag.name }}</span>
+      {% endfor %}
+    </div>
+    <div class="solution-stats">
+      <span>🔼 {{ solution.upvotes }}</span>
+      <span>👁 {{ solution.views }}</span>
+      <span>💬 {{ solution.comments_count }}</span>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty-state">No solutions posted yet. Be the first!</div>
+{% endif %}
+
+<script>
+(function(){
+  var input = document.getElementById('solutions-search-input');
+  if (!input) return;
+  input.addEventListener('input', function(){
+    var q = this.value.toLowerCase();
+    document.querySelectorAll('.solution-card').forEach(function(card){
+      card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+})();
+</script>

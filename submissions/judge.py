@@ -1,5 +1,6 @@
 # submissions/judge.py
 
+import re
 import subprocess
 import time
 from decimal import Decimal
@@ -64,6 +65,10 @@ def is_code_safe(code):
     Check if student code is safe to run.
     Returns (is_safe, reason)
     """
+    # ── Check for input() with prompt string ──
+    if re.search(r'input\s*\(\s*["\']', code):
+        return False, "Do not use input() with a prompt string. Use input() without arguments, e.g: input()"
+
     code_lower = code.lower()
 
     for keyword in BLOCKED_KEYWORDS:
@@ -100,25 +105,28 @@ def run_code(code, input_data, timeout=5):
         return None, Decimal('0.00'), 'TIME_LIMIT_EXCEEDED'
 
 
-def judge_submission(submission_id):
+def judge_submission(submission_id, mode='submit'):
     """
     Main judge function.
-    Takes submission_id, runs code against all test cases,
-    saves SubmissionResult for each, updates Submission status.
+
+    mode='run'    → runs only visible test cases, never stops early, 
+                    does NOT update final submission status
+                    
+    mode='submit' → runs all test cases, stops at first failure,
+                    updates final submission status
     """
     try:
         submission = Submission.objects.get(id=submission_id)
     except Submission.DoesNotExist:
         return
 
-    # ── Step 1 Safety Check first ──
+    # ── Step 1: Safety Check ──
     is_safe, reason = is_code_safe(submission.code)
 
     if not is_safe:
         submission.status = SubmissionStatusChoices.RUNTIME_ERROR
         submission.save()
 
-        # Save one result with the danger message
         test_cases = TestCase.objects.filter(
             problem=submission.problem
         ).order_by('order_num')
@@ -135,25 +143,52 @@ def judge_submission(submission_id):
 
         return submission
 
-    # ── Step 2 Mark as running ──
+    # ── Step 2: Mark as running ──
     submission.status = SubmissionStatusChoices.RUNNING
     submission.save()
 
-    # ── Step 3 Get all test cases ──
-    test_cases = TestCase.objects.filter(
-        problem=submission.problem
-    ).order_by('order_num')
+    # ── Step 3: Get test cases based on mode ──
+    if mode == 'run':
+        # Only fetch visible/sample test cases
+        test_cases = TestCase.objects.filter(
+            problem=submission.problem,
+            is_sample=True
+        ).order_by('order_num')
+    else:
+        # Fetch all test cases for submit
+        test_cases = TestCase.objects.filter(
+            problem=submission.problem
+        ).order_by('order_num')
 
     if not test_cases.exists():
         submission.status = SubmissionStatusChoices.INTERNAL_ERROR
         submission.save()
         return
 
+    has_input = test_cases.filter(
+    input_data__isnull=False
+    ).exclude(input_data='').exists()
+
+    if has_input and 'input()' not in submission.code:
+        submission.status = SubmissionStatusChoices.RUNTIME_ERROR
+        submission.save()
+
+        for tc in test_cases:
+            SubmissionResult.objects.create(
+                submission=submission,
+                test_case=tc,
+                status=SubmissionStatusChoices.RUNTIME_ERROR,
+                actual_output="You forgot to read the input! Use input() to take the input.",
+                expected_output=tc.expected_output.strip(),
+                runtime_ms=Decimal('0.00'),
+            )
+
+        return submission
+
+    # ── Step 4: Run code against each test case ──
     code = submission.code
     total_runtime = Decimal('0.00')
     final_status = SubmissionStatusChoices.ACCEPTED
-
-    # ── Step 4 Run code against each test case ──
     for tc in test_cases:
         input_data = tc.input_data.replace('\\n', '\n')
         expected_output = tc.expected_output.strip()
@@ -188,9 +223,14 @@ def judge_submission(submission_id):
             runtime_ms=runtime_ms,
         )
 
-    # ── Step 5 Update final submission ──
-    submission.status = final_status
-    submission.runtime_ms = total_runtime
-    submission.save()
+        # ── Stop at first failure in submit mode ──
+        if mode == 'submit' and tc_status != SubmissionStatusChoices.ACCEPTED:
+            break
+
+    # ── Step 5: Update final submission (submit mode only) ──
+    if mode == 'submit':
+        submission.status = final_status
+        submission.runtime_ms = total_runtime
+        submission.save()
 
     return submission

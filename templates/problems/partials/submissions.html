@@ -1,0 +1,38 @@
+{% load static %}
+
+<table class="submissions-table">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Language</th>
+      <th>Runtime</th>
+      <th>Memory</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sub in submissions %}
+    <tr
+      class="submission-row {% if sub.status == 'accepted' %}accepted{% else %}failed{% endif %}"
+      data-submission-id="{{ sub.id }}"
+    >
+      <td>
+        <span class="status-text {% if sub.status == 'accepted' %}text-green{% else %}text-red{% endif %}">
+          {{ sub.get_status_display }}
+        </span>
+        <div class="time-ago">{{ sub.created_at|timesince }} ago</div>
+      </td>
+      <td>
+        <span class="lang-badge">{{ sub.language.name }}</span>
+      </td>
+      <td>⏱ {{ sub.runtime_ms }} ms</td>
+      <td> {{ sub.memory_used }} MB</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4" class="empty-state">
+        No submissions yet. Write some code and hit Submit!
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
