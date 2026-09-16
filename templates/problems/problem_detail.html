@@ -1,348 +1,878 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
-<head>
-  <meta charset="UTF-8">
-  <title>{{ title }}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  {# Anti-flash: read theme from localStorage before CSS renders #}
-  <script>(function(){var t=localStorage.getItem('editorTheme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    {# Anti-flash: read theme from localStorage before CSS renders #}
+    <script>
+      (function () {
+        var t = localStorage.getItem("editorTheme") || "dark";
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
 
-  {# Google Fonts #}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/problem_detail.css' %}">
-</head>
-<body>
-
-<div id="problem-page">
-
-  <!-- ════════════════════════════════
+    {# Google Fonts #}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{% static 'css/problem_detail.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/discussion.css' %}" />
+  </head>
+  <body>
+    <div id="problem-page">
+      <!-- ════════════════════════════════
        TOP NAVBAR
   ════════════════════════════════ -->
-  <nav id="top-navbar">
+      <nav id="top-navbar">
+        <!-- LEFT ZONE -->
+        <div class="navbar-left">
+          <!-- 1. Home Icon inside small rounded square -->
+          <a href="/" class="nav-home-btn" title="Back to Home">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </a>
 
-    <!-- LEFT ZONE -->
-    <div class="navbar-left">
-      <!-- Logo -->
-      <span class="nav-logo">LC</span>
+          <!-- Problem list drawer trigger -->
+          <button id="btn-problem-list">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <span>Problem List</span>
+          </button>
 
-      <!-- Problem list drawer trigger -->
-      <button id="btn-problem-list" >
-        ☰ Problem List
-      </button>
+          <span class="nav-sep">|</span>
 
-      <span class="nav-sep">|</span>
+          <!-- Prev arrow -->
+          {% if prev_problem %}
+          <a
+            href="/problems/{{ prev_problem.slug }}"
+            class="nav-icon-btn"
+            title="Previous problem"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </a>
+          {% else %}
+          <span class="nav-icon-btn disabled" title="No previous problem">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </span>
+          {% endif %}
 
-      <!-- Prev arrow -->
-      {% if prev_problem %}
-        <a href="/problems/{{ prev_problem.slug }}" class="nav-icon-btn" title="Previous problem">←</a>
-      {% else %}
-        <span class="nav-icon-btn disabled" title="No previous problem">←</span>
-      {% endif %}
+          <!-- Next arrow -->
+          {% if next_problem %}
+          <a
+            href="/problems/{{ next_problem.slug }}"
+            class="nav-icon-btn"
+            title="Next problem"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </a>
+          {% else %}
+          <span class="nav-icon-btn disabled" title="No next problem">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </span>
+          {% endif %}
 
-      <!-- Next arrow -->
-      {% if next_problem %}
-        <a href="/problems/{{ next_problem.slug }}" class="nav-icon-btn" title="Next problem">→</a>
-      {% else %}
-        <span class="nav-icon-btn disabled" title="No next problem">→</span>
-      {% endif %}
+          <!-- Shuffle -->
+          <a href="{% url 'problems:shuffle_problem' %}" class="nav-icon-btn" title="Random problem">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="4" y1="20" x2="21" y2="3"></line>
+              <polyline points="21 16 21 21 16 21"></polyline>
+              <line x1="15" y1="15" x2="21" y2="21"></line>
+              <line x1="4" y1="4" x2="9" y2="9"></line>
+            </svg>
+          </a>
+        </div>
 
-      <!-- Shuffle -->
-      <a href="/problems/" class="nav-icon-btn" title="Random problem">⇄</a>
-    </div>
+        <!-- CENTER ZONE -->
+        <div class="navbar-center">
+          <!-- Run button -->
+          <button id="btn-run" title="Run code (Ctrl + ')">
+            <svg
+              class="btn-icon"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span class="btn-label">Run</span>
+            <span class="btn-spinner teal"></span>
+          </button>
 
-    <!-- CENTER ZONE -->
-    <div class="navbar-center">
-      <!-- Run button -->
-      <button id="btn-run" title="Run code">
-        <span class="btn-label">▶ Run</span>
-        <span class="btn-spinner teal"></span>
-      </button>
+          <!-- Submit button -->
+          <button id="btn-submit" title="Submit solution">
+            <svg
+              class="btn-icon"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            <span class="btn-label">Submit</span>
+            <span class="btn-spinner"></span>
+          </button>
+        </div>
 
-      <!-- Submit button -->
-      <button id="btn-submit" title="Submit code">
-        <span class="btn-label">⬆ Submit</span>
-        <span class="btn-spinner"></span>
-      </button>
-    </div>
+        <!-- RIGHT ZONE: Theme icon & User avatar -->
+        <div class="navbar-right">
+          <!-- Theme toggle -->
+          <button
+            id="btn-theme-toggle"
+            class="nav-icon-btn"
+            title="Toggle theme"
+          >
+            ☀
+          </button>
 
-    <!-- RIGHT ZONE -->
-    <div class="navbar-right">
-      <!-- Theme toggle -->
-      <button id="btn-theme-toggle" class="nav-icon-btn" title="Toggle theme">☀</button>
+          <!-- User avatar / menu (authenticated) -->
+          {% if request.user.is_authenticated %}
+          <div class="user-menu">
+            <span
+              class="user-avatar"
+              title="{{ request.user.user_name }}"
+            >{{ request.user.user_name|first|upper }}</span>
+            <div class="user-dropdown">
+              <span class="ud-user">{{ request.user.user_name }}</span>
+              <a
+                href="{% url 'users:profile' request.user.user_name %}"
+                class="ud-item"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Profile
+              </a>
+              <span class="ud-item disabled" title="Coming soon">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Settings
+              </span>
+              <span class="ud-divider"></span>
+              <a href="{% url 'users:logout' %}" class="ud-item ud-logout">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+              </a>
+            </div>
+          </div>
+          {% else %}
+          <a href="{% url 'users:login' %}" class="nav-btn-outline">Sign In</a>
+          {% endif %}
+        </div>
+      </nav>
 
-      <!-- Difficulty badge -->
-      {% if problem.difficulty == 'easy' %}
-        <span class="badge-easy">Easy</span>
-      {% elif problem.difficulty == 'medium' %}
-        <span class="badge-medium">Medium</span>
-      {% else %}
-        <span class="badge-hard">Hard</span>
-      {% endif %}
-
-      <!-- Settings -->
-      <button class="nav-icon-btn" title="Settings">⚙</button>
-
-      <!-- FIX 3: Timer changed from <span> to <button> so it is clickable -->
-      <button id="timer-display" class="nav-icon-btn" title="Click to start/pause timer">00:00</button>
-
-      <!-- User avatar -->
-      {% if request.user.is_authenticated %}
-        <span class="user-avatar" title="{{ request.user.username }}">
-          {{ request.user.username|first|upper }}
-        </span>
-      {% endif %}
-    </div>
-  </nav>
-
-  <!-- ════════════════════════════════
+      <!-- ════════════════════════════════
        MAIN CONTENT (left + resize + right)
   ════════════════════════════════ -->
-  <div id="main-content">
-
-    <!-- ─────────────────────────
-         LEFT PANEL
+      <div id="main-content">
+        <!-- ─────────────────────────
+         LEFT PANEL (Problem Details)
     ───────────────────────── -->
-    <div id="left-panel">
-      <div class="left-panel-scroll">
-
-        <!-- Problem Header -->
-        <div class="problem-header">
-          <div class="problem-title-row">
-            <h1>{{ serial_no }}. {{ title }}</h1>
-            {% if is_solved %}
-              <span class="solved-badge">✓ Solved</span>
-            {% endif %}
-          </div>
-
-          <!-- Pills row -->
-          <div class="problem-pills-row">
-
-            <!-- Difficulty pill (no dropdown, just a badge) -->
-            {% if problem.difficulty == 'easy' %}
-              <span class="pill-btn diff-easy">Easy</span>
-            {% elif problem.difficulty == 'medium' %}
-              <span class="pill-btn diff-medium">Medium</span>
-            {% else %}
-              <span class="pill-btn diff-hard">Hard</span>
-            {% endif %}
-
-            <!-- FIX 4: Topics wrapped in pill-wrapper for correct dropdown positioning -->
-            <div class="pill-wrapper">
-              <button class="pill-btn" data-dropdown="topics-dropdown">Topics ▾</button>
-              <div class="pill-dropdown" id="topics-dropdown">
-                {% for tag in tags %}
-                  <span class="tag-pill">{{ tag.name }}</span>
-                {% empty %}
-                  <span class="dropdown-empty">No topics listed</span>
-                {% endfor %}
+        <div id="left-panel">
+          <div class="left-panel-scroll">
+            <!-- Problem Header -->
+            <div class="problem-header">
+              <div class="problem-title-row">
+                <h1>{{ serial_no }}. {{ title }}</h1>
+                {% if is_solved %}
+                <span class="solved-badge">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Solved
+                </span>
+                {% endif %}
               </div>
-            </div>
 
-            <!-- FIX 4: Companies wrapped in pill-wrapper for correct dropdown positioning -->
-            <div class="pill-wrapper">
-              <button class="pill-btn" data-dropdown="companies-dropdown">Companies ▾</button>
-              <div class="pill-dropdown" id="companies-dropdown">
-                {% for company in companies %}
-                  <span class="company-pill">{{ company.name }}</span>
-                {% empty %}
-                  <span class="dropdown-empty">No companies listed</span>
-                {% endfor %}
+              <!-- Pills row -->
+              <div class="problem-pills-row">
+                <!-- Difficulty pill (kept on the LEFT) -->
+                {% if problem.difficulty == 'easy' %}
+                <span class="pill-btn diff-easy">Easy</span>
+                {% elif problem.difficulty == 'medium' %}
+                <span class="pill-btn diff-medium">Medium</span>
+                {% else %}
+                <span class="pill-btn diff-hard">Hard</span>
+                {% endif %}
+
+                <!-- Topics dropdown -->
+                <div class="pill-wrapper">
+                  <button class="pill-btn" data-dropdown="topics-dropdown">
+                    <span>Topics</span>
+                    <span class="dropdown-caret">▾</span>
+                  </button>
+                  <div class="pill-dropdown" id="topics-dropdown">
+                    {% for tag in tags %}
+                    <span class="tag-pill">{{ tag.name }}</span>
+                    {% empty %}
+                    <span class="dropdown-empty">No topics listed</span>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- Companies dropdown -->
+                <div class="pill-wrapper">
+                  <button class="pill-btn" data-dropdown="companies-dropdown">
+                    <span>Companies</span>
+                    <span class="dropdown-caret">▾</span>
+                  </button>
+                  <div class="pill-dropdown" id="companies-dropdown">
+                    {% for company in companies %}
+                    <span class="company-pill">{{ company.name }}</span>
+                    {% empty %}
+                    <span class="dropdown-empty">No companies listed</span>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- Hint button -->
+                {% if hints %}
+                <button class="pill-btn hint-pill" id="btn-hint">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18h6"></path>
+                    <path d="M10 22h4"></path>
+                    <path
+                      d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6v1a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-1c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"
+                    ></path>
+                  </svg>
+                  <span>Hint ({{ hints.count }})</span>
+                </button>
+                {% endif %}
               </div>
+              {# /problem-pills-row #}
             </div>
+            {# /problem-header #}
 
-            <!-- Hint button -->
-            {% if hints %}
-              <button class="pill-btn" id="btn-hint">
-                Hint ({{ hints.count }})
+            <!-- Hints revealed area -->
+            <div class="hints-area" id="hints-area"></div>
+
+            <!-- Hints data as JSON for JS -->
+            <script id="hints-data" type="application/json">
+              [{% for hint in hints %}"{{ hint.hint_text|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
+            </script>
+
+            <!-- ── TABS BAR ── -->
+            <div class="tabs-bar">
+              <button
+                class="tab-btn active"
+                data-tab="description"
+                id="btn-tab-description"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  ></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Description</span>
               </button>
-            {% endif %}
-
-          </div>{# /problem-pills-row #}
-        </div>{# /problem-header #}
-
-        <!-- Hints revealed area -->
-        <div class="hints-area" id="hints-area"></div>
-
-        <!-- Hints data as JSON for JS -->
-        <script id="hints-data" type="application/json">
-          [{% for hint in hints %}"{{ hint.hint_text|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
-        </script>
-
-        <!-- ── TABS BAR ── -->
-        <div class="tabs-bar">
-          <button class="tab-btn active" data-tab="description"  id="btn-tab-description">Description</button>
-          <button class="tab-btn"        data-tab="editorial"    id="btn-tab-editorial">Editorial</button>
-          <button class="tab-btn"        data-tab="solutions"    id="btn-tab-solutions">Solutions</button>
-          <button class="tab-btn"        data-tab="submissions"  id="btn-tab-submissions">Submissions</button>
-        </div>
-
-        <!-- ── TAB 1: DESCRIPTION (server-rendered, no AJAX) ── -->
-        <div id="tab-description" class="tab-content active">
-
-          <div class="problem-statement">
-            {{ description|linebreaksbr }}
-          </div>
-
-          {% for case in sample_cases %}
-          <div class="example-card">
-            <div class="example-label">Example {{ case.order_num }}:</div>
-            <div class="example-body">
-              <div>
-                <span class="ex-label">Input:</span>
-                <code>{{ case.input_data }}</code>
-              </div>
-              <div>
-                <span class="ex-label">Output:</span>
-                <code>{{ case.expected_output }}</code>
-              </div>
-              {% if case.explanation %}
-              <div>
-                <span class="ex-label">Explanation:</span>
-                {{ case.explanation }}
-              </div>
-              {% endif %}
+              <button
+                class="tab-btn"
+                data-tab="editorial"
+                id="btn-tab-editorial"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <span>Editorial</span>
+              </button>
+              <button
+                class="tab-btn"
+                data-tab="discussion"
+                id="btn-tab-discussion"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Discussion</span>
+              </button>
+              <button
+                class="tab-btn"
+                data-tab="submissions"
+                id="btn-tab-submissions"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Submissions</span>
+              </button>
             </div>
+
+            <!-- ── TAB 1: DESCRIPTION (server-rendered) ── -->
+            <div id="tab-description" class="tab-content active">
+              <div class="problem-statement">
+                {{ description|linebreaksbr }}
+              </div>
+
+              {% for case in sample_cases %}
+              <div class="example-card">
+                <div class="example-label">
+                  <span class="example-badge"
+                    >Example {{ case.order_num }}</span
+                  >
+                </div>
+                <div class="example-body">
+                  <div class="example-row">
+                    <span class="ex-label">Input:</span>
+                    <code>{{ case.input_data }}</code>
+                  </div>
+                  <div class="example-row">
+                    <span class="ex-label">Output:</span>
+                    <code class="multiline-output"
+                      >{{ case.expected_output }}</code
+                    >
+                  </div>
+                  {% if case.explanation %}
+                  <div class="example-row explanation">
+                    <span class="ex-label">Explanation:</span>
+                    <span class="ex-text">{{ case.explanation }}</span>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+
+              <div class="stats-bar">
+                <div class="stat-item">
+                  <span class="stat-label">Acceptance Rate:</span>
+                  <span class="stat-val-green"
+                    >{{ problem.acceptance_rate }}%</span
+                  >
+                </div>
+                <span class="divider">|</span>
+                <div class="stat-item">
+                  <span>👍 {{ problem.likes }}</span>
+                  <span style="margin-left: 8px"
+                    >👎 {{ problem.dislikes }}</span
+                  >
+                </div>
+              </div>
+            </div>
+            {# /tab-description #}
+
+            <!-- ── TAB 2: EDITORIAL (AJAX) ── -->
+            <div id="tab-editorial" class="tab-content"></div>
+
+            <!-- ── TAB 3: DISCUSSION (AJAX) ── -->
+            <div id="tab-discussion" class="tab-content"></div>
+
+            <!-- ── TAB 4: SUBMISSIONS (AJAX) ── -->
+            <div id="tab-submissions" class="tab-content"></div>
           </div>
-          {% endfor %}
-
-          <!-- FIX 2: Removed problem.likes as Accepted count (it is thumbs-up, not submissions).
-               Only showing acceptance_rate and like/dislike counts which are correct. -->
-          <div class="stats-bar">
-            <span>Acceptance Rate <strong>{{ problem.acceptance_rate }}%</strong></span>
-            <span class="divider">|</span>
-            <span>👍 {{ problem.likes }} &nbsp; 👎 {{ problem.dislikes }}</span>
-          </div>
-
-        </div>{# /tab-description #}
-
-        <!-- ── TAB 2: EDITORIAL (lazy-loaded via AJAX) ── -->
-        <div id="tab-editorial" class="tab-content">
-          {# Injected by JS: fetch GET /problems/<slug>/editorial #}
+          {# /left-panel-scroll #}
         </div>
+        {# /left-panel #}
 
-        <!-- ── TAB 3: SOLUTIONS (lazy-loaded via AJAX) ── -->
-        <div id="tab-solutions" class="tab-content">
-          {# Injected by JS: fetch GET /problems/<slug>/solutions #}
-        </div>
-
-        <!-- ── TAB 4: SUBMISSIONS (lazy-loaded via AJAX) ── -->
-        <div id="tab-submissions" class="tab-content">
-          {# Injected by JS: fetch GET /problems/<slug>/submissions #}
-        </div>
-
-      </div>{# /left-panel-scroll #}
-    </div>{# /left-panel #}
-
-    <!-- ─────────────────────────
+        <!-- ─────────────────────────
          VERTICAL RESIZE HANDLE
     ───────────────────────── -->
-    <div id="resize-handle-vertical"></div>
+        <div id="resize-handle-vertical" title="Drag to resize panels">
+          <div class="resize-handle-line"></div>
+        </div>
 
-    <!-- ─────────────────────────
-         RIGHT PANEL
+        <!-- ─────────────────────────
+         RIGHT PANEL (Editor + Testcases)
     ───────────────────────── -->
-    <div id="right-panel">
+        <div id="right-panel">
+          <!-- ── EDITOR ZONE ── -->
+          <div id="editor-zone">
+            <!-- Editor toolbar: Language, Timer, Auto-save one after another on the left; Zoom Out, Zoom In, Fullscreen on the right -->
+            <div class="editor-toolbar">
+              <div class="editor-toolbar-left">
+                <!-- 1. Language selector -->
+                <div class="editor-lang-wrapper">
+                  <select id="language-select" aria-label="Select Language">
+                    <option value="python">Python3</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                  </select>
+                  <span class="lang-select-arrow">▾</span>
+                </div>
 
-      <!-- ── EDITOR ZONE (top, resizable height) ── -->
-      <div id="editor-zone">
+                <!-- 2. Timer -->
+                <button
+                  id="timer-display"
+                  class="editor-timer-btn"
+                  title="Click to start/pause timer"
+                >
+                  <svg
+                    class="timer-icon"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="timer-text">00:00</span>
+                </button>
 
-        <!-- Editor toolbar -->
-        <div class="editor-toolbar">
-          <div class="editor-toolbar-left">
-            <select id="language-select">
-              <option value="python">Python3</option>
-              <option value="java">Java</option>
-              <option value="cpp">C++</option>
-              <option value="javascript">JavaScript</option>
-              <option value="go">Go</option>
-              <option value="rust">Rust</option>
-            </select>
-            <span class="autosave-indicator">🔒 Auto</span>
+                <!-- 3. Auto-save -->
+                <div class="autosave-indicator" title="Auto-save enabled">
+                  <span class="autosave-dot"></span>
+                  <span class="autosave-text">Auto-save</span>
+                </div>
+              </div>
+
+              <div class="editor-toolbar-right">
+                <!-- Zoom Out -->
+                <button
+                  class="toolbar-icon-btn"
+                  id="btn-zoom-out"
+                  title="Zoom Out (Ctrl -)"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  </svg>
+                </button>
+
+                <!-- Zoom In -->
+                <button
+                  class="toolbar-icon-btn"
+                  id="btn-zoom-in"
+                  title="Zoom In (Ctrl +)"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  </svg>
+                </button>
+
+                <!-- Fullscreen -->
+                <button
+                  class="toolbar-icon-btn"
+                  id="btn-fullscreen"
+                  title="Toggle Fullscreen"
+                >
+                  <svg
+                    class="fs-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Monaco editor container -->
+            <div id="monaco-editor-container"></div>
+
+            <!-- Editor status bar -->
+            <div class="editor-status-bar">
+              <span id="editor-save-status" class="saved">
+                <span class="status-dot"></span>
+                <span class="status-text">Saved</span>
+              </span>
+              <span id="editor-cursor-pos">Ln 1, Col 1</span>
+            </div>
           </div>
-          <div class="editor-toolbar-right">
-            <button class="toolbar-icon-btn" title="Format code">⚌</button>
-            <button class="toolbar-icon-btn" title="Bookmark">🔖</button>
-            <button class="toolbar-icon-btn" id="btn-undo" title="Undo">↩</button>
-            <button class="toolbar-icon-btn" id="btn-fullscreen" title="Fullscreen">⛶</button>
+          {# /editor-zone #}
+
+          <!-- ── HORIZONTAL RESIZE HANDLE ── -->
+          <div
+            id="resize-handle-horizontal"
+            title="Drag to resize editor & testcases"
+          >
+            <div class="resize-handle-h-line"></div>
           </div>
-        </div>
 
-        <!-- Monaco editor mounts here -->
-        <div id="monaco-editor-container"></div>
+          <!-- ── TESTCASE / RESULT PANEL ── -->
+          <div id="testcase-panel">
+            <!-- Panel tabs -->
+            <div class="testcase-tabs-bar">
+              <button class="testcase-tab-btn active" data-tctab="testcase">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  ></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                <span>Testcase</span>
+              </button>
+              <button class="testcase-tab-btn" data-tctab="result">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>Test Result</span>
+              </button>
+            </div>
 
-        <!-- Editor status bar -->
-        <div class="editor-status-bar">
-          <span id="editor-save-status" class="saved">✓ Saved</span>
-          <span id="editor-cursor-pos">Ln 1, Col 1</span>
-        </div>
+            <!-- Testcase tab -->
+            <div class="testcase-tab-content active" id="tc-tab-testcase">
+              <!-- Case selector pills -->
+              <div class="case-pills-row" id="testcase-pills-row">
+                {% for case in sample_cases %}
+                <button
+                  type="button"
+                  class="case-pill {% if forloop.first %}active{% endif %}"
+                  data-case-index="{{ forloop.counter0 }}"
+                >
+                  Case {{ case.order_num }}
+                </button>
+                {% empty %}
+                <button
+                  type="button"
+                  class="case-pill active"
+                  data-case-index="0"
+                >
+                  Case 1
+                </button>
+                {% endfor %}
+              </div>
 
-      </div>{# /editor-zone #}
+              <!-- Active Case Details -->
+              <div class="tc-case-details" id="testcase-input-container">
+                <div class="case-io-card">
+                  <div class="case-io-card-header">
+                    <span class="case-header-tag">Input</span>
+                    <button
+                      type="button"
+                      class="copy-btn"
+                      id="btn-copy-tc-input"
+                      title="Copy input"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                  <textarea
+                    id="custom-input"
+                    class="case-input-textarea"
+                    placeholder="Enter custom input here..."
+                    rows="2"
+                    spellcheck="false"
+                  >{% if sample_cases %}{{ sample_cases.0.input_data }}{% endif %}</textarea>
+                </div>
 
-      <!-- ── HORIZONTAL RESIZE HANDLE ── -->
-      <div id="resize-handle-horizontal"></div>
+                <div
+                  class="case-io-card"
+                  id="tc-expected-card"
+                  {% if not sample_cases.0.expected_output %}style="display:none;"{% endif %}
+                >
+                  <div class="case-io-card-header">
+                    <span class="case-header-tag">Expected Output</span>
+                    <button
+                      type="button"
+                      class="copy-btn"
+                      id="btn-copy-tc-expected"
+                      title="Copy expected output"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                  <div class="case-io-card-body" id="tc-expected-output">
+                    {% if sample_cases %}{{ sample_cases.0.expected_output }}{% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <!-- ── TESTCASE / RESULT PANEL (bottom) ── -->
-      <div id="testcase-panel">
+            <!-- Sample test cases data as JSON for JS -->
+            <script id="sample-cases-data" type="application/json">
+              [{% for case in sample_cases %}{"order_num":{{ case.order_num }},"input_data":"{{ case.input_data|escapejs }}","expected_output":"{{ case.expected_output|escapejs }}","explanation":"{{ case.explanation|default:''|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]
+            </script>
 
-        <!-- Panel tabs -->
-        <div class="testcase-tabs-bar">
-          <button class="testcase-tab-btn active" data-tctab="testcase">Testcase</button>
-          <button class="testcase-tab-btn"        data-tctab="result">Test Result</button>
-        </div>
-
-        <!-- Testcase tab -->
-        <div class="testcase-tab-content active" id="tc-tab-testcase">
-          <textarea
-            id="custom-input"
-            placeholder="Enter custom input here..."
-            rows="4"
-          >{% if sample_cases %}{{ sample_cases.0.input_data }}{% endif %}</textarea>
-        </div>
-
-        <!-- Test Result tab -->
-        <div class="testcase-tab-content" id="tc-tab-result">
-          <div id="test-result-content">
-            <div class="result-placeholder">You must run your code first</div>
+            <!-- Test Result tab -->
+            <div class="testcase-tab-content" id="tc-tab-result">
+              <div id="test-result-content">
+                <div class="result-placeholder">
+                  <div class="result-placeholder-icon">⚡</div>
+                  <div>You must run or submit your code first</div>
+                </div>
+              </div>
+            </div>
           </div>
+          {# /testcase-panel #}
         </div>
+        {# /right-panel #}
+      </div>
+      {# /main-content #}
 
-      </div>{# /testcase-panel #}
-
-    </div>{# /right-panel #}
-
-  </div>{# /main-content #}
-
-  <!-- ════════════════════════════════
+      <!-- ════════════════════════════════
        PROBLEM LIST DRAWER
   ════════════════════════════════ -->
-  <div id="drawer-backdrop"></div>
-  <div id="problem-list-drawer">
-    <div class="drawer-header">
-      <span>Problem List</span>
-      <button id="drawer-close">✕</button>
+      <div id="drawer-backdrop"></div>
+      <div id="problem-list-drawer">
+        <div class="drawer-header">
+          <div class="drawer-title-wrap">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <span>Problem List</span>
+          </div>
+          <button id="drawer-close" title="Close drawer">✕</button>
+        </div>
+        <div id="drawer-content">
+          {# Injected by JS: fetch GET /problems/problems-panel/ #}
+        </div>
+      </div>
     </div>
-    <div id="drawer-content">
-      {# Injected by JS: fetch GET /problems/problems-panel/ #}
-    </div>
-  </div>
+    {# /problem-page #}
 
-</div>{# /problem-page #}
+    <!-- JS globals — must be before problem_detail.js -->
+    <script>
+      const PROBLEM_SLUG     = "{{ problem.slug }}";
+      const IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
+      const CSRF_TOKEN       = "{{ csrf_token }}";
+      const USER_ID          = "{{ request.user.id|default:'anon' }}";
+    </script>
 
-<!-- JS globals — must be before problem_detail.js -->
-<script>
-  const PROBLEM_SLUG     = "{{ problem.slug }}";
-  const IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
-  const CSRF_TOKEN       = "{{ csrf_token }}";
-</script>
+    {# Monaco CDN — must load before problem_detail.js #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
-{# Monaco CDN — must load before problem_detail.js #}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
-
-<script src="{% static 'js/problem_detail.js' %}"></script>
-
-</body>
+    <script src="{% static 'js/problem_detail.js' %}"></script>
+  </body>
 </html>

@@ -32,11 +32,12 @@ class Command(BaseCommand):
         self.stdout.write('Importing problems...')
 
         for _, row in problems_df.iterrows():
-            problem, created = Problem.objects.get_or_create(
+            description = str(row['description']).replace('\\n', '\n') if pd.notna(row['description']) else ''
+            problem, created = Problem.objects.update_or_create(
                 order_num=int(row['order_num']),
                 defaults={
                     'title': row['title'],
-                    'description': row['description'],
+                    'description': description,
                     'difficulty': row['difficulty'].lower(),
                 }
             )
@@ -44,7 +45,7 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(self.style.SUCCESS(f'  Created problem #{problem.order_num} - {problem.title}'))
             else:
-                self.stdout.write(self.style.WARNING(f'  Already exists #{problem.order_num} - {problem.title} skipping...'))
+                self.stdout.write(self.style.SUCCESS(f'  Updated problem #{problem.order_num} - {problem.title}'))
 
         # ── Import Test Cases ──
         self.stdout.write('Importing test cases...')
@@ -58,16 +59,16 @@ class Command(BaseCommand):
                 continue
 
             # Handle \n replacement
-            input_data = str(row['input_data']).replace('\\n', '\n')
-            expected_output = str(row['expected_output']).replace('\\n', '\n')
+            input_data = str(row['input_data']).replace('\\n', '\n') if pd.notna(row['input_data']) else ''
+            expected_output = str(row['expected_output']).replace('\\n', '\n') if pd.notna(row['expected_output']) else ''
 
             # Handle is_sample — Excel stores TRUE/FALSE as bool
             is_sample = bool(row['is_sample']) if pd.notna(row['is_sample']) else False
 
             # Handle explanation — it can be empty
-            explanation = str(row['explanation']) if pd.notna(row['explanation']) else None
+            explanation = str(row['explanation']).replace('\\n', '\n') if pd.notna(row['explanation']) else None
 
-            testcase, created = TestCase.objects.get_or_create(
+            testcase, created = TestCase.objects.update_or_create(
                 problem=problem,
                 order_num=int(row['order_num']),
                 defaults={
@@ -81,6 +82,6 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(self.style.SUCCESS(f'  Created test case #{testcase.order_num} for {problem.title}'))
             else:
-                self.stdout.write(self.style.WARNING(f'  Test case #{testcase.order_num} for {problem.title} already exists skipping...'))
+                self.stdout.write(self.style.SUCCESS(f'  Updated test case #{testcase.order_num} for {problem.title}'))
 
         self.stdout.write(self.style.SUCCESS('Import completed successfully!'))

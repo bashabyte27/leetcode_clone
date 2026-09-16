@@ -31,6 +31,12 @@ db.sqlite3-journal
 media/
 staticfiles/
 # Environment Variables — NEVER COMMIT THESE
+globalvenv/
+venv/
+env/
+ENV/
+.venv/
+.env/
 .env
 .env.local
 .env.production
@@ -47,6 +53,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.claude/
 coverage.xml
 # Node
 node_modules/

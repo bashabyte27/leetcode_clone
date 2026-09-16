@@ -125,6 +125,15 @@ class Users(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
+    def save(self, *args, **kwargs):
+        # Normalize blank mobile numbers to NULL so the unique constraint
+        # does not reject multiple empty-string users.
+        if not self.mobile_no or not self.mobile_no.strip():
+            self.mobile_no = None
+        else:
+            self.mobile_no = self.mobile_no.strip()
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = 'User'
         verbose_name_plural = 'Users'

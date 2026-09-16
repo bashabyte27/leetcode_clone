@@ -1,0 +1,84 @@
+{% load discussion_extras %}
+<div class="discussion-container" id="discussion-container">
+  <div class="discussion-header">
+    <h3>Discussion</h3>
+    <span class="discussion-count">{{ discussion.comment_count }} comments</span>
+  </div>
+
+  {% if user.is_authenticated %}
+  <div class="comment-form-wrapper">
+    <div class="comment-form-row">
+      <div class="comment-avatar">{{ user.user_name|slice:":1"|upper }}</div>
+      <textarea id="new-comment-input" class="comment-form-input" placeholder="Add to the discussion..."></textarea>
+    </div>
+    <div class="comment-form-actions">
+      <button class="comment-post-btn" data-action="post-comment" data-slug="{{ problem.slug }}">Comment</button>
+    </div>
+  </div>
+  {% else %}
+  <div class="login-prompt">
+    <a href="{% url 'users:login' %}">Log in</a> to join the discussion.
+  </div>
+  {% endif %}
+
+  <div class="comments-list">
+    {% for comment in comments %}
+    <div class="comment-card" data-comment-id="{{ comment.id }}">
+      <div class="comment-top">
+        <div class="comment-avatar">{{ comment.user.user_name|slice:":1"|upper }}</div>
+        <span class="comment-author">{{ comment.user.user_name }}</span>
+        <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+      </div>
+      <div class="comment-body">{{ comment.content }}</div>
+      <div class="comment-actions">
+        <button class="vote-btn{% if comment.user_vote == 1 %} active-up{% endif %}"
+                data-action="vote" data-comment-id="{{ comment.id }}" data-value="1" title="Upvote">&#9650;</button>
+        <span class="vote-count" data-count-id="{{ comment.id }}">{{ comment.vote_count }}</span>
+        <button class="vote-btn{% if comment.user_vote == -1 %} active-down{% endif %}"
+                data-action="vote" data-comment-id="{{ comment.id }}" data-value="-1" title="Downvote">&#9660;</button>
+        <button class="reply-toggle-btn" data-action="toggle-reply" data-parent-id="{{ comment.id }}">Reply</button>
+      </div>
+      <div class="reply-form-wrapper" data-reply-form="{{ comment.id }}">
+        {% if user.is_authenticated %}
+        <div class="comment-form-row">
+          <div class="comment-avatar">{{ user.user_name|slice:":1"|upper }}</div>
+          <textarea class="reply-form-input" placeholder="Write a reply..."></textarea>
+        </div>
+        <div class="reply-form-actions">
+          <button class="reply-cancel-btn" data-action="cancel-reply">Cancel</button>
+          <button class="reply-post-btn" data-action="post-reply" data-slug="{{ problem.slug }}" data-parent-id="{{ comment.id }}">Reply</button>
+        </div>
+        {% else %}
+        <div class="login-prompt"><a href="{% url 'users:login' %}">Log in</a> to reply.</div>
+        {% endif %}
+      </div>
+      {% if comment.id in replies_by_parent %}
+      <div class="replies-list">
+        {% for reply in replies_by_parent|get_list:comment.id %}
+        <div class="comment-card" data-comment-id="{{ reply.id }}">
+          <div class="comment-top">
+            <div class="comment-avatar">{{ reply.user.user_name|slice:":1"|upper }}</div>
+            <span class="comment-author">{{ reply.user.user_name }}</span>
+            <span class="comment-time">{{ reply.created_at|timesince }} ago</span>
+          </div>
+          <div class="comment-body">{{ reply.content }}</div>
+          <div class="comment-actions">
+            <button class="vote-btn{% if reply.user_vote == 1 %} active-up{% endif %}"
+                    data-action="vote" data-comment-id="{{ reply.id }}" data-value="1" title="Upvote">&#9650;</button>
+            <span class="vote-count" data-count-id="{{ reply.id }}">{{ reply.vote_count }}</span>
+            <button class="vote-btn{% if reply.user_vote == -1 %} active-down{% endif %}"
+                    data-action="vote" data-comment-id="{{ reply.id }}" data-value="-1" title="Downvote">&#9660;</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="discussion-empty">
+      <div class="discussion-empty-icon">💬</div>
+      No comments yet. Be the first to discuss this problem!
+    </div>
+    {% endfor %}
+  </div>
+</div>

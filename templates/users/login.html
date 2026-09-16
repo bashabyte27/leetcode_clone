@@ -41,9 +41,15 @@
       <!-- Password field -->
       <div class="mb-3">
         <label for="id_password" class="form-label">Password</label>
-        <input type="password" name="password" id="id_password"
-               class="lc-input" placeholder="Enter your password"
-               required autocomplete="current-password">
+        <div class="password-input-wrap">
+          <input type="password" name="password" id="id_password"
+                 class="lc-input" placeholder="Enter your password"
+                 required autocomplete="current-password">
+          <button type="button" class="password-toggle"
+                  data-target="id_password" aria-label="Show password">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
         {% if form.password.errors %}
           <div class="mt-1 small" style="color: var(--hard-color);">
             {{ form.password.errors }}

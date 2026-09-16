@@ -64,6 +64,7 @@ class Submission(models.Model):
     # Percentile vs other accepted submissions for the same (problem, language)
     runtime_percentile = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     memory_percentile = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    solve_time_seconds = models.PositiveIntegerField(blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -86,6 +87,13 @@ class Submission(models.Model):
             f"Submission: {self.user.user_name} | "
             f"{self.problem.title} | {self.status}"
         )
+
+    @property
+    def solve_time_display(self):
+        if self.solve_time_seconds is None:
+            return "—"
+        m, s = divmod(self.solve_time_seconds, 60)
+        return f"{m}:{s:02d}"
 
 
 # ─────────────────── Per-Test-Case Results ───────────────────────

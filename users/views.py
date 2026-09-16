@@ -1,13 +1,17 @@
 import random, time
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import LoginForm, RegisterForm, ForgotPasswordForm
-from .models import Users, UserProfile, UserStats
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-import os
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
+
+from .forms import LoginForm, RegisterForm, ForgotPasswordForm
+from .models import Users, UserProfile, UserFollow
+from problems.models import Problem, DifficultyChoices
+from submissions.models import Submission, SubmissionStatusChoices
 
 
 def get_otp():
@@ -46,7 +50,7 @@ def register_view(request):
                     'email':     form.cleaned_data['email'],
                     'user_name': form.cleaned_data['user_name'],
                     'password':  make_password(form.cleaned_data['password1']),
-                    'mobile_no': form.cleaned_data.get('mobile_no', ''),
+                    'mobile_no': form.cleaned_data.get('mobile_no') or None,
                 }
                 send_mail(
                     'Your OTP for Registration',
@@ -140,7 +144,7 @@ def reset_password(request):
                 })
 
         elif 'verify-otp' in request.POST:  # no form.is_valid() needed here
-            entered_otp   = request.POST.get('otp', '').strip()
+            entered_otp   = request.POST.get('otp_code', '').strip()
             pending_reset = request.session.get('pending_reset')
 
             if not pending_reset:
@@ -170,26 +174,87 @@ def reset_password(request):
     return render(request, 'users/forgot_password.html', {'form': form})
 
 @login_required
-def profile_view(request,username):
-    from_user = request.user
-    to_user = get_object_or_404(Users,user_name=username)
-    if from_user.user_name==to_user.user_name:
-        profile, created = UserProfile.objects.get_or_create(user=request.user)
-        stats, is_created = UserStats.objects.get_or_create(user=request.user)
-        context = {
-            'profile':profile,
-            'stats':stats,
-            'editable':True
-        }
-        return render(request,"users/profile.html",context)
-    else:
-        to_user_profile, created = UserProfile.objects.get_or_create(user=to_user)
-        stats, is_created = UserStats.objects.get_or_create(user=to_user)
-        context = {
-            'profile':to_user_profile,
-            'stats':stats,
-            'editable':False
-        }
+def profile_view(request, username):
+    to_user = get_object_or_404(Users, user_name=username)
+    editable = request.user.is_authenticated and (request.user.id == to_user.id or request.user.user_name == to_user.user_name)
 
-        return render(request,'users/profile.html',context)
+    profile, _ = UserProfile.objects.get_or_create(user=to_user)
+
+    # ── User's Submissions & Real Solved Data ──
+    user_submissions = Submission.objects.filter(user=to_user)
+    total_submissions = user_submissions.count()
+    accepted_submissions = user_submissions.filter(status=SubmissionStatusChoices.ACCEPTED).count()
+
+    # Solved unique problems
+    accepted_subs = user_submissions.filter(status=SubmissionStatusChoices.ACCEPTED)
+    total_solved = accepted_subs.values('problem_id').distinct().count()
+    easy_solved = accepted_subs.filter(problem__difficulty=DifficultyChoices.EASY).values('problem_id').distinct().count()
+    medium_solved = accepted_subs.filter(problem__difficulty=DifficultyChoices.MEDIUM).values('problem_id').distinct().count()
+    hard_solved = accepted_subs.filter(problem__difficulty=DifficultyChoices.HARD).values('problem_id').distinct().count()
+
+    # Total active problems in DB
+    total_problems = Problem.objects.filter(is_active=True).count()
+    total_easy = Problem.objects.filter(is_active=True, difficulty=DifficultyChoices.EASY).count()
+    total_medium = Problem.objects.filter(is_active=True, difficulty=DifficultyChoices.MEDIUM).count()
+    total_hard = Problem.objects.filter(is_active=True, difficulty=DifficultyChoices.HARD).count()
+
+    # Submission Rate = accepted submissions / total submissions * 100
+    if total_submissions > 0:
+        submission_rate = round((accepted_submissions / total_submissions) * 100, 1)
+    else:
+        submission_rate = 0.0
+
+    # ── Dynamic Rank against ALL users based on submissions ──
+    user_rankings = Users.objects.annotate(
+        solved_count=Count('submissions__problem', filter=Q(submissions__status=SubmissionStatusChoices.ACCEPTED), distinct=True),
+        accepted_count=Count('submissions', filter=Q(submissions__status=SubmissionStatusChoices.ACCEPTED)),
+    ).order_by('-solved_count', '-accepted_count', 'created_at')
+
+    user_ids_ordered = list(user_rankings.values_list('id', flat=True))
+    try:
+        rank = user_ids_ordered.index(to_user.id) + 1
+    except ValueError:
+        rank = len(user_ids_ordered)
+
+    # ── Social Counts ──
+    followers_count = UserFollow.objects.filter(following=to_user).count()
+    following_count = UserFollow.objects.filter(follower=to_user).count()
+
+    # ── Backend Paginated Submissions History (20 per page) ──
+    submissions_qs = user_submissions.select_related(
+        'problem', 'language'
+    ).order_by('-submitted_at')
+    paginator = Paginator(submissions_qs, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Elided page range for clean navigation
+    elided_page_range = paginator.get_elided_page_range(
+        number=page_obj.number, on_each_side=2, on_ends=1
+    )
+
+    context = {
+        'to_user': to_user,
+        'profile': profile,
+        'editable': editable,
+        'rank': rank,
+        'total_users': len(user_ids_ordered),
+        'total_solved': total_solved,
+        'easy_solved': easy_solved,
+        'medium_solved': medium_solved,
+        'hard_solved': hard_solved,
+        'total_problems': total_problems,
+        'total_easy': total_easy,
+        'total_medium': total_medium,
+        'total_hard': total_hard,
+        'total_submissions': total_submissions,
+        'accepted_submissions': accepted_submissions,
+        'submission_rate': submission_rate,
+        'followers_count': followers_count,
+        'following_count': following_count,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'elided_page_range': elided_page_range,
+    }
+    return render(request, 'users/profile.html', context)
 

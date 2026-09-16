@@ -72,9 +72,15 @@
       <!-- Password field -->
       <div class="mb-3">
         <label for="id_password1" class="form-label">Password</label>
-        <input type="password" name="password1" id="id_password1"
-               class="lc-input" placeholder="Create a strong password"
-               required autocomplete="new-password">
+        <div class="password-input-wrap">
+          <input type="password" name="password1" id="id_password1"
+                 class="lc-input" placeholder="Create a strong password"
+                 required autocomplete="new-password">
+          <button type="button" class="password-toggle"
+                  data-target="id_password1" aria-label="Show password">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
         {% if form.password1.errors %}
           <div class="mt-1 small" style="color: var(--hard-color);">
             {{ form.password1.errors }}
@@ -85,9 +91,15 @@
       <!-- Confirm password field -->
       <div class="mb-3">
         <label for="id_password2" class="form-label">Confirm password</label>
-        <input type="password" name="password2" id="id_password2"
-               class="lc-input" placeholder="Confirm your password"
-               required autocomplete="new-password">
+        <div class="password-input-wrap">
+          <input type="password" name="password2" id="id_password2"
+                 class="lc-input" placeholder="Confirm your password"
+                 required autocomplete="new-password">
+          <button type="button" class="password-toggle"
+                  data-target="id_password2" aria-label="Show password">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
         {% if form.password2.errors %}
           <div class="mt-1 small" style="color: var(--hard-color);">
             {{ form.password2.errors }}

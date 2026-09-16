@@ -357,6 +357,40 @@ body {
    Utility Classes
 ══════════════════════════════════════ */
 .text-lc-secondary { color: var(--text-secondary) !important; }
+
+/* ══════════════════════════════════════
+   Password visibility toggle
+══════════════════════════════════════ */
+.password-input-wrap {
+    position: relative;
+}
+.password-input-wrap .lc-input {
+    padding-right: 44px;
+}
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px;
+    line-height: 1;
+    font-size: 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+.password-toggle:hover {
+    color: var(--orange);
+}
+.password-toggle:focus-visible {
+    outline: none;
+    color: var(--orange);
+}
 .text-lc-orange    { color: var(--orange) !important; }
 .text-lc-easy      { color: var(--easy-color) !important; }
 .text-lc-medium    { color: var(--medium-color) !important; }

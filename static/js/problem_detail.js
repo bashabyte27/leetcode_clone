@@ -1,7 +1,7 @@
-/* ─────────────────────────────────────────────
-   PROBLEM DETAIL — problem_detail.js
+/* ─────────────────────────────────────────────────────────────
+   LEETCODE PROBLEM DETAIL — problem_detail.js
    Globals expected: PROBLEM_SLUG, IS_AUTHENTICATED, CSRF_TOKEN
-   ───────────────────────────────────────────── */
+   ───────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
 
@@ -13,10 +13,12 @@
   }
 
   function getSelectedLanguage() {
-    return document.getElementById('language-select').value;
+    const el = document.getElementById('language-select');
+    return el ? el.value : 'python';
   }
 
   function setButtonLoading(btn, loading) {
+    if (!btn) return;
     if (loading) {
       btn.classList.add('btn-loading');
       btn.disabled = true;
@@ -38,6 +40,22 @@
     `;
   }
 
+  function escapeHtml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escapeAttr(text) {
+    return String(text || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function titleize(str) {
+    return String(str || '').replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
   /* ══════════════════════════
      THEME TOGGLE
   ══════════════════════════ */
@@ -56,33 +74,72 @@
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('editorTheme', next);
       btnTheme.textContent = next === 'dark' ? '☀' : '🌙';
+
+      if (window.monaco && window.editor) {
+        monaco.editor.setTheme(next === 'dark' ? 'neonMatrix' : 'vs');
+      }
     });
   }
 
   /* ══════════════════════════
-     TIMER
+     TIMER (Toolbar) — auto-starts on page load
   ══════════════════════════ */
   let timerInterval = null;
   let timerSeconds = 0;
   let timerRunning = false;
 
   const timerDisplay = document.getElementById('timer-display');
+
+  function updateTimerDisplay() {
+    if (!timerDisplay) return;
+    const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+    const s = String(timerSeconds % 60).padStart(2, '0');
+    const timeText = m + ':' + s;
+    const textEl = timerDisplay.querySelector('.timer-text');
+    if (textEl) {
+      textEl.textContent = timeText;
+    } else {
+      timerDisplay.textContent = timeText;
+    }
+  }
+
+  function startTimerInterval() {
+    if (timerRunning) return;
+    timerRunning = true;
+    if (timerDisplay) timerDisplay.classList.add('running');
+    timerInterval = setInterval(function () {
+      timerSeconds++;
+      updateTimerDisplay();
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerRunning = false;
+    if (timerDisplay) timerDisplay.classList.remove('running');
+  }
+
+  function resetTimer() {
+    timerSeconds = 0;
+    updateTimerDisplay();
+  }
+
+  // Fresh timer per page-visit. Not persisted across reloads/users, so
+  // switching accounts always starts at 0 for the current session.
+  (function initTimer() {
+    timerSeconds = 0;
+    updateTimerDisplay();
+    startTimerInterval();
+  })();
+
+  // Click to pause/resume
   if (timerDisplay) {
     timerDisplay.addEventListener('click', function () {
       if (timerRunning) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        timerRunning = false;
-        timerDisplay.classList.remove('running');
+        pauseTimer();
       } else {
-        timerRunning = true;
-        timerDisplay.classList.add('running');
-        timerInterval = setInterval(function () {
-          timerSeconds++;
-          const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-          const s = String(timerSeconds % 60).padStart(2, '0');
-          timerDisplay.textContent = m + ':' + s;
-        }, 1000);
+        startTimerInterval();
       }
     });
   }
@@ -104,7 +161,7 @@
 
       // Lazy loading
       if (target === 'editorial') lazyLoadTab('editorial', '/problems/' + PROBLEM_SLUG + '/editorial');
-      if (target === 'solutions') lazyLoadTab('solutions', '/problems/' + PROBLEM_SLUG + '/solutions');
+      if (target === 'discussion') lazyLoadTab('discussion', '/discussions/problems/' + PROBLEM_SLUG + '/');
       if (target === 'submissions') lazyLoadSubmissions();
     });
   });
@@ -118,8 +175,16 @@
         if (!r.ok) throw new Error('Network response was not ok');
         return r.text();
       })
-      .then(function (html) {
-        el.innerHTML = html;
+      .then(function (text) {
+        // The discussion endpoint returns JSON {html: "..."} — unwrap it.
+        // Editorial/submissions return raw HTML directly.
+        if (tabName === 'discussion') {
+          try {
+            const parsed = JSON.parse(text);
+            text = parsed.html || text;
+          } catch (e) { /* not JSON — leave as-is */ }
+        }
+        el.innerHTML = text;
         el.classList.add('loaded');
       })
       .catch(function () {
@@ -138,7 +203,7 @@
     }
     if (el.classList.contains('loaded')) return;
     el.innerHTML = skeletonHTML();
-    fetch('/problems/' + PROBLEM_SLUG + '/submissions')
+    fetch('/submissions/' + PROBLEM_SLUG + '/')
       .then(function (r) { return r.text(); })
       .then(function (html) {
         el.innerHTML = html;
@@ -147,6 +212,116 @@
       .catch(function () {
         el.innerHTML = '<div class="empty-state">Failed to load submissions.</div>';
       });
+  }
+
+  /* ══════════════════════════
+     DISCUSSION TAB ACTIONS (event-delegated — tab content is AJAX-injected)
+  ══════════════════════════ */
+  const discussionTabEl = document.getElementById('tab-discussion');
+
+  function discussionFetch(url, opts, callback) {
+    fetch(url, opts)
+      .then(function (r) {
+        if (r.status === 403) { throw new Error('Permission denied.'); }
+        return r.json();
+      })
+      .then(callback)
+      .catch(function (err) {
+        alert('Could not complete the request: ' + err.message);
+      });
+  }
+
+  function handleDiscussionVote(btn) {
+    if (!IS_AUTHENTICATED) { alert('Please login to vote.'); return; }
+    const commentId = btn.dataset.commentId;
+    const value = parseInt(btn.dataset.value, 10);
+
+    discussionFetch('/discussions/comments/' + commentId + '/vote/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: JSON.stringify({ value: value }),
+    }, function (data) {
+      // Update count + active styles in place (no full reload)
+      const countEl = document.querySelector('[data-count-id="' + data.comment_id + '"]');
+      if (countEl) countEl.textContent = data.vote_count;
+      const card = btn.closest('.comment-card');
+      if (card) {
+        card.querySelectorAll('.vote-btn').forEach(function (b) {
+          b.classList.remove('active-up', 'active-down');
+        });
+        const up = card.querySelector('[data-value="1"]');
+        const down = card.querySelector('[data-value="-1"]');
+        if (data.user_vote === 1 && up) up.classList.add('active-up');
+        if (data.user_vote === -1 && down) down.classList.add('active-down');
+      }
+    });
+  }
+
+  function toggleReplyForm(btn) {
+    const parentId = btn.dataset.parentId;
+    const form = document.querySelector('[data-reply-form="' + parentId + '"]');
+    if (form) form.classList.toggle('open');
+  }
+
+  function closeReplyForm(btn) {
+    const wrapper = btn.closest('.reply-form-wrapper');
+    if (wrapper) {
+      wrapper.classList.remove('open');
+      const ta = wrapper.querySelector('.reply-form-input');
+      if (ta) ta.value = '';
+    }
+  }
+
+  function postDiscussionComment(btn, isReply) {
+    if (!IS_AUTHENTICATED) { alert('Please login to comment.'); return; }
+    const slug = btn.dataset.slug || PROBLEM_SLUG;
+
+    let content, parentId = null;
+    if (isReply) {
+      const wrapper = btn.closest('.reply-form-wrapper');
+      if (!wrapper) return;
+      const ta = wrapper.querySelector('.reply-form-input');
+      content = ta ? ta.value.trim() : '';
+      parentId = btn.dataset.parentId || null;
+    } else {
+      const ta = document.getElementById('new-comment-input');
+      content = ta ? ta.value.trim() : '';
+    }
+
+    if (!content) { alert('Please write a comment first.'); return; }
+
+    discussionFetch('/discussions/problems/' + slug + '/comment/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: 'content=' + encodeURIComponent(content) +
+            (parentId ? '&parent_id=' + encodeURIComponent(parentId) : ''),
+    }, function (data) {
+      if (data.html) {
+        discussionTabEl.innerHTML = data.html;
+      } else if (data.error) {
+        alert(data.error);
+      }
+    });
+  }
+
+  if (discussionTabEl) {
+    discussionTabEl.addEventListener('click', function (e) {
+      const target = e.target.closest('[data-action]');
+      if (!target || !discussionTabEl.contains(target)) return;
+      switch (target.dataset.action) {
+        case 'vote':           handleDiscussionVote(target); break;
+        case 'toggle-reply':   toggleReplyForm(target);       break;
+        case 'cancel-reply':   closeReplyForm(target);        break;
+        case 'post-comment':   postDiscussionComment(target, false); break;
+        case 'post-reply':     postDiscussionComment(target, true);  break;
+      }
+    });
   }
 
   /* ══════════════════════════
@@ -160,7 +335,6 @@
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       const isOpen = dropdown.classList.contains('open');
-      // Close all
       document.querySelectorAll('.pill-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
       if (!isOpen) dropdown.classList.add('open');
     });
@@ -183,12 +357,10 @@
     try { hints = JSON.parse(hintsDataEl.textContent); } catch (e) { hints = []; }
     let currentIndex = 0;
 
-    btnHint.textContent = 'Hint (' + hints.length + ')';
-
     btnHint.addEventListener('click', function () {
       if (hints.length === 0) return;
       if (currentIndex >= hints.length) {
-        btnHint.textContent = 'All hints shown';
+        btnHint.innerHTML = '<span>All hints shown</span>';
         return;
       }
       const card = document.createElement('div');
@@ -197,18 +369,10 @@
       hintsArea.appendChild(card);
       currentIndex++;
       if (currentIndex >= hints.length) {
-        btnHint.textContent = 'All hints shown';
+        btnHint.innerHTML = '<span>All hints shown</span>';
       }
     });
   })();
-
-  function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
 
   /* ══════════════════════════
      VERTICAL RESIZE HANDLE
@@ -241,6 +405,7 @@
       dragging = false;
       handle.classList.remove('dragging');
       document.body.classList.remove('no-select');
+      if (window.editor) window.editor.layout();
     });
   })();
 
@@ -271,7 +436,7 @@
       const delta = e.clientY - startY;
       const panelH = rightPanel.offsetHeight;
       let newH = startHeight + delta;
-      newH = Math.max(150, Math.min(panelH - 100, newH));
+      newH = Math.max(140, Math.min(panelH - 120, newH));
       editorZone.style.flex = '0 0 ' + newH + 'px';
     });
 
@@ -280,6 +445,7 @@
       dragging = false;
       handle.classList.remove('dragging');
       document.body.classList.remove('no-select');
+      if (window.editor) window.editor.layout();
     });
   })();
 
@@ -307,28 +473,152 @@
   }
 
   /* ══════════════════════════
+     TESTCASE SELECTOR & SYNC
+  ══════════════════════════ */
+  (function initTestcases() {
+    const dataEl = document.getElementById('sample-cases-data');
+    const pillsRow = document.getElementById('testcase-pills-row');
+    const customInput = document.getElementById('custom-input');
+    const expectedOutputEl = document.getElementById('tc-expected-output');
+    const expectedCard = document.getElementById('tc-expected-card');
+    const copyInputBtn = document.getElementById('btn-copy-tc-input');
+    const copyExpectedBtn = document.getElementById('btn-copy-tc-expected');
+
+    if (!pillsRow || !customInput) return;
+
+    let cases = [];
+    try {
+      cases = dataEl ? JSON.parse(dataEl.textContent) : [];
+    } catch (e) {
+      cases = [];
+    }
+
+    if (cases.length === 0) {
+      cases = [{ order_num: 1, input_data: customInput.value || '', expected_output: '' }];
+    }
+
+    let activeIdx = 0;
+
+    customInput.addEventListener('input', function () {
+      if (cases[activeIdx]) {
+        cases[activeIdx].input_data = customInput.value;
+      }
+    });
+
+    pillsRow.querySelectorAll('.case-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const idx = parseInt(pill.dataset.caseIndex, 10);
+        if (isNaN(idx) || idx === activeIdx || !cases[idx]) return;
+
+        if (cases[activeIdx]) {
+          cases[activeIdx].input_data = customInput.value;
+        }
+
+        pillsRow.querySelectorAll('.case-pill').forEach(function (p) {
+          p.classList.remove('active');
+        });
+        pill.classList.add('active');
+
+        activeIdx = idx;
+        const curCase = cases[activeIdx];
+        customInput.value = curCase.input_data || '';
+
+        if (expectedOutputEl) {
+          expectedOutputEl.textContent = curCase.expected_output || '';
+        }
+        if (expectedCard) {
+          expectedCard.style.display = curCase.expected_output ? 'block' : 'none';
+        }
+      });
+    });
+
+    if (copyInputBtn) {
+      copyInputBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(customInput.value).then(function () {
+          copyInputBtn.textContent = '✓ Copied';
+          setTimeout(function () { copyInputBtn.textContent = '📋 Copy'; }, 1500);
+        });
+      });
+    }
+
+    if (copyExpectedBtn && expectedOutputEl) {
+      copyExpectedBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(expectedOutputEl.textContent).then(function () {
+          copyExpectedBtn.textContent = '✓ Copied';
+          setTimeout(function () { copyExpectedBtn.textContent = '📋 Copy'; }, 1500);
+        });
+      });
+    }
+  })();
+
+  /* ══════════════════════════
      RESULT RENDERING
   ══════════════════════════ */
-  function renderRunResult(data) {
-    const container = document.getElementById('test-result-content');
+  function renderRunResult(response) {
+    const container = document.getElementById("test-result-content");
     if (!container) return;
 
-    if (data.status === 'success') {
+    const results = response.test_case_results || [];
+
+    if (results.length === 0) {
       container.innerHTML = `
-        <div class="result-header">
-          <span class="result-title green">✅ Accepted</span>
+        <div class="empty-state">
+          No test case results found.
         </div>
-        <div class="result-meta">Runtime: ${data.runtime_ms} ms</div>
-        <pre class="result-code-block">${escapeHtml(data.stdout || '')}</pre>
       `;
-    } else {
-      container.innerHTML = `
-        <div class="result-header">
-          <span class="result-title red">❌ Runtime Error</span>
-        </div>
-        <pre class="result-code-block error">${escapeHtml(data.stderr || data.stdout || 'Unknown error')}</pre>
-      `;
+      return;
     }
+
+    let html = "";
+
+    results.forEach(tc => {
+      let badge = "";
+      switch (tc.status) {
+        case "success":
+        case "accepted":
+          badge = `<span class="result-title green">✅ Accepted</span>`;
+          break;
+        case "Wrong Answer":
+          badge = `<span class="result-title red">❌ Wrong Answer</span>`;
+          break;
+        case "Runtime Error":
+          badge = `<span class="result-title red">💥 Runtime Error</span>`;
+          break;
+        case "Time Limit Exceeded":
+          badge = `<span class="result-title orange">⏰ Time Limit Exceeded</span>`;
+          break;
+        default:
+          badge = `<span class="result-title">${escapeHtml(tc.status)}</span>`;
+      }
+
+      html += `
+        <div class="testcase-result">
+          <div class="result-header">
+            <strong>Case ${tc.tc_num}</strong>
+            ${badge}
+          </div>
+          <div class="result-meta">
+            Runtime: ${tc.runtime_ms || 0} ms
+          </div>
+          <table class="result-table">
+            <tr>
+              <td>Input</td>
+              <td>${escapeHtml(tc.input)}</td>
+            </tr>
+            <tr>
+              <td>Expected</td>
+              <td>${escapeHtml(tc.expected)}</td>
+            </tr>
+            <tr>
+              <td>Output</td>
+              <td>${escapeHtml(tc.actual)}</td>
+            </tr>
+          </table>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
   }
 
   function renderSubmitResult(data) {
@@ -340,9 +630,8 @@
     const titleText = isAccepted ? 'Accepted' : titleize(data.status);
     const titleClass = isAccepted ? 'green' : 'red';
 
-    // Build pills
     const pillsHTML = (data.test_case_results || []).map(function (tc, i) {
-      const passed = tc.status === 'accepted';
+      const passed = tc.status === 'accepted' || tc.status === 'success';
       const icon = passed ? '✅' : '❌';
       const failedClass = passed ? '' : ' failed';
       const activeClass = i === 0 ? ' active' : '';
@@ -350,22 +639,20 @@
     }).join('');
 
     container.innerHTML = `
-      <div class="result-header">
+      <div class="result-header" style="margin-bottom: 6px;">
         <span class="result-title ${titleClass}">${titleIcon} ${titleText}</span>
       </div>
       <div class="result-meta">
-        Runtime: ${data.runtime_ms} ms &nbsp;·&nbsp;
-        ${data.accepted}/${data.total} test cases passed
+        Runtime: ${data.runtime_ms || 0} ms &nbsp;·&nbsp;
+        ${data.accepted || 0}/${data.total || 0} test cases passed
       </div>
       <div class="case-pills-row">${pillsHTML}</div>
       <div class="case-detail" id="case-detail-panel"></div>
     `;
 
-    // Render first case
     const tcResults = data.test_case_results || [];
     if (tcResults.length > 0) renderCaseDetail(tcResults[0]);
 
-    // Pill click
     container.querySelectorAll('.case-pill').forEach(function (pill) {
       pill.addEventListener('click', function () {
         container.querySelectorAll('.case-pill').forEach(function (p) { p.classList.remove('active'); });
@@ -381,7 +668,6 @@
     if (!panel) return;
 
     if (tc.input !== undefined) {
-      // Sample case — show input/output/expected
       panel.innerHTML = `
         ${ioCard('Input', tc.input)}
         ${ioCard('Output', tc.actual)}
@@ -397,8 +683,7 @@
         });
       });
     } else {
-      // Non-sample
-      const statusIcon = tc.status === 'accepted' ? '✅' : '❌';
+      const statusIcon = (tc.status === 'accepted' || tc.status === 'success') ? '✅' : '❌';
       panel.innerHTML = `
         <div style="font-size:13px;color:var(--text-secondary);padding:8px 0;">
           Case ${tc.tc_num}: ${statusIcon} ${titleize(tc.status)} (${tc.runtime_ms}ms)
@@ -410,22 +695,14 @@
   function ioCard(label, value) {
     const safe = escapeHtml(value || '');
     return `
-      <div class="case-io-card">
+      <div class="case-io-card" style="margin-bottom: 8px;">
         <div class="case-io-card-header">
-          ${label}
+          <span class="case-header-tag">${label}</span>
           <button class="copy-btn" data-copy="${escapeAttr(value || '')}">📋</button>
         </div>
         <div class="case-io-card-body">${safe}</div>
       </div>
     `;
-  }
-
-  function titleize(str) {
-    return String(str || '').replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-  }
-
-  function escapeAttr(text) {
-    return String(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   /* ══════════════════════════
@@ -456,7 +733,7 @@
           body: JSON.stringify({
             code: getEditorCode(),
             language: getSelectedLanguage(),
-            custom_input: document.getElementById('custom-input').value,
+            custom_input: (document.getElementById('custom-input') || {}).value || '',
           }),
         });
         const data = await res.json();
@@ -498,10 +775,16 @@
           body: JSON.stringify({
             code: getEditorCode(),
             language: getSelectedLanguage(),
+            elapsed_seconds: timerSeconds,
           }),
         });
         const data = await res.json();
         renderSubmitResult(data);
+
+        // Reset timer once the solution passes every test case
+        if (data.status === 'accepted') {
+          resetTimer();
+        }
 
         // Invalidate submissions tab cache
         const subTab = document.getElementById('tab-submissions');
@@ -574,21 +857,42 @@
   if (btnFullscreen && rightPanel) {
     btnFullscreen.addEventListener('click', function () {
       rightPanel.classList.toggle('fullscreen');
-      btnFullscreen.textContent = rightPanel.classList.contains('fullscreen') ? '⊠' : '⛶';
       if (window.editor) window.editor.layout();
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && rightPanel.classList.contains('fullscreen')) {
         rightPanel.classList.remove('fullscreen');
-        btnFullscreen.textContent = '⛶';
         if (window.editor) window.editor.layout();
       }
     });
   }
 
   /* ══════════════════════════
-     MONACO EDITOR
+     MONACO EDITOR SETUP
   ══════════════════════════ */
+  let editorFontSize = 14;
+
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+
+  if (btnZoomIn) {
+    btnZoomIn.addEventListener('click', function () {
+      if (window.editor && editorFontSize < 28) {
+        editorFontSize += 2;
+        window.editor.updateOptions({ fontSize: editorFontSize, lineHeight: Math.round(editorFontSize * 1.55) });
+      }
+    });
+  }
+
+  if (btnZoomOut) {
+    btnZoomOut.addEventListener('click', function () {
+      if (window.editor && editorFontSize > 10) {
+        editorFontSize -= 2;
+        window.editor.updateOptions({ fontSize: editorFontSize, lineHeight: Math.round(editorFontSize * 1.55) });
+      }
+    });
+  }
+
   if (typeof require !== 'undefined') {
     require.config({
       paths: {
@@ -597,47 +901,102 @@
     });
 
     require(['vs/editor/editor.main'], function () {
-      // Define creamy theme
-      monaco.editor.defineTheme('myCreamy', {
-        base: 'vs',
+      // Define Premium Futuristic Black + Neon Green Theme (Dark Mode)
+      // Typing code is crisp white/green, standard tokens have clear standard syntax colors
+      monaco.editor.defineTheme('neonMatrix', {
+        base: 'vs-dark',
         inherit: true,
         rules: [
-          { token: 'keyword',  foreground: '1A7B4B', fontStyle: 'bold' },
-          { token: 'string',   foreground: 'B45309' },
-          { token: 'comment',  foreground: '9E9E9E', fontStyle: 'italic' },
-          { token: 'number',   foreground: 'C0392B' },
-          { token: 'type',     foreground: '069494' },
+          // Typing identifiers, plain text and variables: white (#FFFFFF)
+          { token: '', foreground: 'FFFFFF' },
+          { token: 'identifier', foreground: 'FFFFFF' },
+          { token: 'variable', foreground: 'FFFFFF' },
+          { token: 'variable.parameter', foreground: 'FFFFFF' },
+
+          // Regular syntax colors:
+          { token: 'keyword', foreground: '00FF88', fontStyle: 'bold' },
+          { token: 'keyword.control', foreground: '00FF88', fontStyle: 'bold' },
+          { token: 'keyword.operator', foreground: '22FFA0' },
+          { token: 'operator', foreground: '00FF88' },
+          { token: 'string', foreground: 'FDE047' },
+          { token: 'string.escape', foreground: '38BDF8' },
+          { token: 'comment', foreground: '64748B', fontStyle: 'italic' },
+          { token: 'number', foreground: '38BDF8' },
+          { token: 'type', foreground: '34D399', fontStyle: 'bold' },
+          { token: 'type.identifier', foreground: '34D399' },
+          { token: 'function', foreground: '2DD4BF' },
+          { token: 'delimiter', foreground: '94A3B8' },
+          { token: 'tag', foreground: '00FF88' },
+          { token: 'attribute.name', foreground: '34D399' },
+          { token: 'attribute.value', foreground: 'FDE047' },
         ],
         colors: {
-          'editor.background':                '#FDFBD4',
-          'editor.foreground':                '#1A1A1A',
-          'editor.lineHighlightBackground':   '#F5F3C0',
-          'editorLineNumber.foreground':      '#9E9E9E',
-          'editorLineNumber.activeForeground':'#1A7B4B',
-          'editorCursor.foreground':          '#1A7B4B',
-          'editor.selectionBackground':       '#C8E6C9',
-          'editorGutter.background':          '#F5F3C0',
+          'editor.background':                '#070B09',
+          'editor.foreground':                '#FFFFFF',
+          'editor.lineHighlightBackground':   '#0E1712',
+          'editor.lineHighlightBorder':       '#00FF8815',
+          'editorLineNumber.foreground':      '#274233',
+          'editorLineNumber.activeForeground':'#00FF88',
+          'editorCursor.foreground':          '#00FF88',
+          'editor.selectionBackground':       '#00FF8828',
+          'editor.inactiveSelectionBackground':'#00FF8814',
+          'editor.selectionHighlightBackground':'#00FF8818',
+          'editor.findMatchBackground':       '#00FF8844',
+          'editor.findMatchHighlightBackground':'#00FF8822',
+          'editorGutter.background':          '#070B09',
+          'editorIndentGuide.background':     '#13231B',
+          'editorIndentGuide.activeBackground':'#00FF8835',
+          'editorBracketMatch.background':    '#00FF8820',
+          'editorBracketMatch.border':        '#00FF8866',
+          'editorOverviewRuler.border':       '#00000000',
+          'scrollbarSlider.background':       '#00FF8815',
+          'scrollbarSlider.hoverBackground':  '#00FF8830',
+          'scrollbarSlider.activeBackground': '#00FF8850',
         },
       });
+
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+
+      // ── Auto-save: restore draft from localStorage ──
+      var draftKey = 'draft_code_' + USER_ID + '_' + PROBLEM_SLUG;
+      var draftLangKey = 'draft_lang_' + USER_ID + '_' + PROBLEM_SLUG;
+      var savedCode = localStorage.getItem(draftKey) || '';
+      var savedLang = localStorage.getItem(draftLangKey) || 'python';
+
+      // Restore saved language in the <select> before editor init
+      var langSelectInit = document.getElementById('language-select');
+      if (langSelectInit && savedLang) {
+        langSelectInit.value = savedLang;
+      }
+
+      var langMapInit = {
+        'python': 'python', 'python3': 'python', 'java': 'java',
+        'cpp': 'cpp', 'javascript': 'javascript', 'go': 'go', 'rust': 'rust',
+      };
 
       window.editor = monaco.editor.create(
         document.getElementById('monaco-editor-container'),
         {
-          value: '',
-          language: 'python',
-          theme: 'myCreamy',
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 14,
+          value: savedCode,
+          language: langMapInit[savedLang] || 'python',
+          theme: currentTheme === 'dark' ? 'neonMatrix' : 'vs',
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          fontSize: editorFontSize,
           lineHeight: 22,
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           automaticLayout: true,
           wordWrap: 'off',
           lineNumbers: 'on',
-          renderLineHighlight: 'line',
+          renderLineHighlight: 'all',
           cursorStyle: 'line',
+          cursorBlinking: 'smooth',
+          cursorSmoothCaretAnimation: 'on',
           tabSize: 4,
           insertSpaces: true,
+          padding: { top: 12, bottom: 12 },
+          roundedSelection: true,
+          smoothScrolling: true,
         }
       );
 
@@ -645,11 +1004,27 @@
       const saveStatus = document.getElementById('editor-save-status');
       const cursorPos = document.getElementById('editor-cursor-pos');
 
+      // ── Auto-save: debounced write to localStorage ──
+      var autoSaveTimer = null;
+      function scheduleAutoSave() {
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(function () {
+          localStorage.setItem(draftKey, window.editor.getValue());
+          if (saveStatus) {
+            saveStatus.className = 'saved';
+            var textSpan = saveStatus.querySelector('.status-text');
+            if (textSpan) textSpan.textContent = 'Saved';
+          }
+        }, 500);
+      }
+
       window.editor.onDidChangeModelContent(function () {
         if (saveStatus) {
-          saveStatus.textContent = '● Unsaved';
           saveStatus.className = 'unsaved';
+          const textSpan = saveStatus.querySelector('.status-text');
+          if (textSpan) textSpan.textContent = 'Unsaved';
         }
+        scheduleAutoSave();
       });
 
       window.editor.onDidChangeCursorPosition(function (e) {
@@ -658,30 +1033,24 @@
         }
       });
 
-      // Language switch triggers Monaco language change
+      // Language switcher
       const langSelect = document.getElementById('language-select');
       if (langSelect) {
         const langMap = {
-          'python3': 'python',
-          'java':    'java',
-          'cpp':     'cpp',
+          'python':     'python',
+          'python3':    'python',
+          'java':       'java',
+          'cpp':        'cpp',
           'javascript': 'javascript',
-          'go':      'go',
-          'rust':    'rust',
+          'go':         'go',
+          'rust':       'rust',
         };
         langSelect.addEventListener('change', function () {
           const monacoLang = langMap[this.value] || 'python';
           const model = window.editor.getModel();
           if (model) monaco.editor.setModelLanguage(model, monacoLang);
-        });
-      }
-
-      // Undo button
-      const btnUndo = document.getElementById('btn-undo');
-      if (btnUndo) {
-        btnUndo.addEventListener('click', function () {
-          window.editor.trigger('keyboard', 'undo', null);
-          window.editor.focus();
+          // Persist language choice so it is restored next time
+          localStorage.setItem(draftLangKey, this.value);
         });
       }
     });
@@ -693,8 +1062,9 @@
   (function () {
     const saveStatus = document.getElementById('editor-save-status');
     if (saveStatus) {
-      saveStatus.textContent = '✓ Saved';
       saveStatus.className = 'saved';
+      const textSpan = saveStatus.querySelector('.status-text');
+      if (textSpan) textSpan.textContent = 'Saved';
     }
   })();
 

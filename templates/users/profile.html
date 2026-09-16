@@ -1,4 +1,394 @@
-{%extends "base.html" %}
-{%block content %}
-<h1>Hello</h1>
-{%endblock%}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ to_user.user_name }} — Profile | BashaByte{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+  <div class="container-xl px-3 px-md-4">
+
+    <!-- ═══════════════ TOP SECTION ═══════════════ -->
+    <div class="profile-top-layout">
+
+      <!-- ── LEFT PROFILE SECTION ── -->
+      <div class="profile-card">
+        <!-- Avatar -->
+        <div class="profile-avatar-wrap">
+          {% if to_user.avatar_url %}
+            <img src="{{ to_user.avatar_url }}" alt="{{ to_user.user_name }}" class="profile-avatar-img">
+          {% else %}
+            <div class="profile-avatar-placeholder">
+              <span class="avatar-letter">{{ to_user.user_name|slice:":1"|upper }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Username / Name -->
+        <div class="profile-identity-info">
+          <h1 class="profile-username">{{ to_user.user_name }}</h1>
+          {% if to_user.is_admin %}
+            <span class="badge-role badge-role-admin">Admin</span>
+          {% elif to_user.is_moderator %}
+            <span class="badge-role badge-role-mod">Moderator</span>
+          {% endif %}
+        </div>
+
+        <!-- Dynamic Rank Badge -->
+        <div class="profile-rank-badge" title="Dynamic rank calculated against all users based on submissions">
+          <i class="bi bi-trophy-fill rank-trophy"></i>
+          <span>Rank #{{ rank }}</span>
+        </div>
+
+        <!-- Followers & Following -->
+        <div class="profile-social-row">
+          <div class="profile-social-box">
+            <span class="profile-social-val">{{ followers_count }}</span>
+            <span class="profile-social-lbl">Followers</span>
+          </div>
+          <div class="profile-social-divider"></div>
+          <div class="profile-social-box">
+            <span class="profile-social-val">{{ following_count }}</span>
+            <span class="profile-social-lbl">Following</span>
+          </div>
+        </div>
+
+        <!-- Bio (if available) -->
+        {% if profile.bio %}
+          <p class="profile-bio">{{ profile.bio }}</p>
+        {% endif %}
+
+        <!-- Meta Info -->
+        <div class="profile-meta-list">
+          {% if profile.location %}
+            <div class="profile-meta-item">
+              <i class="bi bi-geo-alt"></i>
+              <span>{{ profile.location }}</span>
+            </div>
+          {% endif %}
+          {% if profile.company %}
+            <div class="profile-meta-item">
+              <i class="bi bi-building"></i>
+              <span>{{ profile.company }}</span>
+            </div>
+          {% endif %}
+          {% if profile.website %}
+            <div class="profile-meta-item">
+              <i class="bi bi-link-45deg"></i>
+              <a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">{{ profile.website }}</a>
+            </div>
+          {% endif %}
+          {% if profile.github %}
+            <div class="profile-meta-item">
+              <i class="bi bi-github"></i>
+              <a href="{{ profile.github }}" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </div>
+          {% endif %}
+          {% if profile.linkedin %}
+            <div class="profile-meta-item">
+              <i class="bi bi-linkedin"></i>
+              <a href="{{ profile.linkedin }}" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            </div>
+          {% endif %}
+          <div class="profile-meta-item joined-meta">
+            <i class="bi bi-calendar3"></i>
+            <span>Joined {{ to_user.created_at|date:"M Y" }}</span>
+          </div>
+        </div>
+
+        <!-- Edit Profile Button (only when viewing own profile) -->
+        {% if editable %}
+          <div class="profile-edit-wrap">
+            <a href="#" class="btn-edit-profile">
+              <i class="bi bi-pencil-square"></i>
+              <span>Edit Profile</span>
+            </a>
+          </div>
+        {% endif %}
+      </div><!-- /profile-card -->
+
+      <!-- ── RIGHT STATISTICS SECTION (Questions Solved + Submission Stats) ── -->
+      <div class="profile-stats-container">
+
+        <!-- 1. Questions Solved -->
+        <div class="stats-card questions-solved-card">
+          <div class="stats-card-header">
+            <h2 class="stats-card-title">
+              <i class="bi bi-check2-circle icon-neon me-2"></i>Questions Solved
+            </h2>
+          </div>
+
+          <div class="solved-content">
+            <!-- Large Total Solved Count -->
+            <div class="solved-hero">
+              <div class="solved-hero-count">{{ total_solved }}</div>
+              <div class="solved-hero-label">
+                <span>Solved</span>
+                <span class="solved-total-denom">/ {{ total_problems }}</span>
+              </div>
+            </div>
+
+            <!-- Breakdown: Easy, Medium, Hard -->
+            <div class="solved-breakdown-list">
+              <!-- Easy -->
+              <div class="solved-breakdown-item">
+                <div class="solved-row-info">
+                  <span class="badge-diff badge-easy">Easy</span>
+                  <div class="solved-numbers">
+                    <span class="count-solved text-easy">{{ easy_solved }}</span>
+                    <span class="count-total">/ {{ total_easy }}</span>
+                  </div>
+                </div>
+                <div class="solved-bar-track">
+                  <div class="solved-bar-fill fill-easy"
+                       style="width: {% if total_easy > 0 %}{% widthratio easy_solved total_easy 100 %}%{% else %}0%{% endif %};">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Medium -->
+              <div class="solved-breakdown-item">
+                <div class="solved-row-info">
+                  <span class="badge-diff badge-medium">Medium</span>
+                  <div class="solved-numbers">
+                    <span class="count-solved text-medium">{{ medium_solved }}</span>
+                    <span class="count-total">/ {{ total_medium }}</span>
+                  </div>
+                </div>
+                <div class="solved-bar-track">
+                  <div class="solved-bar-fill fill-medium"
+                       style="width: {% if total_medium > 0 %}{% widthratio medium_solved total_medium 100 %}%{% else %}0%{% endif %};">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hard -->
+              <div class="solved-breakdown-item">
+                <div class="solved-row-info">
+                  <span class="badge-diff badge-hard">Hard</span>
+                  <div class="solved-numbers">
+                    <span class="count-solved text-hard">{{ hard_solved }}</span>
+                    <span class="count-total">/ {{ total_hard }}</span>
+                  </div>
+                </div>
+                <div class="solved-bar-track">
+                  <div class="solved-bar-fill fill-hard"
+                       style="width: {% if total_hard > 0 %}{% widthratio hard_solved total_hard 100 %}%{% else %}0%{% endif %};">
+                  </div>
+                </div>
+              </div>
+            </div><!-- /solved-breakdown-list -->
+          </div><!-- /solved-content -->
+        </div><!-- /questions-solved-card -->
+
+        <!-- 2. Submission Stats -->
+        <div class="stats-card submission-stats-card">
+          <div class="stats-card-header">
+            <h2 class="stats-card-title">
+              <i class="bi bi-graph-up-arrow icon-neon me-2"></i>Submission Stats
+            </h2>
+          </div>
+
+          <div class="submission-stats-body">
+            <!-- Submission Rate -->
+            <div class="sub-stat-block">
+              <div class="sub-stat-value text-neon">{{ submission_rate|floatformat:1 }}%</div>
+              <div class="sub-stat-name">Submission Rate</div>
+              <div class="sub-stat-subtext">
+                <i class="bi bi-check2-all me-1"></i>
+                <span>{{ accepted_submissions }} accepted / {{ total_submissions }} total</span>
+              </div>
+            </div>
+
+            <div class="sub-stat-sep"></div>
+
+            <!-- Overall Submissions -->
+            <div class="sub-stat-block">
+              <div class="sub-stat-value text-heading">{{ total_submissions }}</div>
+              <div class="sub-stat-name">Overall Submissions</div>
+              <div class="sub-stat-subtext">
+                <i class="bi bi-cpu me-1"></i>
+                <span>Total solutions submitted</span>
+              </div>
+            </div>
+          </div>
+        </div><!-- /submission-stats-card -->
+
+      </div><!-- /profile-stats-container -->
+
+    </div><!-- /profile-top-layout -->
+
+
+    <!-- ═══════════════ SUBMISSION / PRACTICE HISTORY ═══════════════ -->
+    <div class="history-card">
+      <div class="history-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-clock-history icon-neon fs-5"></i>
+          <h2 class="history-title">Practice History</h2>
+        </div>
+        <span class="history-total-pill">{{ paginator.count }} Total</span>
+      </div>
+
+      {% if page_obj.object_list %}
+        <div class="table-responsive">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th style="min-width: 200px;">Problem</th>
+                <th style="min-width: 100px;">Difficulty</th>
+                <th style="min-width: 100px;">Language</th>
+                <th style="min-width: 160px;">Status</th>
+                <th style="min-width: 110px;">Runtime</th>
+                <th style="min-width: 150px;">Submitted At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sub in page_obj %}
+                <tr>
+                  <!-- Problem Title -->
+                  <td class="td-problem">
+                    <a href="{% url 'problems:problem' sub.problem.slug %}" class="problem-link">
+                      {{ sub.problem.title }}
+                    </a>
+                  </td>
+
+                  <!-- Difficulty -->
+                  <td class="td-difficulty">
+                    {% if sub.problem.difficulty == 'easy' %}
+                      <span class="badge-diff badge-easy">Easy</span>
+                    {% elif sub.problem.difficulty == 'medium' %}
+                      <span class="badge-diff badge-medium">Medium</span>
+                    {% else %}
+                      <span class="badge-diff badge-hard">Hard</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Language -->
+                  <td class="td-language">
+                    {% if sub.language %}
+                      <span class="lang-tag">{{ sub.language.name }}</span>
+                    {% else %}
+                      <span class="text-secondary">—</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Status -->
+                  <td class="td-status">
+                    {% if sub.status == 'accepted' %}
+                      <span class="status-pill status-accepted">
+                        <i class="bi bi-check-circle-fill"></i> Accepted
+                      </span>
+                    {% elif sub.status == 'wrong_answer' %}
+                      <span class="status-pill status-wrong">
+                        <i class="bi bi-x-circle-fill"></i> Wrong Answer
+                      </span>
+                    {% elif sub.status == 'time_limit_exceeded' %}
+                      <span class="status-pill status-error">
+                        <i class="bi bi-hourglass-split"></i> Time Limit Exceeded
+                      </span>
+                    {% elif sub.status == 'memory_limit_exceeded' %}
+                      <span class="status-pill status-error">
+                        <i class="bi bi-memory"></i> Memory Limit Exceeded
+                      </span>
+                    {% elif sub.status == 'runtime_error' %}
+                      <span class="status-pill status-error">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Runtime Error
+                      </span>
+                    {% elif sub.status == 'compile_error' %}
+                      <span class="status-pill status-error">
+                        <i class="bi bi-file-earmark-x-fill"></i> Compile Error
+                      </span>
+                    {% elif sub.status == 'internal_error' %}
+                      <span class="status-pill status-error">
+                        <i class="bi bi-slash-circle"></i> Internal Error
+                      </span>
+                    {% else %}
+                      <span class="status-pill status-pending">
+                        {{ sub.get_status_display }}
+                      </span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Runtime -->
+                  <td class="td-runtime">
+                    {% if sub.runtime_ms is not None %}
+                      <span class="runtime-badge"><i class="bi bi-speedometer2"></i> {{ sub.runtime_ms }} ms</span>
+                    {% else %}
+                      <span class="text-secondary">—</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Submitted At -->
+                  <td class="td-date">
+                    <span class="date-text">{{ sub.submitted_at|date:"M d, Y" }}</span>
+                    <span class="time-text">{{ sub.submitted_at|date:"H:i" }}</span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Django Pagination (20 items per page) ── -->
+        {% if paginator.num_pages > 1 %}
+          <div class="pagination-footer">
+            <div class="profile-pagination">
+              <!-- Previous Button -->
+              {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="page-link-btn" title="Previous Page">
+                  <i class="bi bi-chevron-left me-1"></i> Previous
+                </a>
+              {% else %}
+                <span class="page-link-btn disabled">
+                  <i class="bi bi-chevron-left me-1"></i> Previous
+                </span>
+              {% endif %}
+
+              <!-- Page Numbers with Elision -->
+              <div class="page-numbers-wrap">
+                {% for num in elided_page_range %}
+                  {% if num == page_obj.number %}
+                    <span class="page-num active">{{ num }}</span>
+                  {% elif num == paginator.ELLIPSIS or num == '…' %}
+                    <span class="page-num-ellipsis">…</span>
+                  {% else %}
+                    <a href="?page={{ num }}" class="page-num">{{ num }}</a>
+                  {% endif %}
+                {% endfor %}
+              </div>
+
+              <!-- Next Button -->
+              {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="page-link-btn" title="Next Page">
+                  Next <i class="bi bi-chevron-right ms-1"></i>
+                </a>
+              {% else %}
+                <span class="page-link-btn disabled">
+                  Next <i class="bi bi-chevron-right ms-1"></i>
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+      {% else %}
+        <div class="history-empty-box">
+          <div class="empty-icon-circle">
+            <i class="bi bi-code-slash"></i>
+          </div>
+          <h3 class="empty-heading">No submissions yet</h3>
+          <p class="empty-subtext">Solve problems to build up your practice history!</p>
+          <a href="/problems/" class="btn-explore-problems mt-2">
+            <i class="bi bi-play-circle me-1"></i> Explore Problems
+          </a>
+        </div>
+      {% endif %}
+
+    </div><!-- /history-card -->
+
+  </div><!-- /container-xl -->
+</div><!-- /profile-page -->
+{% endblock %}

@@ -104,111 +104,89 @@ def run_code(code, input_data, timeout=5):
     except subprocess.TimeoutExpired:
         return None, Decimal('0.00'), 'TIME_LIMIT_EXCEEDED'
 
-
-def judge_submission(submission_id, mode='submit'):
+def judge_submission(submission_id):
     """
-    Main judge function.
-
-    mode='run'    → runs only visible test cases, never stops early, 
-                    does NOT update final submission status
-                    
-    mode='submit' → runs all test cases, stops at first failure,
-                    updates final submission status
+    Judge function for Submit only.
+    Runs ALL test cases, stops at first failure, updates final submission status.
+    Run mode is handled separately by run_code() in views.py.
     """
     try:
         submission = Submission.objects.get(id=submission_id)
     except Submission.DoesNotExist:
-        return
+        return None
 
     # ── Step 1: Safety Check ──
     is_safe, reason = is_code_safe(submission.code)
 
     if not is_safe:
         submission.status = SubmissionStatusChoices.RUNTIME_ERROR
-        submission.save()
+        submission.save(update_fields=['status'])
 
-        test_cases = TestCase.objects.filter(
-            problem=submission.problem
-        ).order_by('order_num')
-
-        for tc in test_cases:
-            SubmissionResult.objects.create(
+        test_cases = TestCase.objects.filter(problem=submission.problem).order_by('order_num')
+        SubmissionResult.objects.bulk_create([
+            SubmissionResult(
                 submission=submission,
                 test_case=tc,
                 status=SubmissionStatusChoices.RUNTIME_ERROR,
                 actual_output=reason,
                 expected_output=tc.expected_output.strip(),
                 runtime_ms=Decimal('0.00'),
-            )
-
+            ) for tc in test_cases
+        ])
         return submission
 
     # ── Step 2: Mark as running ──
     submission.status = SubmissionStatusChoices.RUNNING
-    submission.save()
+    submission.save(update_fields=['status'])
 
-    # ── Step 3: Get test cases based on mode ──
-    if mode == 'run':
-        # Only fetch visible/sample test cases
-        test_cases = TestCase.objects.filter(
-            problem=submission.problem,
-            is_sample=True
-        ).order_by('order_num')
-    else:
-        # Fetch all test cases for submit
-        test_cases = TestCase.objects.filter(
-            problem=submission.problem
-        ).order_by('order_num')
+    # ── Step 3: All test cases, always ──
+    test_cases = TestCase.objects.filter(problem=submission.problem).order_by('order_num')
 
     if not test_cases.exists():
         submission.status = SubmissionStatusChoices.INTERNAL_ERROR
-        submission.save()
-        return
+        submission.save(update_fields=['status'])
+        return submission
 
-    has_input = test_cases.filter(
-    input_data__isnull=False
-    ).exclude(input_data='').exists()
-
+    has_input = test_cases.filter(input_data__isnull=False).exclude(input_data='').exists()
     if has_input and 'input()' not in submission.code:
         submission.status = SubmissionStatusChoices.RUNTIME_ERROR
-        submission.save()
+        submission.save(update_fields=['status'])
 
-        for tc in test_cases:
-            SubmissionResult.objects.create(
+        SubmissionResult.objects.bulk_create([
+            SubmissionResult(
                 submission=submission,
                 test_case=tc,
                 status=SubmissionStatusChoices.RUNTIME_ERROR,
                 actual_output="You forgot to read the input! Use input() to take the input.",
                 expected_output=tc.expected_output.strip(),
                 runtime_ms=Decimal('0.00'),
-            )
-
+            ) for tc in test_cases
+        ])
         return submission
 
-    # ── Step 4: Run code against each test case ──
+    # ── Step 4: Run code against each test case, stop at first failure ──
     code = submission.code
-    total_runtime = Decimal('0.00')
+    max_runtime = Decimal('0.00')
     final_status = SubmissionStatusChoices.ACCEPTED
+
     for tc in test_cases:
-        input_data = tc.input_data.replace('\\n', '\n')
-        expected_output = tc.expected_output.strip()
+        input_data = tc.input_data.replace('\\n', '\n') if tc.input_data else ''
+        expected_output = tc.expected_output.replace('\\n', '\n').strip() if tc.expected_output else ''
 
         actual_output, runtime_ms, error = run_code(code, input_data)
-        total_runtime += runtime_ms
+        if runtime_ms and runtime_ms > max_runtime:
+            max_runtime = runtime_ms
 
         if error == 'TIME_LIMIT_EXCEEDED':
             tc_status = SubmissionStatusChoices.TIME_LIMIT_EXCEEDED
             final_status = SubmissionStatusChoices.TIME_LIMIT_EXCEEDED
             actual_output = ''
-
         elif error:
             tc_status = SubmissionStatusChoices.RUNTIME_ERROR
             final_status = SubmissionStatusChoices.RUNTIME_ERROR
             actual_output = error
-
-        elif actual_output == expected_output:
+        elif (actual_output or '').replace('\r\n', '\n').strip() == expected_output.replace('\r\n', '\n').strip():
             tc_status = SubmissionStatusChoices.ACCEPTED
-
         else:
             tc_status = SubmissionStatusChoices.WRONG_ANSWER
             if final_status == SubmissionStatusChoices.ACCEPTED:
@@ -223,14 +201,12 @@ def judge_submission(submission_id, mode='submit'):
             runtime_ms=runtime_ms,
         )
 
-        # ── Stop at first failure in submit mode ──
-        if mode == 'submit' and tc_status != SubmissionStatusChoices.ACCEPTED:
-            break
+        if tc_status != SubmissionStatusChoices.ACCEPTED:
+            break   # always stop at first failure now — no mode check needed
 
-    # ── Step 5: Update final submission (submit mode only) ──
-    if mode == 'submit':
-        submission.status = final_status
-        submission.runtime_ms = total_runtime
-        submission.save()
+    # ── Step 5: Update final submission ──
+    submission.status = final_status
+    submission.runtime_ms = max_runtime
+    submission.save(update_fields=['status', 'runtime_ms'])
 
     return submission

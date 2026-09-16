@@ -39,6 +39,9 @@
 
         <!-- Nav Links + Right Side -->
         <div class="collapse navbar-collapse" id="mainNav">
+            {% comment %} <style > {% endcomment %}
+
+
 
             <!-- Center Links -->
             <ul class="navbar-nav me-auto gap-1 align-items-lg-center">
@@ -78,7 +81,7 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end lc-dropdown">
                             <li>
-                                <a class="dropdown-item" href="{% url 'users:profile' request.user.user_name %}"">
+                                <a class="dropdown-item" href="{% url 'users:profile' request.user.user_name %}">
                                     <i class="bi bi-person me-2"></i>Profile
                                 </a>
                             </li>
@@ -143,6 +146,24 @@
             toggleBtn.title = 'Switch to Dark Mode';
         }
     }
+</script>
+
+<!-- Password Visibility Toggle -->
+<script>
+    function togglePasswordVisibility(btn, input) {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        input.focus();
+    }
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.password-toggle');
+        if (!btn || !btn.dataset.target) return;
+        const input = document.getElementById(btn.dataset.target);
+        if (input) togglePasswordVisibility(btn, input);
+    });
 </script>
 
 {% block extra_js %}{% endblock %}

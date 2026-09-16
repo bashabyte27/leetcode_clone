@@ -28,7 +28,7 @@
                 {% endfor %}
             {% endif %}
 
-            <form method="post" action="{% url 'users:register' %}">
+            <form method="post" action="{% if form_action == 'reset-password' %}{% url 'users:reset_password' %}{% else %}{% url 'users:register' %}{% endif %}">
                 {% csrf_token %}
                 <div class="mb-4">
                     <input type="text" name="otp_code" id="otp_code" class="lc-input form-control"
@@ -37,12 +37,12 @@
                 </div>
 
                 <!-- No JavaScript – OTP expiry handled by backend -->
-                <button type="submit" name="verify-otp" class="btn-lc-green mb-2">Verify & Create Account</button>
+                <button type="submit" name="verify-otp" class="btn-lc-green mb-2">{% if form_action == 'reset-password' %}Verify & Reset Password{% else %}Verify & Create Account{% endif %}</button>
                 <button type="submit" name="resend-otp" class="lc-link bg-transparent border-0 d-block w-100 mt-2">Resend OTP</button>
             </form>
 
             <hr class="my-4" style="border-color: var(--border);">
-            <a href="{% url 'users:register' %}" class="lc-link small">← Back to Register</a>
+            <a href="{% if form_action == 'reset-password' %}{% url 'users:reset_password' %}{% else %}{% url 'users:register' %}{% endif %}" class="lc-link small">{% if form_action == 'reset-password' %}← Back to Login{% else %}← Back to Register{% endif %}</a>
         </div>
     </div>
 </body>

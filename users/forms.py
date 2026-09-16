@@ -64,6 +64,12 @@ class RegisterForm(UserCreationForm):
             raise forms.ValidationError('This username is already taken.')
         return user_name
 
+    def clean_mobile_no(self):
+        mobile_no = self.cleaned_data.get('mobile_no')
+        # Store blanks as NULL (not '') so the unique constraint allows
+        # many users without a mobile number.
+        return mobile_no.strip() if mobile_no and mobile_no.strip() else None
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
