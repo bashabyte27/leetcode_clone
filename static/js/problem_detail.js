@@ -535,8 +535,8 @@
     if (copyInputBtn) {
       copyInputBtn.addEventListener('click', function () {
         navigator.clipboard.writeText(customInput.value).then(function () {
-          copyInputBtn.textContent = '✓ Copied';
-          setTimeout(function () { copyInputBtn.textContent = '📋 Copy'; }, 1500);
+          copyInputBtn.textContent = 'Copied!';
+          setTimeout(function () { copyInputBtn.textContent = 'Copy'; }, 1500);
         });
       });
     }
@@ -544,165 +544,314 @@
     if (copyExpectedBtn && expectedOutputEl) {
       copyExpectedBtn.addEventListener('click', function () {
         navigator.clipboard.writeText(expectedOutputEl.textContent).then(function () {
-          copyExpectedBtn.textContent = '✓ Copied';
-          setTimeout(function () { copyExpectedBtn.textContent = '📋 Copy'; }, 1500);
+          copyExpectedBtn.textContent = 'Copied!';
+          setTimeout(function () { copyExpectedBtn.textContent = 'Copy'; }, 1500);
         });
       });
     }
   })();
 
   /* ══════════════════════════
+     ERROR LINE HIGHLIGHTING (Monaco editor)
+     Parses compiler/runtime error messages, highlights the offending
+     source line(s) with a red gutter marker + wavy underline.
+  ══════════════════════════ */
+  var errorDecorations = [];
+
+  function clearErrorHighlights() {
+    if (!window.monaco || !window.editor) return;
+    errorDecorations = window.editor.deltaDecorations(errorDecorations, []);
+  }
+
+  function highlightErrorLines(message) {
+    if (!window.monaco || !window.editor) return;
+    clearErrorHighlights();
+
+    var text = String(message || '');
+    if (!text) return;
+
+    var lines = [];
+    // Extract 1-based line numbers from common compiler messages.
+    // Patterns: "Main.java:9"  "main.c:12:"  "stdin:9"  "solution.py:line 4"
+    //           C++: "solution.cc:In function 'main':" ... "solution.cc:7:5:"
+    //           Python tracebacks: 'File ".../Main.py", line 5, in <module>'
+    //           JavaScript/Node: 'evalmachine.<anonymous>:3'  /  '...foo.js:3:5'
+    var lineRe = /\b(?:[A-Za-z0-9_.\-]+\.(?:java|c|cpp|c\+\+|cc|py|go|rs|js|ts)|stdin|Main|solution|main|Input|Code)\s*:?\s*(\d+)/gi;
+    var match;
+    while ((match = lineRe.exec(text)) !== null) {
+      var n = parseInt(match[1], 10);
+      if (n >= 1 && lines.indexOf(n) === -1) lines.push(n);
+    }
+    // Also catch "line N" style used by Python / Node tracebacks
+    var pythonRe = /line\s+(\d+)/gi;
+    while ((match = pythonRe.exec(text)) !== null) {
+      var n3 = parseInt(match[1], 10);
+      if (n3 >= 1 && lines.indexOf(n3) === -1) lines.push(n3);
+    }
+    // Also catch "captured identification" style: ".js:9:5" / "9:9" col-form
+    var colRe = /([A-Za-z0-9_.\-]+\.[a-z]+)\s*:\s*(\d+)/gi;
+    while ((match = colRe.exec(text)) !== null) {
+      var n2 = parseInt(match[2], 10);
+      if (n2 >= 1 && lines.indexOf(n2) === -1) lines.push(n2);
+    }
+    // Node.js (Judge0): 'evalmachine.<anonymous>:3'
+    var nodeRe = /evalmachine\.<anonymous>\s*:\s*(\d+)/gi;
+    while ((match = nodeRe.exec(text)) !== null) {
+      var n4 = parseInt(match[1], 10);
+      if (n4 >= 1 && lines.indexOf(n4) === -1) lines.push(n4);
+    }
+
+    if (lines.length === 0) {
+      // No line info — highlight line 1 as a fallback hint
+      lines.push(1);
+    }
+
+    var model = window.editor.getModel();
+    if (!model) return;
+    var lineCount = model.getLineCount();
+    var decos = lines
+      .filter(function (ln) { return ln <= lineCount; })
+      .map(function (ln) {
+        return {
+          range: new monaco.Range(ln, 1, ln, model.getLineMaxColumn(ln)),
+          options: {
+            isWholeLine: true,
+            className: 'error-highlight-line',
+            linesDecorationsClassName: 'error-highlight-line-number',
+            hoverMessage: { value: escapeHtml(text) },
+            overviewRuler: { color: '#ef4444', position: monaco.editor.OverviewRulerPosition.Left },
+          },
+        };
+      })
+      .filter(Boolean);
+
+    if (decos.length > 0) {
+      errorDecorations = window.editor.deltaDecorations(errorDecorations, decos);
+    }
+  }
+
+    /* ══════════════════════════
      RESULT RENDERING
   ══════════════════════════ */
+
+  // Status helpers
+  function statusClass(status) {
+    var s = String(status || '').toLowerCase().replace(/ /g, '_');
+    if (s === 'success' || s === 'accepted') return 'accepted';
+    if (s === 'wrong_answer' || s === 'wrong answer') return 'wrong';
+    if (s === 'time_limit_exceeded' || s === 'time limit exceeded') return 'tle';
+    if (s === 'runtime_error' || s === 'runtime error') return 'runtime';
+    if (s === 'compile_error' || s === 'compile error') return 'compile';
+    return 'runtime';
+  }
+
+  function statusLabel(status) {
+    var s = String(status || '').toLowerCase();
+    if (s === 'success' || s === 'accepted') return 'Accepted';
+    return titleize(status);
+  }
+
+  function formatMemoryKB(kb) {
+    if (!kb && kb !== 0) return null;
+    var val = parseFloat(kb);
+    if (isNaN(val)) return null;
+    if (val >= 1024) return (val / 1024).toFixed(1) + ' MB';
+    return Math.round(val) + ' KB';
+  }
+
+  /* ── Banner HTML ──
+     Status text is bold + text-shadow for accepted,
+     bold + red-tinted for errors. No emojis. */
+  function bannerHTML(cls, label, statsRow) {
+    return '<div class="result-status-banner ' + cls + '">' +
+      '<div class="result-banner-title">' + label + '</div>' +
+      (statsRow ? '<div class="result-stats-row">' + statsRow + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ── Case pill ──
+     Filled green background for pass, filled red for fail.
+     No emoji tick/cross — just the text "Case N". */
+  function casePillHTML(num, passed, active) {
+    return '<button class="result-case-pill ' +
+      (passed ? 'pill-passed' : 'pill-failed') +
+      (active ? ' active' : '') +
+      '" data-index="' + (num - 1) + '">Case ' + num + '</button>';
+  }
+
   function renderRunResult(response) {
-    const container = document.getElementById("test-result-content");
+    var container = document.getElementById('test-result-content');
     if (!container) return;
 
-    const results = response.test_case_results || [];
+    var results = response.test_case_results || [];
 
     if (results.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          No test case results found.
-        </div>
-      `;
+      container.innerHTML = '<div class="empty-state">No test case results found.</div>';
       return;
     }
 
-    let html = "";
-
-    results.forEach(tc => {
-      let badge = "";
-      switch (tc.status) {
-        case "success":
-        case "accepted":
-          badge = `<span class="result-title green">✅ Accepted</span>`;
-          break;
-        case "Wrong Answer":
-          badge = `<span class="result-title red">❌ Wrong Answer</span>`;
-          break;
-        case "Runtime Error":
-          badge = `<span class="result-title red">💥 Runtime Error</span>`;
-          break;
-        case "Time Limit Exceeded":
-          badge = `<span class="result-title orange">⏰ Time Limit Exceeded</span>`;
-          break;
-        default:
-          badge = `<span class="result-title">${escapeHtml(tc.status)}</span>`;
+    // Determine overall status from first non-success result
+    var overallStatus = 'success';
+    for (var k = 0; k < results.length; k++) {
+      if (results[k].status !== 'success' && results[k].status !== 'accepted') {
+        overallStatus = results[k].status;
+        break;
       }
+    }
+    var cls = statusClass(overallStatus);
+    var label = statusLabel(overallStatus);
 
-      html += `
-        <div class="testcase-result">
-          <div class="result-header">
-            <strong>Case ${tc.tc_num}</strong>
-            ${badge}
-          </div>
-          <div class="result-meta">
-            Runtime: ${tc.runtime_ms || 0} ms
-          </div>
-          <table class="result-table">
-            <tr>
-              <td>Input</td>
-              <td>${escapeHtml(tc.input)}</td>
-            </tr>
-            <tr>
-              <td>Expected</td>
-              <td>${escapeHtml(tc.expected)}</td>
-            </tr>
-            <tr>
-              <td>Output</td>
-              <td>${escapeHtml(tc.actual)}</td>
-            </tr>
-          </table>
-        </div>
-      `;
+    // Highlight the offending source line for runtime / compile errors
+    if (cls === 'runtime' || cls === 'compile') {
+      var errMsg = '';
+      for (var e = 0; e < results.length; e++) {
+        if (results[e].status !== 'success' && results[e].status !== 'accepted') {
+          errMsg = results[e].actual || '';
+          break;
+        }
+      }
+      try { highlightErrorLines(errMsg); } catch (_) { /* Monaco not ready */ }
+    } else {
+      try { clearErrorHighlights(); } catch (_) {}
+    }
+
+    // Compute total runtime
+    var totalMs = 0;
+    for (var j = 0; j < results.length; j++) {
+      totalMs += parseFloat(results[j].runtime_ms) || 0;
+    }
+    totalMs = totalMs.toFixed(1);
+
+    var header = bannerHTML(cls, label, '<span>' + totalMs + ' ms</span>');
+
+    // Case pills (for multi-case run)
+    var pillsHTML = '';
+    if (results.length > 1) {
+      pillsHTML = '<div class="result-case-pills">';
+      for (var p = 0; p < results.length; p++) {
+        var passed = results[p].status === 'success' || results[p].status === 'accepted';
+        pillsHTML += casePillHTML(results[p].tc_num, passed, p === 0);
+      }
+      pillsHTML += '</div>';
+    }
+
+    container.innerHTML = header + pillsHTML + '<div id="case-detail-panel"></div>';
+
+    // Render first case detail
+    if (results.length > 0) renderCaseDetail(results[0]);
+
+    // Wire up pill clicks
+    container.querySelectorAll('.result-case-pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        container.querySelectorAll('.result-case-pill').forEach(function (b) { b.classList.remove('active'); });
+        pill.classList.add('active');
+        var idx = parseInt(pill.dataset.index, 10);
+        if (results[idx]) renderCaseDetail(results[idx]);
+      });
     });
-
-    container.innerHTML = html;
   }
 
   function renderSubmitResult(data) {
-    const container = document.getElementById('test-result-content');
+    var container = document.getElementById('test-result-content');
     if (!container) return;
 
-    const isAccepted = data.status === 'accepted';
-    const titleIcon = isAccepted ? '✅' : '❌';
-    const titleText = isAccepted ? 'Accepted' : titleize(data.status);
-    const titleClass = isAccepted ? 'green' : 'red';
+    var cls = statusClass(data.status);
+    var label = statusLabel(data.status);
+    var accepted = data.accepted || 0;
+    var total = data.total || 0;
+    var pct = total > 0 ? Math.round((accepted / total) * 100) : 0;
 
-    const pillsHTML = (data.test_case_results || []).map(function (tc, i) {
-      const passed = tc.status === 'accepted' || tc.status === 'success';
-      const icon = passed ? '✅' : '❌';
-      const failedClass = passed ? '' : ' failed';
-      const activeClass = i === 0 ? ' active' : '';
-      return `<button class="case-pill${failedClass}${activeClass}" data-index="${i}">${icon} Case ${tc.tc_num}</button>`;
-    }).join('');
+    // Highlight the offending source line for runtime / compile errors
+    if (cls === 'runtime' || cls === 'compile') {
+      var errMsg = '';
+      var tcResultsErr = data.test_case_results || [];
+      for (var ee = 0; ee < tcResultsErr.length; ee++) {
+        if (tcResultsErr[ee].status !== 'accepted' && tcResultsErr[ee].status !== 'success') {
+          errMsg = tcResultsErr[ee].actual || '';
+          break;
+        }
+      }
+      try { highlightErrorLines(errMsg); } catch (_) { /* Monaco not ready */ }
+    } else {
+      try { clearErrorHighlights(); } catch (_) {}
+    }
 
-    container.innerHTML = `
-      <div class="result-header" style="margin-bottom: 6px;">
-        <span class="result-title ${titleClass}">${titleIcon} ${titleText}</span>
-      </div>
-      <div class="result-meta">
-        Runtime: ${data.runtime_ms || 0} ms &nbsp;·&nbsp;
-        ${data.accepted || 0}/${data.total || 0} test cases passed
-      </div>
-      <div class="case-pills-row">${pillsHTML}</div>
-      <div class="case-detail" id="case-detail-panel"></div>
-    `;
+    // Stats
+    var runtimeStr = data.runtime_ms ? (parseFloat(data.runtime_ms)).toFixed(1) + ' ms' : '—';
+    var memStr = formatMemoryKB(data.memory_kb) || '—';
 
-    const tcResults = data.test_case_results || [];
+    var statsRow = '<span>' + runtimeStr + '</span>' +
+      '<span>' + memStr + '</span>' +
+      '<span>' + accepted + '/' + total + ' passed</span>';
+
+    var header = bannerHTML(cls, label, statsRow);
+
+    // Progress bar
+    header += '<div class="result-progress-bar"><div class="result-progress-fill" style="width:' + pct + '%"></div></div>';
+
+    // Case pills
+    var tcResults = data.test_case_results || [];
+    var pillsHTML = '<div class="result-case-pills">';
+    for (var i = 0; i < tcResults.length; i++) {
+      var tc = tcResults[i];
+      var passed = tc.status === 'accepted' || tc.status === 'success';
+      pillsHTML += casePillHTML(tc.tc_num, passed, i === 0);
+    }
+    pillsHTML += '</div>';
+
+    container.innerHTML = header + pillsHTML + '<div id="case-detail-panel"></div>';
+
+    // Render first case detail
     if (tcResults.length > 0) renderCaseDetail(tcResults[0]);
 
-    container.querySelectorAll('.case-pill').forEach(function (pill) {
+    // Wire up pill clicks
+    container.querySelectorAll('.result-case-pill').forEach(function (pill) {
       pill.addEventListener('click', function () {
-        container.querySelectorAll('.case-pill').forEach(function (p) { p.classList.remove('active'); });
+        container.querySelectorAll('.result-case-pill').forEach(function (b) { b.classList.remove('active'); });
         pill.classList.add('active');
-        const idx = parseInt(pill.dataset.index, 10);
+        var idx = parseInt(pill.dataset.index, 10);
         if (tcResults[idx]) renderCaseDetail(tcResults[idx]);
       });
     });
   }
 
   function renderCaseDetail(tc) {
-    const panel = document.getElementById('case-detail-panel');
+    var panel = document.getElementById('case-detail-panel');
     if (!panel) return;
 
+    // If IO data is available (sample / run mode), show full cards
     if (tc.input !== undefined) {
-      panel.innerHTML = `
-        ${ioCard('Input', tc.input)}
-        ${ioCard('Output', tc.actual)}
-        ${ioCard('Expected', tc.expected)}
-      `;
+      panel.innerHTML =
+        ioCard('Input', tc.input) +
+        ioCard('Output', tc.actual) +
+        ioCard('Expected', tc.expected);
       panel.querySelectorAll('.copy-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          const text = btn.dataset.copy;
+          var text = btn.dataset.copy;
           navigator.clipboard.writeText(text).then(function () {
-            btn.textContent = '✓';
-            setTimeout(function () { btn.textContent = '📋'; }, 1500);
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
           });
         });
       });
     } else {
-      const statusIcon = (tc.status === 'accepted' || tc.status === 'success') ? '✅' : '❌';
-      panel.innerHTML = `
-        <div style="font-size:13px;color:var(--text-secondary);padding:8px 0;">
-          Case ${tc.tc_num}: ${statusIcon} ${titleize(tc.status)} (${tc.runtime_ms}ms)
-        </div>
-      `;
+      // Hidden test case — compact summary only
+      var passed = tc.status === 'accepted' || tc.status === 'success';
+      panel.innerHTML = '<div class="result-case-summary ' + (passed ? 'case-pass' : 'case-fail') + '">' +
+        'Case ' + tc.tc_num + ': ' + titleize(tc.status) +
+        (tc.runtime_ms ? ' - ' + tc.runtime_ms + ' ms' : '') + '</div>';
     }
   }
 
   function ioCard(label, value) {
-    const safe = escapeHtml(value || '');
-    return `
-      <div class="case-io-card" style="margin-bottom: 8px;">
-        <div class="case-io-card-header">
-          <span class="case-header-tag">${label}</span>
-          <button class="copy-btn" data-copy="${escapeAttr(value || '')}">📋</button>
-        </div>
-        <div class="case-io-card-body">${safe}</div>
-      </div>
-    `;
+    var safe = escapeHtml(value || '');
+    return '<div class="case-io-card">' +
+      '<div class="case-io-card-header">' +
+        '<span class="case-header-tag">' + label + '</span>' +
+        '<button class="copy-btn" data-copy="' + escapeAttr(value || '') + '">Copy</button>' +
+      '</div>' +
+      '<div class="case-io-card-body">' + safe + '</div>' +
+    '</div>';
   }
 
   /* ══════════════════════════
@@ -736,11 +885,33 @@
             custom_input: (document.getElementById('custom-input') || {}).value || '',
           }),
         });
-        const data = await res.json();
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (_) {
+          // Server returned non-JSON (e.g. HTML error page) — show what we can
+          const bodyText = await res.text().catch(function () { return ''; });
+          const snippet = bodyText.substring(0, 200);
+          if (container) container.innerHTML = '<div class="result-status-banner compile">' +
+            '<div class="result-banner-title">Server error (' + res.status + ')</div>' +
+            '<div class="result-stats-row"><span>' + escapeHtml(snippet) + '</span></div></div>';
+          return;
+        }
+
+        if (data.error) {
+          // Backend refused (e.g. forgot to read input) — show message
+          if (container) {
+            container.innerHTML = '<div class="result-status-banner runtime">' +
+              '<div class="result-banner-title">' + escapeHtml(data.error) + '</div>' +
+              '</div>';
+          }
+          return;
+        }
         renderRunResult(data);
       } catch (err) {
         if (container) {
-          container.innerHTML = '<div class="empty-state">Network error. Please try again.</div>';
+          container.innerHTML = '<div class="empty-state">Network error: ' + escapeHtml(err.message || err) + '</div>';
         }
       } finally {
         setButtonLoading(btnRun, false);
@@ -778,7 +949,33 @@
             elapsed_seconds: timerSeconds,
           }),
         });
-        const data = await res.json();
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (_) {
+          const bodyText = await res.text().catch(function () { return ''; });
+          const snippet = bodyText.substring(0, 200);
+          if (container) container.innerHTML = '<div class="result-status-banner compile">' +
+            '<div class="result-banner-title">Server error (' + res.status + ')</div>' +
+            '<div class="result-stats-row"><span>' + escapeHtml(snippet) + '</span></div></div>';
+          try { clearErrorHighlights(); } catch (_) {}
+          const subTab = document.getElementById('tab-submissions');
+          if (subTab) subTab.classList.remove('loaded');
+          return;
+        }
+
+        if (data.error) {
+          try { clearErrorHighlights(); } catch (_) {}
+          if (container) {
+            container.innerHTML = '<div class="result-status-banner runtime">' +
+              '<div class="result-banner-title">' + escapeHtml(data.error) + '</div>' +
+              '</div>';
+          }
+          const subTab = document.getElementById('tab-submissions');
+          if (subTab) subTab.classList.remove('loaded');
+          return;
+        }
         renderSubmitResult(data);
 
         // Reset timer once the solution passes every test case
@@ -791,7 +988,7 @@
         if (subTab) subTab.classList.remove('loaded');
       } catch (err) {
         if (container) {
-          container.innerHTML = '<div class="empty-state">Network error. Please try again.</div>';
+          container.innerHTML = '<div class="empty-state">Network error: ' + escapeHtml(err.message || err) + '</div>';
         }
       } finally {
         setButtonLoading(btnRun, false);

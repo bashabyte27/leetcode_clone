@@ -1398,9 +1398,10 @@ a.ud-logout:hover {
 [data-theme="dark"] .case-io-card-body { color: #86EFAC; }
 
 /* ══════════════════════════════════════════════════════════════
-   15. TEST RESULTS
+   15. TEST RESULTS — Professional Coding Platform Style
 ══════════════════════════════════════════════════════════════ */
 #test-result-content { flex: 1; overflow-y: auto; }
+
 .result-placeholder {
   display: flex;
   flex-direction: column;
@@ -1417,48 +1418,166 @@ a.ud-logout:hover {
   opacity: 0.6;
 }
 
-.testcase-result {
+/* ── Status Banner ── */
+.result-status-banner {
+  border-left: 4px solid var(--border-color);
+  padding: 14px 16px;
+  border-radius: 8px;
   margin-bottom: 14px;
-  padding: 14px;
+  background: var(--bg-card);
+}
+.result-status-banner.accepted  { border-color: var(--easy-color); background: rgba(0,255,136,0.04); }
+.result-status-banner.wrong     { border-color: var(--hard-color); background: rgba(255,77,109,0.04); }
+.result-status-banner.tle       { border-color: var(--medium-color); background: rgba(255,176,32,0.04); }
+.result-status-banner.runtime   { border-color: #A855F7; background: rgba(168,85,247,0.04); }
+.result-status-banner.compile   { border-color: #F472B6; background: rgba(244,114,182,0.04); }
+
+.result-banner-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.result-status-banner.accepted .result-banner-title {
+  color: var(--easy-color);
+  text-shadow: 0 0 12px rgba(0, 255, 136, 0.45);
+}
+.result-status-banner.wrong    .result-banner-title {
+  color: var(--hard-color);
+  text-shadow: 0 0 12px rgba(255, 77, 109, 0.35);
+}
+.result-status-banner.tle      .result-banner-title {
+  color: var(--medium-color);
+  text-shadow: 0 0 12px rgba(255, 167, 0, 0.35);
+}
+.result-status-banner.runtime  .result-banner-title {
+  color: #A855F7;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
+}
+.result-status-banner.compile  .result-banner-title {
+  color: #F472B6;
+  text-shadow: 0 0 12px rgba(244, 114, 182, 0.35);
+}
+
+/* ── Error Line Highlighting (Monaco decorations) ──
+   Applied to the editor when a runtime/compile error is detected. */
+.error-highlight-line {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  border-top: 1px solid rgba(239, 68, 68, 0.5);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.5);
+}
+.error-highlight-line-number {
+  background-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ── Stats Row ── */
+.result-stats-row {
+  display: flex;
+  gap: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+.result-stats-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Progress Bar ── */
+.result-progress-bar {
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.result-progress-fill {
+  height: 100%;
+  background: var(--easy-color);
+  border-radius: 2px;
+  transition: width 0.35s ease;
+}
+
+/* ── Case Pills (Result Tab) ── */
+.result-case-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.result-case-pill {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.result-case-pill:hover {
+  border-color: var(--neon-green-dim);
+  color: var(--text-secondary);
+}
+.result-case-pill.active {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: rgba(0,255,136,0.06);
+}
+
+/* Filled green background — passed case */
+.result-case-pill.pill-passed {
+  background: rgba(0,255,136,0.12);
+  border-color: rgba(0,255,136,0.4);
+  color: var(--easy-color);
+}
+.result-case-pill.pill-passed.active {
+  background: rgba(0,255,136,0.2);
+  border-color: var(--easy-color);
+}
+
+/* Filled red background — failed case */
+.result-case-pill.pill-failed {
+  background: rgba(255,77,109,0.12);
+  border-color: rgba(255,77,109,0.4);
+  color: var(--hard-color);
+}
+.result-case-pill.pill-failed.active {
+  background: rgba(255,77,109,0.2);
+  border-color: var(--hard-color);
+}
+
+/* Legacy classes kept for backwards compat */
+.result-case-pill.passed { border-color: rgba(0,255,136,0.35); }
+.result-case-pill.failed { border-color: rgba(255,77,109,0.45); color: var(--hard-color); }
+
+/* ── Case Detail Panel ── */
+#case-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.result-case-summary {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 10px 14px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-card);
 }
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+.result-case-summary.case-pass {
+  border-color: rgba(0,255,136,0.35);
+  color: var(--easy-color);
 }
-.result-title { font-size: 15px; font-weight: 700; }
-.result-title.green { color: var(--easy-color); }
-.result-title.red { color: var(--hard-color); }
-.result-title.orange { color: var(--medium-color); }
-
-.result-meta {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.result-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.result-table td {
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.result-table td:first-child {
-  width: 110px;
-  color: var(--neon-green);
-  font-weight: 600;
-  background: var(--bg-hover);
-  white-space: nowrap;
+.result-case-summary.case-fail {
+  border-color: rgba(255,77,109,0.45);
+  color: var(--hard-color);
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -21,8 +21,8 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{% static 'css/problem_detail.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/discussion.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/problem_detail.css' %}?v=2" />
+    <link rel="stylesheet" href="{% static 'css/discussion.css' %}?v=2" />
   </head>
   <body>
     <div id="problem-page">
@@ -771,7 +771,7 @@
                       id="btn-copy-tc-input"
                       title="Copy input"
                     >
-                      📋 Copy
+                      Copy
                     </button>
                   </div>
                   <textarea
@@ -796,7 +796,7 @@
                       id="btn-copy-tc-expected"
                       title="Copy expected output"
                     >
-                      📋 Copy
+                      Copy
                     </button>
                   </div>
                   <div class="case-io-card-body" id="tc-expected-output">
@@ -873,6 +873,6 @@
     {# Monaco CDN — must load before problem_detail.js #}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
-    <script src="{% static 'js/problem_detail.js' %}"></script>
+    <script src="{% static 'js/problem_detail.js' %}?v=2"></script>
   </body>
 </html>

@@ -1,13 +1,17 @@
 # submissions/views.py
 
 import json
-from decimal import Decimal
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from problems.models import Problem, Language, TestCase
 from submissions.models import Submission, SubmissionStatusChoices
-from submissions.judge import judge_submission, is_code_safe, run_code as execute_code
+from submissions.judge import (
+    judge_submission,
+    is_code_safe,
+    _code_reads_input,
+    run_code as execute_code,
+)
 from django.shortcuts import get_object_or_404, render
 
 
@@ -20,7 +24,7 @@ def submission_list(request):
 def submit_code(request, problem_slug):
     """
     POST /submissions/submit/<problem_slug>/
-    Runs code against ALL test cases.
+    Runs code against ALL test cases via Judge0.
     Stops at first failure — same as LeetCode submit behavior.
     """
     if request.method != 'POST':
@@ -67,17 +71,15 @@ def submit_code(request, problem_slug):
             solve_time_seconds=solve_time,
         )
 
-        # ── Run judge in submit mode ──
-        # Stops at first failure, updates final submission status
+        # ── Run judge via Judge0 ──
         result = judge_submission(submission.id)
-        if result is None:                          # ← fixed: guard against None
+        if result is None:
             return JsonResponse({'error': 'Submission could not be processed!'}, status=500)
 
         # ── Build response ──
         test_case_results = []
         for r in result.results.all().order_by('test_case__order_num'):
             if r.test_case.is_sample:
-                # Show full details for sample test cases
                 test_case_results.append({
                     'tc_num': r.test_case.order_num,
                     'status': r.status,
@@ -87,7 +89,6 @@ def submit_code(request, problem_slug):
                     'runtime_ms': str(r.runtime_ms),
                 })
             else:
-                # Hide details for hidden test cases, only show status
                 test_case_results.append({
                     'tc_num': r.test_case.order_num,
                     'status': r.status,
@@ -103,6 +104,7 @@ def submit_code(request, problem_slug):
             'submission_id': result.id,
             'status': result.status,
             'runtime_ms': str(result.runtime_ms),
+            'memory_kb': str(result.memory_kb) if result.memory_kb else None,
             'accepted': accepted,
             'total': total,
             'test_case_results': test_case_results,
@@ -120,85 +122,84 @@ def submit_code(request, problem_slug):
 def run_code(request, problem_slug):
     """
     POST /submissions/run/<problem_slug>/
-    Runs code against sample test cases ONLY.
+    Runs code against sample test cases via Judge0.
     No Submission object created — this is just a temporary execution.
-    Never stops early — shows all sample results like LeetCode run behavior.
     """
     if request.method != 'POST':
-        print("problem in method")
         return JsonResponse({'error': 'Only POST method allowed!'}, status=405)
-    
 
     try:
         body = json.loads(request.body)
         code = body.get('code', '').strip()
 
         if not code:
-            print("code is empty")
             return JsonResponse({'error': 'Code cannot be empty!'}, status=400)
+
+        language_slug = body.get('language', 'python')
 
         # ── Get problem ──
         try:
             problem = Problem.objects.get(slug=problem_slug, is_active=True)
         except Problem.DoesNotExist:
-            print("problem not found")
             return JsonResponse({'error': 'Problem not found!'}, status=404)
+
+        # ── Get language ──
+        try:
+            language = Language.objects.get(slug=language_slug)
+        except Language.DoesNotExist:
+            return JsonResponse({'error': 'Language not found!'}, status=404)
 
         # ── Safety check ──
         is_safe, reason = is_code_safe(code)
         if not is_safe:
-            print("code is not safe")
             return JsonResponse({
                 'test_case_results': [],
                 'error': reason,
             }, status=400)
 
-        # ── Fetch sample test cases directly — no Submission needed ──
+        # ── Fetch sample test cases ──
         test_cases = TestCase.objects.filter(
             problem=problem,
             is_sample=True
         ).order_by('order_num')
 
-        print(f"Found {test_cases.count()} sample test cases")
         if not test_cases.exists():
-            print("No sample test cases found")
             return JsonResponse({'error': 'No sample test cases found!'}, status=404)
 
-        # ── Check if student forgot input() ──
+        # ── Check if student forgot to read the input ──
         has_input = test_cases.filter(
             input_data__isnull=False
         ).exclude(input_data='').exists()
 
-        if has_input and 'input()' not in code:
-            print("forgot to read input")
+        if has_input and not _code_reads_input(code):
             return JsonResponse({
                 'test_case_results': [],
-                'error': 'You forgot to read the input! Use input() to take the input.',
+                'error': 'You forgot to read the input! Use input(), Scanner, scanf, cin, readline, fmt.Scan, etc. to take the input.',
             }, status=400)
 
-        # ── Run code against each sample test case ──
+        # ── Run code against each sample test case via Judge0 ──
         test_case_results = []
 
         for tc in test_cases:
             input_data = tc.input_data.replace('\\n', '\n') if tc.input_data else ''
             expected_output = tc.expected_output.replace('\\n', '\n').strip() if tc.expected_output else ''
 
-            actual_output, runtime_ms, error = execute_code(code, input_data)
+            actual_output, runtime_ms, error, status = execute_code(code, language, input_data)
 
-            if error == 'TIME_LIMIT_EXCEEDED':
-                print("code is taking too long to run")
+            if status == 'tle':
                 status = "Time Limit Exceeded"
                 actual_output = ''
-            elif error:
-                print("code is giving runtime error")
+            elif status == 'compile_error':
+                status = "Compile Error"
+                actual_output = error
+            elif status == 'runtime_error':
                 status = "Runtime Error"
                 actual_output = error
-            elif (actual_output or '').replace('\r\n', '\n').strip() == expected_output.replace('\r\n', '\n').strip():
-                print("code is giving correct output")
+            elif status == 'accepted':
                 status = "success"
-                print("code is ran successfully !")
+            elif (actual_output or '').replace('\r\n', '\n').strip() == expected_output.replace('\r\n', '\n').strip():
+                status = "success"
             else:
-                print("code is giving wrong output")
                 status = "Wrong Answer"
 
             test_case_results.append({
@@ -209,7 +210,6 @@ def run_code(request, problem_slug):
                 'actual': actual_output or '',
                 'runtime_ms': str(runtime_ms),
             })
-        print(test_case_results)
 
         return JsonResponse({
             'test_case_results': test_case_results,
@@ -219,10 +219,9 @@ def run_code(request, problem_slug):
         return JsonResponse({'error': 'Invalid JSON!'}, status=400)
 
     except Exception as e:
-        print(f"Unexpected error occurred: {str(e)}")
         return JsonResponse({'error': f'Internal error: {str(e)}'}, status=500)
 
-# submissions/views.py
+
 @login_required
 def submission_list(request, problem_slug):
     """
@@ -240,6 +239,8 @@ def submission_list(request, problem_slug):
         'problem': problem,
         'submissions': submissions,
     })
+
+
 @login_required
 def submission_detail(request, submission_id):
     submission = get_object_or_404(

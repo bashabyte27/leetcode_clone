@@ -162,3 +162,11 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
 DEFAULT_FROM_EMAIL = 'bashabyte@gmail.com'  # put your own email here
+
+# ── Judge0 Code Execution API ──────────────────────────────────────
+# Supports Judge0 CE (self-hosted) or RapidAPI Judge0.
+# Local:  JUDGE0_URL=http://localhost:2358  (no auth token needed)
+# Cloud:  JUDGE0_URL=https://judge0-ce.p.rapidapi.com + JUDGE0_AUTH_TOKEN
+JUDGE0_URL = os.getenv('JUDGE0_URL', 'http://localhost:2358')
+JUDGE0_AUTH_TOKEN = os.getenv('JUDGE0_AUTH_TOKEN', '')
+JUDGE0_TIMEOUT = int(os.getenv('JUDGE0_TIMEOUT', '10'))  # seconds

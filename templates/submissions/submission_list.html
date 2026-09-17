@@ -6,6 +6,7 @@
       <th>Status</th>
       <th>Language</th>
       <th>Runtime</th>
+      <th>Memory</th>
       <th>Time Taken</th>
       <th>Submitted</th>
     </tr>
@@ -19,7 +20,8 @@
         </span>
       </td>
       <td><span class="lang-badge">{{ sub.language.name|default:"—" }}</span></td>
-      <td>{{ sub.runtime_ms|default:"—" }} ms</td>
+      <td>{% if sub.runtime_ms != None %}{{ sub.runtime_ms }} ms{% else %}—{% endif %}</td>
+      <td>{% if sub.memory_kb != None %}{{ sub.memory_kb|floatformat:0 }} KB{% else %}—{% endif %}</td>
       <td>{{ sub.solve_time_seconds|mmss }}</td>
       <td><span class="time-ago">{{ sub.submitted_at|timesince }} ago</span></td>
     </tr>
