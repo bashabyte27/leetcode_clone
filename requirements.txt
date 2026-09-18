@@ -7,3 +7,4 @@ Pillow==10.0.0
 requests==2.32.3
 dj-database-url==2.3.0
 resend==2.46.0
+pandas==3.0.2
