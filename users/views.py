@@ -66,6 +66,17 @@ def register_view(request):
         if 'send-otp' in request.POST:
             form = RegisterForm(request.POST)
             if form.is_valid():
+                user = Users(
+                    email=form.cleaned_data['email'],
+                    user_name=form.cleaned_data['user_name'],
+                    password=make_password(form.cleaned_data['password1']),
+                    mobile_no=form.cleaned_data.get('mobile_no') or None,
+                    is_verified=True,
+                )
+                user.save()
+                return redirect('users:login')
+
+                # Temporary registration bypass; restore this block when email OTP is available.
                 otp = get_otp()
                 print(otp)
                 request.session['otp'] = otp
