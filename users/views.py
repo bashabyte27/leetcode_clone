@@ -1,8 +1,9 @@
+import os
 import random, time
+
+import resend
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core.mail import send_mail
-from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -12,6 +13,30 @@ from .forms import LoginForm, RegisterForm, ForgotPasswordForm
 from .models import Users, UserProfile, UserFollow
 from problems.models import Problem, DifficultyChoices
 from submissions.models import Submission, SubmissionStatusChoices
+
+
+resend.api_key = os.getenv("RESEND_API_KEY")
+
+
+def send_otp_email(subject, email, otp):
+    if not resend.api_key:
+        return False
+
+    try:
+        response = resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": [email],
+            "subject": subject,
+            "text": f"Your OTP is: {otp}",
+        })
+    except Exception:
+        return False
+
+    if not response:
+        return False
+    if isinstance(response, dict) and response.get("error"):
+        return False
+    return not getattr(response, "error", None)
 
 
 def get_otp():
@@ -52,15 +77,15 @@ def register_view(request):
                     'password':  make_password(form.cleaned_data['password1']),
                     'mobile_no': form.cleaned_data.get('mobile_no') or None,
                 }
-                send_mail(
+                if send_otp_email(
                     'Your OTP for Registration',
-                    f'Your OTP is: {otp}',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [form.cleaned_data['email']],
-                )
-                return render(request, 'users/otp_form.html', {
-                    'email': form.cleaned_data['email'],
-                })
+                    form.cleaned_data['email'],
+                    otp,
+                ):
+                    return render(request, 'users/otp_form.html', {
+                        'email': form.cleaned_data['email'],
+                    })
+                form.add_error(None, 'Unable to send OTP email. Please try again.')
 
         elif 'verify-otp' in request.POST:
             entered_otp  = request.POST.get('otp_code', '').strip()
@@ -132,16 +157,16 @@ def reset_password(request):
                     'email':    email,
                     'password': make_password(form.cleaned_data['new_password1']),
                 }
-                send_mail(
+                if send_otp_email(
                     'Your OTP for Password Reset',
-                    f'Your OTP is: {otp}',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                )
-                return render(request, 'users/otp_form.html', {
-                    'email': email,
-                    'form_action': 'reset-password',  # optional, for template routing
-                })
+                    email,
+                    otp,
+                ):
+                    return render(request, 'users/otp_form.html', {
+                        'email': email,
+                        'form_action': 'reset-password',  # optional, for template routing
+                    })
+                form.add_error(None, 'Unable to send OTP email. Please try again.')
 
         elif 'verify-otp' in request.POST:  # no form.is_valid() needed here
             entered_otp   = request.POST.get('otp_code', '').strip()

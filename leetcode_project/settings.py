@@ -169,25 +169,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.Users'
 
-# ── Email (sends OTP / verification emails) ─────────────────────────
-# When EMAIL_HOST_USER is set in .env the app sends real Gmail SMTP
-# emails. If it's missing we fall back to the console backend so OTPs
-# still print to the terminal during local development.
-EMAIL_BACKEND = (
-    'django.core.mail.backends.smtp.EmailBackend'
-    if os.getenv('EMAIL_HOST_USER')
-    else 'django.core.mail.backends.console.EmailBackend'
-)
-
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-
-DEFAULT_FROM_EMAIL = 'bashabyte@gmail.com'  # put your own email here
-
 # ── Judge0 Code Execution API ──────────────────────────────────────
 # Supports Judge0 CE (self-hosted) or RapidAPI Judge0.
 # Local:  JUDGE0_URL=http://localhost:2358  (no auth token needed)
