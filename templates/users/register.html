@@ -1,13 +1,9 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block content %}
+{% extends 'base.html' %} {% load static %} {% block content %}
 <div class="container py-5 d-flex justify-content-center">
-  <div class="lc-card" style="max-width: 420px; width: 100%; margin: 0 auto;">
-    
+  <div class="lc-card" style="max-width: 420px; width: 100%; margin: 0 auto">
     <!-- BashaByte Logo -->
     <div class="text-center mb-3">
-      <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40">
+      <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40" />
     </div>
 
     <!-- Icon and heading -->
@@ -21,9 +17,16 @@
 
     <!-- Non-field errors -->
     {% if form.non_field_errors %}
-      <div class="mb-3 p-2 rounded" style="color: var(--hard-color); background-color: var(--orange-bg); border: 1px solid var(--border-color);">
-        {{ form.non_field_errors }}
-      </div>
+    <div
+      class="mb-3 p-2 rounded"
+      style="
+        color: var(--hard-color);
+        background-color: var(--orange-bg);
+        border: 1px solid var(--border-color);
+      "
+    >
+      {{ form.non_field_errors }}
+    </div>
     {% endif %}
 
     <!-- Registration form -->
@@ -33,39 +36,58 @@
       <!-- Username field -->
       <div class="mb-3">
         <label for="id_user_name" class="form-label">Username</label>
-        <input type="text" name="user_name" id="id_user_name" class="lc-input"
-               value="{{ form.user_name.value|default:'' }}"
-               placeholder="coder123" required>
+        <input
+          type="text"
+          name="user_name"
+          id="id_user_name"
+          class="lc-input"
+          value="{{ form.user_name.value|default:'' }}"
+          placeholder="coder123"
+          required
+        />
         {% if form.user_name.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.user_name.errors }}
-          </div>
+        <div class="mt-1 small" style="color: var(--hard-color)">
+          {{ form.user_name.errors }}
+        </div>
         {% endif %}
       </div>
 
       <!-- Email field -->
       <div class="mb-3">
         <label for="id_email" class="form-label">Email address</label>
-        <input type="email" name="email" id="id_email" class="lc-input"
-               value="{{ form.email.value|default:'' }}"
-               placeholder="you@example.com" required>
+        <input
+          type="email"
+          name="email"
+          id="id_email"
+          class="lc-input"
+          value="{{ form.email.value|default:'' }}"
+          placeholder="you@example.com"
+          required
+        />
         {% if form.email.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.email.errors }}
-          </div>
+        <div class="mt-1 small" style="color: var(--hard-color)">
+          {{ form.email.errors }}
+        </div>
         {% endif %}
       </div>
 
       <!-- Mobile number field (optional) -->
       <div class="mb-3">
-        <label for="id_mobile_no" class="form-label">Mobile number (optional)</label>
-        <input type="tel" name="mobile_no" id="id_mobile_no" class="lc-input"
-               value="{{ form.mobile_no.value|default:'' }}"
-               placeholder="+91 9876543210">
+        <label for="id_mobile_no" class="form-label"
+          >Mobile number (optional)</label
+        >
+        <input
+          type="tel"
+          name="mobile_no"
+          id="id_mobile_no"
+          class="lc-input"
+          value="{{ form.mobile_no.value|default:'' }}"
+          placeholder="+91 9876543210"
+        />
         {% if form.mobile_no.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.mobile_no.errors }}
-          </div>
+        <div class="mt-1 small" style="color: var(--hard-color)">
+          {{ form.mobile_no.errors }}
+        </div>
         {% endif %}
       </div>
 
@@ -73,18 +95,28 @@
       <div class="mb-3">
         <label for="id_password1" class="form-label">Password</label>
         <div class="password-input-wrap">
-          <input type="password" name="password1" id="id_password1"
-                 class="lc-input" placeholder="Create a strong password"
-                 required autocomplete="new-password">
-          <button type="button" class="password-toggle"
-                  data-target="id_password1" aria-label="Show password">
+          <input
+            type="password"
+            name="password1"
+            id="id_password1"
+            class="lc-input"
+            placeholder="Create a strong password"
+            required
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            data-target="id_password1"
+            aria-label="Show password"
+          >
             <i class="bi bi-eye"></i>
           </button>
         </div>
         {% if form.password1.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.password1.errors }}
-          </div>
+        <div class="mt-1 small" style="color: var(--hard-color)">
+          {{ form.password1.errors }}
+        </div>
         {% endif %}
       </div>
 
@@ -92,27 +124,47 @@
       <div class="mb-3">
         <label for="id_password2" class="form-label">Confirm password</label>
         <div class="password-input-wrap">
-          <input type="password" name="password2" id="id_password2"
-                 class="lc-input" placeholder="Confirm your password"
-                 required autocomplete="new-password">
-          <button type="button" class="password-toggle"
-                  data-target="id_password2" aria-label="Show password">
+          <input
+            type="password"
+            name="password2"
+            id="id_password2"
+            class="lc-input"
+            placeholder="Confirm your password"
+            required
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            data-target="id_password2"
+            aria-label="Show password"
+          >
             <i class="bi bi-eye"></i>
           </button>
         </div>
         {% if form.password2.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.password2.errors }}
-          </div>
+        <div class="mt-1 small" style="color: var(--hard-color)">
+          {{ form.password2.errors }}
+        </div>
         {% endif %}
       </div>
 
       <!-- Terms checkbox -->
       <div class="mb-4">
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="terms" id="id_terms" required>
-          <label class="form-check-label text-lc-secondary" style="font-size: 0.9rem;">
-            I agree to the <a href="#" class="lc-link">Terms of Service</a> and <a href="#" class="lc-link">Privacy Policy</a>
+          <input
+            class="form-check-input"
+            type="checkbox"
+            name="terms"
+            id="id_terms"
+            required
+          />
+          <label
+            class="form-check-label text-lc-secondary"
+            style="font-size: 0.9rem"
+          >
+            I agree to the <a href="#" class="lc-link">Terms of Service</a> and
+            <a href="#" class="lc-link">Privacy Policy</a>
           </label>
         </div>
       </div>
@@ -128,7 +180,6 @@
         <a href="{% url 'users:login' %}" class="lc-link">Log in</a>
       </div>
     </form>
-
   </div>
 </div>
 {% endblock %}
