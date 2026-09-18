@@ -1,0 +1,1747 @@
+[
+{
+  "model": "problems.language",
+  "pk": 1,
+  "fields": {
+    "name": "Python",
+    "slug": "python",
+    "version": "3.0",
+    "judge_id": "71",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.language",
+  "pk": 2,
+  "fields": {
+    "name": "Java",
+    "slug": "java",
+    "version": "17.0.6",
+    "judge_id": "62",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.language",
+  "pk": 3,
+  "fields": {
+    "name": "C++",
+    "slug": "cpp",
+    "version": "17.0.6",
+    "judge_id": "54",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.language",
+  "pk": 4,
+  "fields": {
+    "name": "C",
+    "slug": "c",
+    "version": "10.2.0",
+    "judge_id": "50",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.language",
+  "pk": 5,
+  "fields": {
+    "name": "JavaScript",
+    "slug": "javascript",
+    "version": "18.15.0",
+    "judge_id": "63",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.language",
+  "pk": 6,
+  "fields": {
+    "name": "Go",
+    "slug": "go",
+    "version": "1.18.0",
+    "judge_id": "39",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.language",
+  "pk": 7,
+  "fields": {
+    "name": "Rust",
+    "slug": "rust",
+    "version": "1.65.0",
+    "judge_id": "73",
+    "is_active": true
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 13,
+  "fields": {
+    "order_num": 1,
+    "title": "Even or Odd",
+    "slug": "even-or-odd",
+    "description": "Write a program that reads an integer n and prints: - \"Yes! It is Even\" if the number is even - \"Yes! It is Odd\" if the number is odd",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.969Z",
+    "updated_at": "2026-09-16T07:55:14.193Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 14,
+  "fields": {
+    "order_num": 2,
+    "title": "Voting Eligibility Check",
+    "slug": "voting-eligibility-check",
+    "description": "Write a Python program that asks the user to enter their age. Then check if the user is eligible to vote or not. A person is eligible to vote only if their age is 18 or above. If the age is 18 or more, print \"Eligible to vote\". If the age is less than 18, print \"Not eligible to vote\". The program must take age as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.977Z",
+    "updated_at": "2026-09-16T07:55:14.199Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 15,
+  "fields": {
+    "order_num": 3,
+    "title": "Check Leap year",
+    "slug": "check-leap-year",
+    "description": "3\tLeap Year Check\tWrite a Python program that asks the user to enter a year. Then check if the given year is a leap year or not. A year is a leap year if it is divisible by 4 but not divisible by 100, OR if it is divisible by 400. If the year is a leap year, print \"Leap year\". If not, print \"Not a leap year\". The program must take the year as input from the user.\tEasy",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.979Z",
+    "updated_at": "2026-09-16T07:55:14.201Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 16,
+  "fields": {
+    "order_num": 4,
+    "title": "Electricity Bill Calculator",
+    "slug": "electricity-bill-calculator",
+    "description": "Write a Python program that asks the user to enter the number of units of electricity consumed. Then calculate the total electricity bill based on the following slab rates: First 100 units are charged at 5 rupees per unit. Next 100 units (from 101 to 200) are charged at 7 rupees per unit. Any units beyond 200 are charged at 10 rupees per unit. Print the total bill amount as an integer. The program must take units as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.980Z",
+    "updated_at": "2026-09-16T07:55:14.202Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 17,
+  "fields": {
+    "order_num": 5,
+    "title": "Print Multiplication Table",
+    "slug": "print-multiplication-table",
+    "description": "Write a Python program that asks the user to enter a number. Then print the multiplication table of that number from 1 to 10. Each line should show the multiplication result in the format: number x i = result. The program must take the number as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.982Z",
+    "updated_at": "2026-09-16T07:55:14.204Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 18,
+  "fields": {
+    "order_num": 6,
+    "title": "Multiplication Table Using For-Else",
+    "slug": "multiplication-table-using-for-else",
+    "description": "Write a Python program that asks the user to enter a number and then the number of rows for the multiplication table. Use a for loop with an else clause to print the multiplication table. If the number of rows entered by the user is 10 or less, print the multiplication table up to the given rows. If the number of rows is more than 10, print the table only up to 10 rows and then print \"rows are limited to 10\" using the else clause. Each line should be printed in the format: number x i = result. The program must take both the number and the number of rows as input from the user.",
+    "difficulty": "medium",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.983Z",
+    "updated_at": "2026-09-16T07:55:14.205Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 19,
+  "fields": {
+    "order_num": 7,
+    "title": "Sum of First N Natural Numbers",
+    "slug": "sum-of-first-n-natural-numbers",
+    "description": "Write a Python program that asks the user to enter a number N. Then calculate and print the sum of all natural numbers from 1 to N. The program must take N as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.985Z",
+    "updated_at": "2026-09-16T07:55:14.206Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 20,
+  "fields": {
+    "order_num": 8,
+    "title": "Sum of Digits in a Number",
+    "slug": "sum-of-digits-in-a-number",
+    "description": "Write a Python program that asks the user to enter a number. Then calculate the sum of all individual digits in that number and print the result. For example, if the user enters 123, the sum of digits is 1 + 2 + 3 = 6. The program must take the number as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.986Z",
+    "updated_at": "2026-09-16T07:55:14.208Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 21,
+  "fields": {
+    "order_num": 9,
+    "title": "Reverse a Number",
+    "slug": "reverse-a-number",
+    "description": "Write a Python program that asks the user to enter a number. Then reverse the digits of that number and print the result. For example, if the user enters 1234, the output should be 4321. If the user enters a negative number like -321, reverse only the digits and keep the negative sign, so the output should be -123. The program must take the number as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.989Z",
+    "updated_at": "2026-09-16T07:55:14.209Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 22,
+  "fields": {
+    "order_num": 10,
+    "title": "Palindrome Number Checker",
+    "slug": "palindrome-number-checker",
+    "description": "Write a Python program that asks the user to enter a number. Then check if the given number is a palindrome or not. A number is called a palindrome if it reads the same forward and backward. For example, 121 reads the same from both sides so it is a palindrome. But 123 reversed is 321 which is different, so it is not a palindrome. If the number is a palindrome, print \"Palindrome\". If not, print \"Not a Palindrome\". The program must take the number as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.993Z",
+    "updated_at": "2026-09-16T07:55:14.210Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 23,
+  "fields": {
+    "order_num": 11,
+    "title": "Prime Number Checker",
+    "slug": "prime-number-checker",
+    "description": "Write a Python program that asks the user to enter a number. Then check if the given number is a prime number or not. A prime number is a number that is greater than 1 and has no factors other than 1 and itself. For example, 7 is a prime number because it is only divisible by 1 and 7. But 6 is not a prime number because it is divisible by 2 and 3 also. If the number is prime, print \"Prime\". If not, print \"Not Prime\". The program must take the number as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.994Z",
+    "updated_at": "2026-09-16T07:55:14.212Z"
+  }
+},
+{
+  "model": "problems.problem",
+  "pk": 24,
+  "fields": {
+    "order_num": 12,
+    "title": "Generate Prime Numbers Up to N",
+    "slug": "generate-prime-numbers-up-to-n",
+    "description": "Write a Python program that asks the user to enter a number N. Then find all prime numbers from 2 up to N and store them in a list. Print the list as the final output. A prime number is a number greater than 1 that has no factors other than 1 and itself. For example, if the user enters 10, the output should be [2, 3, 5, 7]. The program must take N as input from the user.",
+    "difficulty": "easy",
+    "acceptance_rate": "0.00",
+    "likes": 0,
+    "dislikes": 0,
+    "is_premium": false,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-05-04T07:58:44.996Z",
+    "updated_at": "2026-09-16T07:55:14.213Z"
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 64,
+  "fields": {
+    "problem": 13,
+    "input_data": "1",
+    "expected_output": "Odd",
+    "is_sample": true,
+    "explanation": "1 is not divisible by 2 so it is Odd",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 65,
+  "fields": {
+    "problem": 13,
+    "input_data": "2",
+    "expected_output": "Even",
+    "is_sample": true,
+    "explanation": "2 is divisible by 2 so it is Even",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 66,
+  "fields": {
+    "problem": 13,
+    "input_data": "0",
+    "expected_output": "Even",
+    "is_sample": true,
+    "explanation": "0 is divisible by 2 so it is Even",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 67,
+  "fields": {
+    "problem": 13,
+    "input_data": "99",
+    "expected_output": "Odd",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 68,
+  "fields": {
+    "problem": 13,
+    "input_data": "100",
+    "expected_output": "Even",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 69,
+  "fields": {
+    "problem": 13,
+    "input_data": "-3",
+    "expected_output": "Odd",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 70,
+  "fields": {
+    "problem": 13,
+    "input_data": "-4",
+    "expected_output": "Even",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 71,
+  "fields": {
+    "problem": 13,
+    "input_data": "1000",
+    "expected_output": "Even",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 72,
+  "fields": {
+    "problem": 13,
+    "input_data": "7",
+    "expected_output": "Odd",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 73,
+  "fields": {
+    "problem": 13,
+    "input_data": "44",
+    "expected_output": "Even",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 74,
+  "fields": {
+    "problem": 14,
+    "input_data": "17",
+    "expected_output": "Not eligible to vote",
+    "is_sample": true,
+    "explanation": "17 is less than 18 so the person is not eligible to vote",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 75,
+  "fields": {
+    "problem": 14,
+    "input_data": "18",
+    "expected_output": "Eligible to vote",
+    "is_sample": true,
+    "explanation": "18 is exactly 18 so the person is eligible to vote",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 76,
+  "fields": {
+    "problem": 14,
+    "input_data": "0",
+    "expected_output": "Not eligible to vote",
+    "is_sample": true,
+    "explanation": "0 is less than 18 so the person is not eligible to vote",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 77,
+  "fields": {
+    "problem": 14,
+    "input_data": "15",
+    "expected_output": "Not eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 78,
+  "fields": {
+    "problem": 14,
+    "input_data": "25",
+    "expected_output": "Eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 79,
+  "fields": {
+    "problem": 14,
+    "input_data": "1",
+    "expected_output": "Not eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 80,
+  "fields": {
+    "problem": 14,
+    "input_data": "100",
+    "expected_output": "Eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 81,
+  "fields": {
+    "problem": 14,
+    "input_data": "17",
+    "expected_output": "Not eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 82,
+  "fields": {
+    "problem": 14,
+    "input_data": "45",
+    "expected_output": "Eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 83,
+  "fields": {
+    "problem": 14,
+    "input_data": "12",
+    "expected_output": "Not eligible to vote",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 84,
+  "fields": {
+    "problem": 15,
+    "input_data": "2000",
+    "expected_output": "Leap year",
+    "is_sample": true,
+    "explanation": "2000 is divisible by 400 so it is a Leap year",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 85,
+  "fields": {
+    "problem": 15,
+    "input_data": "1900",
+    "expected_output": "Not a leap year",
+    "is_sample": true,
+    "explanation": "1900 is divisible by 100 but not by 400 so it is Not a leap year",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 86,
+  "fields": {
+    "problem": 15,
+    "input_data": "2024",
+    "expected_output": "Leap year",
+    "is_sample": true,
+    "explanation": "2024 is divisible by 4 and not divisible by 100 so it is a Leap year",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 87,
+  "fields": {
+    "problem": 15,
+    "input_data": "1800",
+    "expected_output": "Not a leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 88,
+  "fields": {
+    "problem": 15,
+    "input_data": "2100",
+    "expected_output": "Not a leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 89,
+  "fields": {
+    "problem": 15,
+    "input_data": "2004",
+    "expected_output": "Leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 90,
+  "fields": {
+    "problem": 15,
+    "input_data": "1997",
+    "expected_output": "Not a leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 91,
+  "fields": {
+    "problem": 15,
+    "input_data": "2400",
+    "expected_output": "Leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 92,
+  "fields": {
+    "problem": 15,
+    "input_data": "2023",
+    "expected_output": "Not a leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 93,
+  "fields": {
+    "problem": 15,
+    "input_data": "1600",
+    "expected_output": "Leap year",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 94,
+  "fields": {
+    "problem": 16,
+    "input_data": "250",
+    "expected_output": "1700",
+    "is_sample": true,
+    "explanation": "First 100 units at 5 = 500, Next 100 units at 7 = 700, Remaining 50 units at 10 = 500, Total = 1700",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 95,
+  "fields": {
+    "problem": 16,
+    "input_data": "50",
+    "expected_output": "250",
+    "is_sample": true,
+    "explanation": "50 units are within first 100 units so 50 x 5 = 250",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 96,
+  "fields": {
+    "problem": 16,
+    "input_data": "150",
+    "expected_output": "850",
+    "is_sample": true,
+    "explanation": "First 100 units at 5 = 500, Next 50 units at 7 = 350, Total = 850",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 97,
+  "fields": {
+    "problem": 16,
+    "input_data": "0",
+    "expected_output": "0",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 98,
+  "fields": {
+    "problem": 16,
+    "input_data": "100",
+    "expected_output": "500",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 99,
+  "fields": {
+    "problem": 16,
+    "input_data": "200",
+    "expected_output": "1200",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 100,
+  "fields": {
+    "problem": 16,
+    "input_data": "300",
+    "expected_output": "2200",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 101,
+  "fields": {
+    "problem": 16,
+    "input_data": "75",
+    "expected_output": "375",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 102,
+  "fields": {
+    "problem": 16,
+    "input_data": "125",
+    "expected_output": "675",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 103,
+  "fields": {
+    "problem": 16,
+    "input_data": "500",
+    "expected_output": "4200",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 104,
+  "fields": {
+    "problem": 17,
+    "input_data": "9",
+    "expected_output": "9 x 1 = 9\n9 x 2 = 18\n9 x 3 = 27\n9 x 4 = 36\n9 x 5 = 45\n9 x 6 = 54\n9 x 7 = 63\n9 x 8 = 72\n9 x 9 = 81\n9 x 10 = 90",
+    "is_sample": true,
+    "explanation": "9 multiplied from 1 to 10 gives the multiplication table of 9",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 105,
+  "fields": {
+    "problem": 17,
+    "input_data": "1",
+    "expected_output": "1 x 1 = 1\n1 x 2 = 2\n1 x 3 = 3\n1 x 4 = 4\n1 x 5 = 5\n1 x 6 = 6\n1 x 7 = 7\n1 x 8 = 8\n1 x 9 = 9\n1 x 10 = 10",
+    "is_sample": true,
+    "explanation": "1 multiplied from 1 to 10 gives the multiplication table of 1",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 106,
+  "fields": {
+    "problem": 17,
+    "input_data": "5",
+    "expected_output": "5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15\n5 x 4 = 20\n5 x 5 = 25\n5 x 6 = 30\n5 x 7 = 35\n5 x 8 = 40\n5 x 9 = 45\n5 x 10 = 50",
+    "is_sample": true,
+    "explanation": "5 multiplied from 1 to 10 gives the multiplication table of 5",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 107,
+  "fields": {
+    "problem": 17,
+    "input_data": "2",
+    "expected_output": "2 x 1 = 2\n2 x 2 = 4\n2 x 3 = 6\n2 x 4 = 8\n2 x 5 = 10\n2 x 6 = 12\n2 x 7 = 14\n2 x 8 = 16\n2 x 9 = 18\n2 x 10 = 20",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 108,
+  "fields": {
+    "problem": 17,
+    "input_data": "3",
+    "expected_output": "3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15\n3 x 6 = 18\n3 x 7 = 21\n3 x 8 = 24\n3 x 9 = 27\n3 x 10 = 30",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 109,
+  "fields": {
+    "problem": 17,
+    "input_data": "7",
+    "expected_output": "7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 110,
+  "fields": {
+    "problem": 17,
+    "input_data": "10",
+    "expected_output": "10 x 1 = 10\n10 x 2 = 20\n10 x 3 = 30\n10 x 4 = 40\n10 x 5 = 50\n10 x 6 = 60\n10 x 7 = 70\n10 x 8 = 80\n10 x 9 = 90\n10 x 10 = 100",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 111,
+  "fields": {
+    "problem": 17,
+    "input_data": "4",
+    "expected_output": "4 x 1 = 4\n4 x 2 = 8\n4 x 3 = 12\n4 x 4 = 16\n4 x 5 = 20\n4 x 6 = 24\n4 x 7 = 28\n4 x 8 = 32\n4 x 9 = 36\n4 x 10 = 40",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 112,
+  "fields": {
+    "problem": 17,
+    "input_data": "6",
+    "expected_output": "6 x 1 = 6\n6 x 2 = 12\n6 x 3 = 18\n6 x 4 = 24\n6 x 5 = 30\n6 x 6 = 36\n6 x 7 = 42\n6 x 8 = 48\n6 x 9 = 54\n6 x 10 = 60",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 113,
+  "fields": {
+    "problem": 17,
+    "input_data": "8",
+    "expected_output": "8 x 1 = 8\n8 x 2 = 16\n8 x 3 = 24\n8 x 4 = 32\n8 x 5 = 40\n8 x 6 = 48\n8 x 7 = 56\n8 x 8 = 64\n8 x 9 = 72\n8 x 10 = 80",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 114,
+  "fields": {
+    "problem": 18,
+    "input_data": "9\n11",
+    "expected_output": "9 x 1 = 9\n9 x 2 = 18\n9 x 3 = 27\n9 x 4 = 36\n9 x 5 = 45\n9 x 6 = 54\n9 x 7 = 63\n9 x 8 = 72\n9 x 9 = 81\n9 x 10 = 90\nrows are limited to 10",
+    "is_sample": true,
+    "explanation": "11 rows are requested but limit is 10 so table is printed only up to 10 rows and error message is shown",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 115,
+  "fields": {
+    "problem": 18,
+    "input_data": "5\n3",
+    "expected_output": "5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15",
+    "is_sample": true,
+    "explanation": "3 rows are within limit so table is printed up to 3 rows without any error message",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 116,
+  "fields": {
+    "problem": 18,
+    "input_data": "7\n10",
+    "expected_output": "7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70",
+    "is_sample": true,
+    "explanation": "10 rows are exactly at limit so table is printed up to 10 rows without any error message",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 117,
+  "fields": {
+    "problem": 18,
+    "input_data": "3\n15",
+    "expected_output": "3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15\n3 x 6 = 18\n3 x 7 = 21\n3 x 8 = 24\n3 x 9 = 27\n3 x 10 = 30\nrows are limited to 10",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 118,
+  "fields": {
+    "problem": 18,
+    "input_data": "2\n5",
+    "expected_output": "2 x 1 = 2\n2 x 2 = 4\n2 x 3 = 6\n2 x 4 = 8\n2 x 5 = 10",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 119,
+  "fields": {
+    "problem": 18,
+    "input_data": "1\n20",
+    "expected_output": "1 x 1 = 1\n1 x 2 = 2\n1 x 3 = 3\n1 x 4 = 4\n1 x 5 = 5\n1 x 6 = 6\n1 x 7 = 7\n1 x 8 = 8\n1 x 9 = 9\n1 x 10 = 10\nrows are limited to 10",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 120,
+  "fields": {
+    "problem": 18,
+    "input_data": "4\n4",
+    "expected_output": "4 x 1 = 4\n4 x 2 = 8\n4 x 3 = 12\n4 x 4 = 16",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 121,
+  "fields": {
+    "problem": 18,
+    "input_data": "6\n1",
+    "expected_output": "6 x 1 = 6",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 122,
+  "fields": {
+    "problem": 18,
+    "input_data": "8\n10",
+    "expected_output": "8 x 1 = 8\n8 x 2 = 16\n8 x 3 = 24\n8 x 4 = 32\n8 x 5 = 40\n8 x 6 = 48\n8 x 7 = 56\n8 x 8 = 64\n8 x 9 = 72\n8 x 10 = 80",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 123,
+  "fields": {
+    "problem": 18,
+    "input_data": "10\n11",
+    "expected_output": "10 x 1 = 10\n10 x 2 = 20\n10 x 3 = 30\n10 x 4 = 40\n10 x 5 = 50\n10 x 6 = 60\n10 x 7 = 70\n10 x 8 = 80\n10 x 9 = 90\n10 x 10 = 100\nrows are limited to 10",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 124,
+  "fields": {
+    "problem": 19,
+    "input_data": "1",
+    "expected_output": "1",
+    "is_sample": true,
+    "explanation": "Sum of first 1 natural number is 1",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 125,
+  "fields": {
+    "problem": 19,
+    "input_data": "5",
+    "expected_output": "15",
+    "is_sample": true,
+    "explanation": "1+2+3+4+5 = 15",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 126,
+  "fields": {
+    "problem": 19,
+    "input_data": "10",
+    "expected_output": "55",
+    "is_sample": true,
+    "explanation": "Sum of first 10 natural numbers is 55",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 127,
+  "fields": {
+    "problem": 19,
+    "input_data": "0",
+    "expected_output": "0",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 128,
+  "fields": {
+    "problem": 19,
+    "input_data": "2",
+    "expected_output": "3",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 129,
+  "fields": {
+    "problem": 19,
+    "input_data": "3",
+    "expected_output": "6",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 130,
+  "fields": {
+    "problem": 19,
+    "input_data": "7",
+    "expected_output": "28",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 131,
+  "fields": {
+    "problem": 19,
+    "input_data": "15",
+    "expected_output": "120",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 132,
+  "fields": {
+    "problem": 19,
+    "input_data": "20",
+    "expected_output": "210",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 133,
+  "fields": {
+    "problem": 19,
+    "input_data": "100",
+    "expected_output": "5050",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 134,
+  "fields": {
+    "problem": 20,
+    "input_data": "123",
+    "expected_output": "6",
+    "is_sample": true,
+    "explanation": "1+2+3 = 6",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 135,
+  "fields": {
+    "problem": 20,
+    "input_data": "456",
+    "expected_output": "15",
+    "is_sample": true,
+    "explanation": "4+5+6 = 15",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 136,
+  "fields": {
+    "problem": 20,
+    "input_data": "0",
+    "expected_output": "0",
+    "is_sample": true,
+    "explanation": "0 has only one digit so sum is 0",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 137,
+  "fields": {
+    "problem": 20,
+    "input_data": "999",
+    "expected_output": "27",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 138,
+  "fields": {
+    "problem": 20,
+    "input_data": "100",
+    "expected_output": "1",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 139,
+  "fields": {
+    "problem": 20,
+    "input_data": "111",
+    "expected_output": "3",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 140,
+  "fields": {
+    "problem": 20,
+    "input_data": "9999",
+    "expected_output": "36",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 141,
+  "fields": {
+    "problem": 20,
+    "input_data": "12345",
+    "expected_output": "15",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 142,
+  "fields": {
+    "problem": 20,
+    "input_data": "1000",
+    "expected_output": "1",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 143,
+  "fields": {
+    "problem": 20,
+    "input_data": "55",
+    "expected_output": "10",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 144,
+  "fields": {
+    "problem": 21,
+    "input_data": "1234",
+    "expected_output": "4321",
+    "is_sample": true,
+    "explanation": "1234 reversed is 4321",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 145,
+  "fields": {
+    "problem": 21,
+    "input_data": "-321",
+    "expected_output": "-123",
+    "is_sample": true,
+    "explanation": "-321 reversed is -123 and negative sign is kept",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 146,
+  "fields": {
+    "problem": 21,
+    "input_data": "0",
+    "expected_output": "0",
+    "is_sample": true,
+    "explanation": "0 reversed is 0",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 147,
+  "fields": {
+    "problem": 21,
+    "input_data": "100",
+    "expected_output": "1",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 148,
+  "fields": {
+    "problem": 21,
+    "input_data": "9999",
+    "expected_output": "9999",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 149,
+  "fields": {
+    "problem": 21,
+    "input_data": "-100",
+    "expected_output": "-1",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 150,
+  "fields": {
+    "problem": 21,
+    "input_data": "12345",
+    "expected_output": "54321",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 151,
+  "fields": {
+    "problem": 21,
+    "input_data": "-456",
+    "expected_output": "-654",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 152,
+  "fields": {
+    "problem": 21,
+    "input_data": "1000",
+    "expected_output": "1",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 153,
+  "fields": {
+    "problem": 21,
+    "input_data": "9876",
+    "expected_output": "6789",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 154,
+  "fields": {
+    "problem": 22,
+    "input_data": "121",
+    "expected_output": "Palindrome",
+    "is_sample": true,
+    "explanation": "121 reversed is also 121 so it is a Palindrome",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 155,
+  "fields": {
+    "problem": 22,
+    "input_data": "123",
+    "expected_output": "Not a Palindrome",
+    "is_sample": true,
+    "explanation": "123 reversed is 321 which is different so it is Not a Palindrome",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 156,
+  "fields": {
+    "problem": 22,
+    "input_data": "0",
+    "expected_output": "Palindrome",
+    "is_sample": true,
+    "explanation": "0 reversed is also 0 so it is a Palindrome",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 157,
+  "fields": {
+    "problem": 22,
+    "input_data": "1001",
+    "expected_output": "Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 158,
+  "fields": {
+    "problem": 22,
+    "input_data": "1000",
+    "expected_output": "Not a Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 159,
+  "fields": {
+    "problem": 22,
+    "input_data": "9999",
+    "expected_output": "Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 160,
+  "fields": {
+    "problem": 22,
+    "input_data": "12321",
+    "expected_output": "Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 161,
+  "fields": {
+    "problem": 22,
+    "input_data": "12345",
+    "expected_output": "Not a Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 162,
+  "fields": {
+    "problem": 22,
+    "input_data": "11",
+    "expected_output": "Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 163,
+  "fields": {
+    "problem": 22,
+    "input_data": "10",
+    "expected_output": "Not a Palindrome",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 164,
+  "fields": {
+    "problem": 23,
+    "input_data": "7",
+    "expected_output": "Prime",
+    "is_sample": true,
+    "explanation": "7 is only divisible by 1 and 7 so it is Prime",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 165,
+  "fields": {
+    "problem": 23,
+    "input_data": "1",
+    "expected_output": "Not Prime",
+    "is_sample": true,
+    "explanation": "1 is not greater than 1 so it is Not Prime",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 166,
+  "fields": {
+    "problem": 23,
+    "input_data": "2",
+    "expected_output": "Prime",
+    "is_sample": true,
+    "explanation": "2 is the smallest prime number divisible only by 1 and 2",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 167,
+  "fields": {
+    "problem": 23,
+    "input_data": "0",
+    "expected_output": "Not Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 168,
+  "fields": {
+    "problem": 23,
+    "input_data": "9",
+    "expected_output": "Not Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 169,
+  "fields": {
+    "problem": 23,
+    "input_data": "13",
+    "expected_output": "Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 170,
+  "fields": {
+    "problem": 23,
+    "input_data": "25",
+    "expected_output": "Not Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 171,
+  "fields": {
+    "problem": 23,
+    "input_data": "97",
+    "expected_output": "Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 172,
+  "fields": {
+    "problem": 23,
+    "input_data": "100",
+    "expected_output": "Not Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 173,
+  "fields": {
+    "problem": 23,
+    "input_data": "53",
+    "expected_output": "Prime",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 174,
+  "fields": {
+    "problem": 24,
+    "input_data": "10",
+    "expected_output": "[2, 3, 5, 7]",
+    "is_sample": true,
+    "explanation": "Prime numbers from 2 to 10 are 2, 3, 5, 7",
+    "order_num": 1
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 175,
+  "fields": {
+    "problem": 24,
+    "input_data": "2",
+    "expected_output": "[2]",
+    "is_sample": true,
+    "explanation": "2 is the only prime number up to 2",
+    "order_num": 2
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 176,
+  "fields": {
+    "problem": 24,
+    "input_data": "1",
+    "expected_output": "[]",
+    "is_sample": true,
+    "explanation": "There are no prime numbers up to 1 so list is empty",
+    "order_num": 3
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 177,
+  "fields": {
+    "problem": 24,
+    "input_data": "20",
+    "expected_output": "[2, 3, 5, 7, 11, 13, 17, 19]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 4
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 178,
+  "fields": {
+    "problem": 24,
+    "input_data": "5",
+    "expected_output": "[2, 3, 5]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 5
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 179,
+  "fields": {
+    "problem": 24,
+    "input_data": "0",
+    "expected_output": "[]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 6
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 180,
+  "fields": {
+    "problem": 24,
+    "input_data": "50",
+    "expected_output": "[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 7
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 181,
+  "fields": {
+    "problem": 24,
+    "input_data": "30",
+    "expected_output": "[2, 3, 5, 7, 11, 13, 17, 19, 23, 29]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 8
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 182,
+  "fields": {
+    "problem": 24,
+    "input_data": "15",
+    "expected_output": "[2, 3, 5, 7, 11, 13]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 9
+  }
+},
+{
+  "model": "problems.testcase",
+  "pk": 183,
+  "fields": {
+    "problem": 24,
+    "input_data": "100",
+    "expected_output": "[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]",
+    "is_sample": false,
+    "explanation": null,
+    "order_num": 10
+  }
+}
+]
