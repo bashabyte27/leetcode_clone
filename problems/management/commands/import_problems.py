@@ -2,7 +2,7 @@
 
 import pandas as pd
 from django.core.management.base import BaseCommand
-from problems.models import Problem, TestCase
+from problems.models import Language, Problem, TestCase
 import os
 
 
@@ -10,6 +10,26 @@ class Command(BaseCommand):
     help = 'Import problems and test cases from Excel file'
 
     def handle(self, *args, **kwargs):
+        languages = [
+            ('Python', 'python', '3.0', '71'),
+            ('Java', 'java', '17.0.6', '62'),
+            ('C++', 'cpp', '17.0.6', '54'),
+            ('C', 'c', '10.2.0', '50'),
+            ('JavaScript', 'javascript', '18.15.0', '63'),
+            ('Go', 'go', '1.18.0', '39'),
+            ('Rust', 'rust', '1.65.0', '73'),
+        ]
+
+        for name, slug, version, judge_id in languages:
+            Language.objects.get_or_create(
+                slug=slug,
+                defaults={
+                    'name': name,
+                    'version': version,
+                    'judge_id': judge_id,
+                    'is_active': True,
+                },
+            )
 
         # ── File Path ──
         file_path = os.path.join(
