@@ -16,7 +16,6 @@
 
       <!-- ── LEFT PROFILE SECTION ── -->
       <div class="profile-card">
-        <!-- Avatar -->
         <div class="profile-avatar-wrap">
           {% if to_user.avatar_url %}
             <img src="{{ to_user.avatar_url }}" alt="{{ to_user.user_name }}" class="profile-avatar-img">
@@ -27,7 +26,6 @@
           {% endif %}
         </div>
 
-        <!-- Username / Name -->
         <div class="profile-identity-info">
           <h1 class="profile-username">{{ to_user.user_name }}</h1>
           {% if to_user.is_admin %}
@@ -37,13 +35,11 @@
           {% endif %}
         </div>
 
-        <!-- Dynamic Rank Badge -->
         <div class="profile-rank-badge" title="Dynamic rank calculated against all users based on submissions">
           <i class="bi bi-trophy-fill rank-trophy"></i>
           <span>Rank #{{ rank }}</span>
         </div>
 
-        <!-- Followers & Following -->
         <div class="profile-social-row">
           <div class="profile-social-box">
             <span class="profile-social-val">{{ followers_count }}</span>
@@ -56,12 +52,10 @@
           </div>
         </div>
 
-        <!-- Bio (if available) -->
         {% if profile.bio %}
           <p class="profile-bio">{{ profile.bio }}</p>
         {% endif %}
 
-        <!-- Meta Info -->
         <div class="profile-meta-list">
           {% if profile.location %}
             <div class="profile-meta-item">
@@ -99,7 +93,6 @@
           </div>
         </div>
 
-        <!-- Edit Profile Button (only when viewing own profile) -->
         {% if editable %}
           <div class="profile-edit-wrap">
             <a href="#" class="btn-edit-profile">
@@ -110,10 +103,10 @@
         {% endif %}
       </div><!-- /profile-card -->
 
-      <!-- ── RIGHT STATISTICS SECTION (Questions Solved + Submission Stats) ── -->
+      <!-- ── RIGHT STATISTICS SECTION ── -->
       <div class="profile-stats-container">
 
-        <!-- 1. Questions Solved -->
+        <!-- Questions Solved -->
         <div class="stats-card questions-solved-card">
           <div class="stats-card-header">
             <h2 class="stats-card-title">
@@ -122,7 +115,6 @@
           </div>
 
           <div class="solved-content">
-            <!-- Large Total Solved Count -->
             <div class="solved-hero">
               <div class="solved-hero-count">{{ total_solved }}</div>
               <div class="solved-hero-label">
@@ -131,9 +123,7 @@
               </div>
             </div>
 
-            <!-- Breakdown: Easy, Medium, Hard -->
             <div class="solved-breakdown-list">
-              <!-- Easy -->
               <div class="solved-breakdown-item">
                 <div class="solved-row-info">
                   <span class="badge-diff badge-easy">Easy</span>
@@ -149,7 +139,6 @@
                 </div>
               </div>
 
-              <!-- Medium -->
               <div class="solved-breakdown-item">
                 <div class="solved-row-info">
                   <span class="badge-diff badge-medium">Medium</span>
@@ -165,7 +154,6 @@
                 </div>
               </div>
 
-              <!-- Hard -->
               <div class="solved-breakdown-item">
                 <div class="solved-row-info">
                   <span class="badge-diff badge-hard">Hard</span>
@@ -180,11 +168,11 @@
                   </div>
                 </div>
               </div>
-            </div><!-- /solved-breakdown-list -->
-          </div><!-- /solved-content -->
+            </div>
+          </div>
         </div><!-- /questions-solved-card -->
 
-        <!-- 2. Submission Stats -->
+        <!-- Submission Stats -->
         <div class="stats-card submission-stats-card">
           <div class="stats-card-header">
             <h2 class="stats-card-title">
@@ -193,7 +181,6 @@
           </div>
 
           <div class="submission-stats-body">
-            <!-- Submission Rate -->
             <div class="sub-stat-block">
               <div class="sub-stat-value text-neon">{{ submission_rate|floatformat:1 }}%</div>
               <div class="sub-stat-name">Submission Rate</div>
@@ -205,7 +192,6 @@
 
             <div class="sub-stat-sep"></div>
 
-            <!-- Overall Submissions -->
             <div class="sub-stat-block">
               <div class="sub-stat-value text-heading">{{ total_submissions }}</div>
               <div class="sub-stat-name">Overall Submissions</div>
@@ -218,11 +204,10 @@
         </div><!-- /submission-stats-card -->
 
       </div><!-- /profile-stats-container -->
-
     </div><!-- /profile-top-layout -->
 
 
-    <!-- ═══════════════ SUBMISSION / PRACTICE HISTORY ═══════════════ -->
+    <!-- ═══════════════ PRACTICE HISTORY ═══════════════ -->
     <div class="history-card">
       <div class="history-header">
         <div class="d-flex align-items-center gap-2">
@@ -248,14 +233,12 @@
             <tbody>
               {% for sub in page_obj %}
                 <tr>
-                  <!-- Problem Title -->
                   <td class="td-problem">
                     <a href="{% url 'problems:problem' sub.problem.slug %}" class="problem-link">
                       {{ sub.problem.title }}
                     </a>
                   </td>
 
-                  <!-- Difficulty -->
                   <td class="td-difficulty">
                     {% if sub.problem.difficulty == 'easy' %}
                       <span class="badge-diff badge-easy">Easy</span>
@@ -266,7 +249,6 @@
                     {% endif %}
                   </td>
 
-                  <!-- Language -->
                   <td class="td-language">
                     {% if sub.language %}
                       <span class="lang-tag">{{ sub.language.name }}</span>
@@ -275,7 +257,6 @@
                     {% endif %}
                   </td>
 
-                  <!-- Status -->
                   <td class="td-status">
                     {% if sub.status == 'accepted' %}
                       <span class="status-pill status-accepted">
@@ -312,7 +293,6 @@
                     {% endif %}
                   </td>
 
-                  <!-- Runtime -->
                   <td class="td-runtime">
                     {% if sub.runtime_ms is not None %}
                       <span class="runtime-badge"><i class="bi bi-speedometer2"></i> {{ sub.runtime_ms }} ms</span>
@@ -321,7 +301,6 @@
                     {% endif %}
                   </td>
 
-                  <!-- Submitted At -->
                   <td class="td-date">
                     <span class="date-text">{{ sub.submitted_at|date:"M d, Y" }}</span>
                     <span class="time-text">{{ sub.submitted_at|date:"H:i" }}</span>
@@ -332,22 +311,19 @@
           </table>
         </div>
 
-        <!-- ── Django Pagination (20 items per page) ── -->
         {% if paginator.num_pages > 1 %}
           <div class="pagination-footer">
             <div class="profile-pagination">
-              <!-- Previous Button -->
               {% if page_obj.has_previous %}
                 <a href="?page={{ page_obj.previous_page_number }}" class="page-link-btn" title="Previous Page">
-                  <i class="bi bi-chevron-left me-1"></i> Previous
+                  <i class="bi bi-chevron-left me-1"></i><span>Previous</span>
                 </a>
               {% else %}
                 <span class="page-link-btn disabled">
-                  <i class="bi bi-chevron-left me-1"></i> Previous
+                  <i class="bi bi-chevron-left me-1"></i><span>Previous</span>
                 </span>
               {% endif %}
 
-              <!-- Page Numbers with Elision -->
               <div class="page-numbers-wrap">
                 {% for num in elided_page_range %}
                   {% if num == page_obj.number %}
@@ -360,14 +336,13 @@
                 {% endfor %}
               </div>
 
-              <!-- Next Button -->
               {% if page_obj.has_next %}
                 <a href="?page={{ page_obj.next_page_number }}" class="page-link-btn" title="Next Page">
-                  Next <i class="bi bi-chevron-right ms-1"></i>
+                  <span>Next</span><i class="bi bi-chevron-right ms-1"></i>
                 </a>
               {% else %}
                 <span class="page-link-btn disabled">
-                  Next <i class="bi bi-chevron-right ms-1"></i>
+                  <span>Next</span><i class="bi bi-chevron-right ms-1"></i>
                 </span>
               {% endif %}
             </div>
@@ -386,7 +361,6 @@
           </a>
         </div>
       {% endif %}
-
     </div><!-- /history-card -->
 
   </div><!-- /container-xl -->

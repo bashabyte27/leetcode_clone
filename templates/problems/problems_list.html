@@ -3,258 +3,516 @@
 
 {% block title %}Problems — BashaByte{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/problems.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid px-4 py-4">
-    <div class="row g-4">
+<div class="bb-problems">
+  <div class="bbp-wrap">
 
-        <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
-        <div class="col-lg-8 col-md-12">
-            <div class="page-head">
-                <div>
-                    <h1 class="page-title">Problems</h1>
-                    <p class="page-sub">Sharpen your skills with our curated problem set</p>
-                </div>
-                <div class="page-stats">
-                    <span class="stat-pill">
-                        <i class="bi bi-collection"></i>
-                        Total&nbsp;<strong>{{ total_problems|default:"0" }}</strong>
-                    </span>
-                    <span class="badge-easy">Easy {{ easy_count|default:"0" }}</span>
-                    <span class="badge-medium">Medium {{ medium_count|default:"0" }}</span>
-                    <span class="badge-hard">Hard {{ hard_count|default:"0" }}</span>
-                </div>
-            </div>
+    <!-- ═══════════════ PAGE HEADER ═══════════════ -->
+    <header class="bbp-head">
+      <div>
+        <div class="bbp-kicker">
+          <span class="bbp-kicker-dot"></span>
+          The BashaByte Library
+        </div>
+        <h1 class="bbp-title">Sharpen your edge.</h1>
+        <p class="bbp-sub">
+          A curated set of problems across every difficulty. Practice daily,
+          build patterns, and level up.
+        </p>
+      </div>
+      <div class="bbp-stats">
+        <div class="bbp-stat">
+          <span class="bbp-stat-num">{{ total_problems|default:"0" }}</span>
+          <span class="bbp-stat-lbl">Total</span>
+        </div>
+        <div class="bbp-stat bbp-stat-easy">
+          <span class="bbp-stat-num">{{ easy_count|default:"0" }}</span>
+          <span class="bbp-stat-lbl">Easy</span>
+        </div>
+        <div class="bbp-stat bbp-stat-medium">
+          <span class="bbp-stat-num">{{ medium_count|default:"0" }}</span>
+          <span class="bbp-stat-lbl">Medium</span>
+        </div>
+        <div class="bbp-stat bbp-stat-hard">
+          <span class="bbp-stat-num">{{ hard_count|default:"0" }}</span>
+          <span class="bbp-stat-lbl">Hard</span>
+        </div>
+      </div>
+    </header>
 
-            <div class="lc-card">
-                <div class="table-responsive">
-                    <table class="lc-table w-100">
-                        <thead>
-                            <tr>
-                                <th style="width:8%">Status</th>
-                                <th style="width:8%">Q</th>
-                                <th>Title</th>
-                                <th style="width:15%">Difficulty</th>
-                                <th style="width:15%">Acceptance</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for problem in problems %}
-                                <tr style="cursor: pointer;">
-                                    <td class="text-center">
-                                        {% if problem.is_solved %}
-                                            <i class="bi bi-check-circle-fill status-solved"></i>
-                                        {% else %}
-                                            <i class="bi bi-circle status-unsolved"></i>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-lc-secondary">{{ problem.order_num|default:forloop.counter }}</td>
-                                    <td>
-                                        <a href="{% url 'problems:problem' problem.slug %}" class="lc-link problem-title">{{ problem.title }}</a>
-                                    </td>
-                                    <td class="difficulty-col">
-                                        <span class="badge-{{ problem.difficulty }}">
-                                            {{ problem.get_difficulty_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex flex-column gap-1">
-                                            <span class="text-lc-secondary small">{{ problem.acceptance_rate|default:"0" }}%</span>
-                                            <div class="progress acceptance-bar">
-                                                <div class="progress-bar"
-                                                     role="progressbar"
-                                                     style="width:{{ problem.acceptance_rate|default:0 }}%;">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center py-5 text-lc-secondary">
-                                        No problems found yet.
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <!-- ═══════════════ TOOLBAR — search + filters ═══════════════ -->
+    <div class="bbp-toolbar" role="search">
+      <div class="bbp-search">
+        <i class="bi bi-search bbp-search-icon" aria-hidden="true"></i>
+        <label for="bbpSearch" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search problems</label>
+        <input
+          type="search"
+          id="bbpSearch"
+          class="bbp-search-input"
+          placeholder="Search by title or problem number…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <kbd class="bbp-search-kbd" aria-hidden="true">/</kbd>
+        <button type="button" class="bbp-search-clear" id="bbpSearchClear" aria-label="Clear search">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
 
-            {% if is_paginated %}
-            <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
-                <div class="text-lc-secondary small">
-                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} problems
-                </div>
-                <nav>
-                    <ul class="pagination mb-0">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link lc-link" href="?page=1">&laquo; First</a></li>
-                            <li class="page-item"><a class="page-link lc-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
-                        {% endif %}
-                        <li class="page-item active">
-                            <span class="page-link" style="background-color:var(--orange); border-color:var(--orange); color:#000;">{{ page_obj.number }}</span>
-                        </li>
-                        {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link lc-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
-                            <li class="page-item"><a class="page-link lc-link" href="?page={{ paginator.num_pages }}">Last &raquo;</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
+      <div class="bbp-filters">
+        <div class="bbp-seg" role="group" aria-label="Filter by difficulty">
+          <button type="button" class="bbp-seg-btn is-active" data-difficulty="all">
+            All
+          </button>
+          <button type="button" class="bbp-seg-btn" data-difficulty="easy">
+            <span class="bbp-seg-dot easy"></span>Easy
+          </button>
+          <button type="button" class="bbp-seg-btn" data-difficulty="medium">
+            <span class="bbp-seg-dot medium"></span>Medium
+          </button>
+          <button type="button" class="bbp-seg-btn" data-difficulty="hard">
+            <span class="bbp-seg-dot hard"></span>Hard
+          </button>
+        </div>
+      </div>
+
+      <div class="bbp-toolbar-meta">
+        <span class="bbp-count" id="bbpCount">
+          <strong>{{ paginator.count|default:problems|length }}</strong> problems
+        </span>
+        <button type="button" class="bbp-reset" id="bbpReset" hidden>
+          <i class="bi bi-arrow-counterclockwise"></i> Reset filters
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ LAYOUT ═══════════════ -->
+    <div class="bbp-layout">
+
+      <!-- ── Problem list ── -->
+      <div class="bbp-list-col">
+        <div class="bbp-list" id="bbpList" role="list">
+          {% for problem in problems %}
+            <div class="bbp-row"
+                 role="listitem"
+                 data-difficulty="{{ problem.difficulty|lower }}"
+                 data-title="{{ problem.title|lower }}"
+                 data-number="{{ problem.order_num|default:forloop.counter }}">
+
+              <div class="bbp-row-status">
+                {% if problem.is_solved %}
+                  <span class="bbp-status bbp-status-solved" title="Solved" aria-label="Solved">
+                    <i class="bi bi-check-lg"></i>
+                  </span>
+                {% else %}
+                  <span class="bbp-status bbp-status-unsolved" title="Not solved" aria-label="Not solved"></span>
+                {% endif %}
+              </div>
+
+              <div class="bbp-row-num">
+                {{ problem.order_num|default:forloop.counter }}
+              </div>
+
+              <div class="bbp-row-main">
+                <a href="{% url 'problems:problem' problem.slug %}" class="bbp-row-title">
+                  {{ problem.title }}
+                </a>
+              </div>
+
+              <div class="bbp-row-diff">
+                <span class="bbp-diff bbp-diff-{{ problem.difficulty|lower }}">
+                  {{ problem.get_difficulty_display }}
+                </span>
+              </div>
+
+              <div class="bbp-row-accept">
+                <span class="bbp-accept-val">{{ problem.acceptance_rate|default:"0" }}%</span>
+                <span class="bbp-accept-bar">
+                  <span class="bbp-accept-fill"
+                        style="width:{{ problem.acceptance_rate|default:0 }}%;"></span>
+                </span>
+              </div>
+
+              <div class="bbp-row-arrow" aria-hidden="true">
+                <i class="bi bi-arrow-right"></i>
+              </div>
             </div>
-            {% endif %}
+          {% empty %}
+            <div class="bbp-empty" id="bbpEmptyDefault">
+              <div class="bbp-empty-icon">
+                <i class="bi bi-code-slash"></i>
+              </div>
+              <h3 class="bbp-empty-title">No problems yet</h3>
+              <p class="bbp-empty-sub">
+                The library is still being built. Check back soon for a fresh set of problems.
+              </p>
+            </div>
+          {% endfor %}
         </div>
 
-        <!-- ═══════════════ RIGHT SIDEBAR ═══════════════ -->
-        <aside class="col-lg-4 col-md-12">
+        <!-- Empty state for active filters (hidden by default) -->
+        <div class="bbp-empty" id="bbpEmptyFiltered" hidden>
+          <div class="bbp-empty-icon">
+            <i class="bi bi-search"></i>
+          </div>
+          <h3 class="bbp-empty-title">No matching problems</h3>
+          <p class="bbp-empty-sub">
+            Try a different search term or clear the difficulty filter.
+          </p>
+          <button type="button" class="bbp-empty-btn" id="bbpEmptyReset">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset filters
+          </button>
+        </div>
 
-            <!-- ─── Your Progress ─── -->
-            <section class="sb-card">
-                <header class="sb-head">
-                    <i class="bi bi-activity"></i>
-                    <h6>Your Progress</h6>
-                </header>
-
-                {% if request.user.is_authenticated %}
-                    <div class="progress-hero">
-                        <div class="progress-ring-wrap">
-                            <svg class="progress-ring" viewBox="0 0 36 36" aria-hidden="true">
-                                <path class="progress-ring-track"
-                                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path class="progress-ring-fill"
-                                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                      stroke-dasharray="{{ overall_progress_percent|default:'0' }}, 100"
-                                      data-progress="{{ overall_progress_percent|default:'0' }}"/>
-                            </svg>
-                            <div class="progress-ring-text">
-                                <span class="progress-ring-percent">{{ progress|default:"0" }}<span class="progress-ring-pct">%</span></span>
-                            </div>
-                        </div>
-                        <div class="progress-summary">
-                            <div class="progress-summary-title">Keep shipping.</div>
-                            <div class="progress-summary-sub">Solve problems across all difficulties to level up.</div>
-                        </div>
-                    </div>
-
-                    <div class="progress-breakdown">
-                        <div class="pb-row" style="--solved: {{ Easy_solved|default:0 }}; --total: {{ easy_count|default:1 }};">
-                            <span class="pb-label"><span class="pb-dot easy"></span>Easy</span>
-                            <span class="pb-bar"><span class="pb-fill easy"></span></span>
-                            <span class="pb-count"><strong>{{ Easy_solved|default:"0" }}</strong> / {{ easy_count|default:"0" }}</span>
-                        </div>
-                        <div class="pb-row" style="--solved: {{ Medium_solved|default:0 }}; --total: {{ medium_count|default:1 }};">
-                            <span class="pb-label"><span class="pb-dot medium"></span>Medium</span>
-                            <span class="pb-bar"><span class="pb-fill medium"></span></span>
-                            <span class="pb-count"><strong>{{ Medium_solved|default:"0" }}</strong> / {{ medium_count|default:"0" }}</span>
-                        </div>
-                        <div class="pb-row" style="--solved: {{ Hard_solved|default:0 }}; --total: {{ hard_count|default:1 }};">
-                            <span class="pb-label"><span class="pb-dot hard"></span>Hard</span>
-                            <span class="pb-bar"><span class="pb-fill hard"></span></span>
-                            <span class="pb-count"><strong>{{ Hard_solved|default:"0" }}</strong> / {{ hard_count|default:"0" }}</span>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="sb-auth-prompt">
-                        <i class="bi bi-lock"></i>
-                        <p>Log in to track progress and unlock study plans.</p>
-                        <a href="{% url 'users:login' %}" class="btn-lc-orange">Log in</a>
-                    </div>
-                {% endif %}
-            </section>
-
-            <!-- ─── Daily Challenge ─── -->
-            {% if daily_challenge %}
-            <section class="dc-card mt-3">
-                <div class="dc-head">
-                    <span class="dc-title"><i class="bi bi-fire"></i>Daily Challenge</span>
-                    <span>{{ today_date|date:"M j, Y" }}</span>
-                </div>
-                <h6>{{ daily_challenge.title }}</h6>
-                <div class="dc-meta">
-                    <span class="badge-{{ daily_challenge.difficulty|lower }}">{{ daily_challenge.get_difficulty_display }}</span>
-                </div>
-                <a href="/problems/{{ daily_challenge.slug }}/" class="dc-cta">
-                    Solve now <i class="bi bi-arrow-right"></i>
+        <!-- ═══════════════ PAGINATION ═══════════════ -->
+        {% if is_paginated %}
+          <nav class="bbp-pagination" aria-label="Problem pagination">
+            <div class="bbp-pagination-info">
+              Showing <strong>{{ page_obj.start_index }}</strong>–<strong>{{ page_obj.end_index }}</strong>
+              of <strong>{{ paginator.count }}</strong> problems
+            </div>
+            <div class="bbp-pagination-nav">
+              {% if page_obj.has_previous %}
+                <a class="bbp-page-btn" href="?page={{ page_obj.previous_page_number }}"
+                   rel="prev" aria-label="Previous page">
+                  <i class="bi bi-chevron-left"></i>
                 </a>
-            </section>
-            {% endif %}
+              {% else %}
+                <span class="bbp-page-btn" style="opacity:.35;pointer-events:none;" aria-disabled="true">
+                  <i class="bi bi-chevron-left"></i>
+                </span>
+              {% endif %}
 
-            <!-- ─── Study Plans ─── -->
-            <section class="sb-card mt-3">
-                <header class="sb-head">
-                    <i class="bi bi-signpost-split"></i>
-                    <h6>Study Plans</h6>
-                </header>
+              <span class="bbp-page-current">
+                {{ page_obj.number }} / {{ paginator.num_pages }}
+              </span>
 
-                <div class="plan-list">
-                    <div class="plan-item">
-                        <div class="plan-row1">
-                            <span class="plan-name"><i class="bi bi-diagram-3"></i>DSA Basics</span>
-                            <span class="plan-level beginner">Beginner</span>
-                        </div>
-                        <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
-                        <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
-                    </div>
+              {% if page_obj.has_next %}
+                <a class="bbp-page-btn" href="?page={{ page_obj.next_page_number }}"
+                   rel="next" aria-label="Next page">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              {% else %}
+                <span class="bbp-page-btn" style="opacity:.35;pointer-events:none;" aria-disabled="true">
+                  <i class="bi bi-chevron-right"></i>
+                </span>
+              {% endif %}
+            </div>
+          </nav>
+        {% endif %}
+      </div>
 
-                    <div class="plan-item">
-                        <div class="plan-row1">
-                            <span class="plan-name"><i class="bi bi-briefcase"></i>Interview Prep</span>
-                            <span class="plan-level intermediate">Intermediate</span>
-                        </div>
-                        <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
-                        <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
-                    </div>
+      <!-- ═══════════════ SIDEBAR ═══════════════ -->
+      <aside class="bbp-sidebar">
 
-                    <div class="plan-item">
-                        <div class="plan-row1">
-                            <span class="plan-name"><i class="bi bi-filetype-py"></i>Python Mastery</span>
-                            <span class="plan-level beginner">Beginner</span>
-                        </div>
-                        <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
-                        <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
-                    </div>
+        <!-- Your Progress -->
+        <section class="sb-card">
+          <header class="sb-head">
+            <i class="bi bi-activity"></i>
+            <h6>Your Progress</h6>
+          </header>
+
+          {% if request.user.is_authenticated %}
+            <div class="progress-hero">
+              <div class="progress-ring-wrap">
+                <svg class="progress-ring" viewBox="0 0 36 36" aria-hidden="true">
+                  <path class="progress-ring-track"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path class="progress-ring-fill"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        stroke-dasharray="{{ overall_progress_percent|default:'0' }}, 100"
+                        data-progress="{{ overall_progress_percent|default:'0' }}"/>
+                </svg>
+                <div class="progress-ring-text">
+                  <span class="progress-ring-percent">{{ progress|default:"0" }}<span class="progress-ring-pct">%</span></span>
                 </div>
-            </section>
+              </div>
+              <div class="progress-summary">
+                <div class="progress-summary-title">Keep shipping.</div>
+                <div class="progress-summary-sub">Solve problems across all difficulties to level up.</div>
+              </div>
+            </div>
 
-            <!-- ─── Popular Topics ─── -->
-            <section class="sb-card mt-3">
-                <header class="sb-head">
-                    <i class="bi bi-tag"></i>
-                    <h6>Popular Topics</h6>
-                </header>
+            <div class="progress-breakdown">
+              <div class="pb-row" style="--solved: {{ Easy_solved|default:0 }}; --total: {{ easy_count|default:1 }};">
+                <span class="pb-label"><span class="pb-dot easy"></span>Easy</span>
+                <span class="pb-bar"><span class="pb-fill easy"></span></span>
+                <span class="pb-count"><strong>{{ Easy_solved|default:"0" }}</strong> / {{ easy_count|default:"0" }}</span>
+              </div>
+              <div class="pb-row" style="--solved: {{ Medium_solved|default:0 }}; --total: {{ medium_count|default:1 }};">
+                <span class="pb-label"><span class="pb-dot medium"></span>Medium</span>
+                <span class="pb-bar"><span class="pb-fill medium"></span></span>
+                <span class="pb-count"><strong>{{ Medium_solved|default:"0" }}</strong> / {{ medium_count|default:"0" }}</span>
+              </div>
+              <div class="pb-row" style="--solved: {{ Hard_solved|default:0 }}; --total: {{ hard_count|default:1 }};">
+                <span class="pb-label"><span class="pb-dot hard"></span>Hard</span>
+                <span class="pb-bar"><span class="pb-fill hard"></span></span>
+                <span class="pb-count"><strong>{{ Hard_solved|default:"0" }}</strong> / {{ hard_count|default:"0" }}</span>
+              </div>
+            </div>
+          {% else %}
+            <div class="sb-auth-prompt">
+              <i class="bi bi-lock"></i>
+              <p>Log in to track progress and unlock study plans.</p>
+              <a href="{% url 'users:login' %}" class="btn-lc-orange">Log in</a>
+            </div>
+          {% endif %}
+        </section>
 
-                <div class="topic-cloud">
-                    <span class="topic-chip">Array</span>
-                    <span class="topic-chip">String</span>
-                    <span class="topic-chip">Dynamic Programming</span>
-                    <span class="topic-chip">Graph</span>
-                    <span class="topic-chip">Tree</span>
-                    <span class="topic-chip">Binary Search</span>
-                    <span class="topic-chip">Stack</span>
-                    <span class="topic-chip">Queue</span>
-                    <span class="topic-chip">Sorting</span>
-                </div>
-            </section>
-        </aside>
+        <!-- Daily Challenge -->
+        {% if daily_challenge %}
+          <section class="dc-card">
+            <div class="dc-head">
+              <span class="dc-title"><i class="bi bi-fire"></i>Daily Challenge</span>
+              <span>{{ today_date|date:"M j, Y" }}</span>
+            </div>
+            <h6>{{ daily_challenge.title }}</h6>
+            <div class="dc-meta">
+              <span class="badge-{{ daily_challenge.difficulty|lower }}">{{ daily_challenge.get_difficulty_display }}</span>
+            </div>
+            <a href="/problems/{{ daily_challenge.slug }}/" class="dc-cta">
+              Solve now <i class="bi bi-arrow-right"></i>
+            </a>
+          </section>
+        {% endif %}
 
+        <!-- Study Plans -->
+        <section class="sb-card">
+          <header class="sb-head">
+            <i class="bi bi-signpost-split"></i>
+            <h6>Study Plans</h6>
+          </header>
+
+          <div class="plan-list">
+            <div class="plan-item">
+              <div class="plan-row1">
+                <span class="plan-name"><i class="bi bi-diagram-3"></i>DSA Basics</span>
+                <span class="plan-level beginner">Beginner</span>
+              </div>
+              <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
+              <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
+            </div>
+
+            <div class="plan-item">
+              <div class="plan-row1">
+                <span class="plan-name"><i class="bi bi-briefcase"></i>Interview Prep</span>
+                <span class="plan-level intermediate">Intermediate</span>
+              </div>
+              <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
+              <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
+            </div>
+
+            <div class="plan-item">
+              <div class="plan-row1">
+                <span class="plan-name"><i class="bi bi-filetype-py"></i>Python Mastery</span>
+                <span class="plan-level beginner">Beginner</span>
+              </div>
+              <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
+              <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Popular Topics -->
+        <section class="sb-card">
+          <header class="sb-head">
+            <i class="bi bi-tag"></i>
+            <h6>Popular Topics</h6>
+          </header>
+
+          <div class="topic-cloud">
+            <span class="topic-chip">Array</span>
+            <span class="topic-chip">String</span>
+            <span class="topic-chip">Dynamic Programming</span>
+            <span class="topic-chip">Graph</span>
+            <span class="topic-chip">Tree</span>
+            <span class="topic-chip">Binary Search</span>
+            <span class="topic-chip">Stack</span>
+            <span class="topic-chip">Queue</span>
+            <span class="topic-chip">Sorting</span>
+          </div>
+        </section>
+
+      </aside>
     </div>
+
+  </div>
 </div>
 
 <script>
 (function () {
-    // ── Animate the SVG progress ring ──
-    var ring = document.querySelector('.progress-ring-fill');
+    "use strict";
+
+    // ── Elements ──
+    var searchInput  = document.getElementById("bbpSearch");
+    var searchClear  = document.getElementById("bbpSearchClear");
+    var resetBtn     = document.getElementById("bbpReset");
+    var emptyReset   = document.getElementById("bbpEmptyReset");
+    var emptyFilter  = document.getElementById("bbpEmptyFiltered");
+    var countEl      = document.getElementById("bbpCount");
+    var listEl       = document.getElementById("bbpList");
+    var segBtns      = document.querySelectorAll(".bbp-seg-btn");
+
+    if (!listEl) return;
+
+    var rows = Array.prototype.slice.call(listEl.querySelectorAll(".bbp-row"));
+    var totalProblems = rows.length;
+
+    // ── State ──
+    var state = { q: "", difficulty: "all" };
+
+    // Restore from sessionStorage (state survives pagination clicks)
+    try {
+        var saved = JSON.parse(sessionStorage.getItem("bbp-filters") || "null");
+        if (saved && typeof saved === "object") {
+            state.q = saved.q || "";
+            state.difficulty = saved.difficulty || "all";
+        }
+    } catch (e) {}
+
+    function persist() {
+        try { sessionStorage.setItem("bbp-filters", JSON.stringify(state)); } catch (e) {}
+    }
+
+    // ── Apply filters ──
+    function apply() {
+        var q = state.q.trim().toLowerCase();
+        var diff = state.difficulty;
+        var visible = 0;
+
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var rowDiff = row.getAttribute("data-difficulty") || "";
+            var rowTitle = row.getAttribute("data-title") || "";
+            var rowNum = row.getAttribute("data-number") || "";
+
+            var matchDiff = diff === "all" || rowDiff === diff;
+            var matchQ = !q ||
+                rowTitle.indexOf(q) !== -1 ||
+                rowNum.indexOf(q) !== -1;
+
+            var show = matchDiff && matchQ;
+            row.hidden = !show;
+            if (show) visible++;
+        }
+
+        // Update count
+        if (countEl) {
+            countEl.innerHTML = "<strong>" + visible + "</strong> " +
+                (visible === 1 ? "problem" : "problems");
+        }
+
+        // Show / hide filtered empty state
+        if (emptyFilter) emptyFilter.hidden = visible !== 0;
+        if (listEl) listEl.hidden = visible === 0 && totalProblems > 0;
+
+        // Show / hide reset button
+        var hasFilters = q || diff !== "all";
+        if (resetBtn) resetBtn.hidden = !hasFilters;
+
+        // Sync segmented control active state
+        for (var j = 0; j < segBtns.length; j++) {
+            var btn = segBtns[j];
+            if (btn.getAttribute("data-difficulty") === diff) {
+                btn.classList.add("is-active");
+            } else {
+                btn.classList.remove("is-active");
+            }
+        }
+
+        // Sync search input value
+        if (searchInput && searchInput.value !== state.q) {
+            searchInput.value = state.q;
+        }
+
+        persist();
+    }
+
+    // ── Search input ──
+    if (searchInput) {
+        var rafId = null;
+        searchInput.addEventListener("input", function () {
+            state.q = searchInput.value;
+            // Micro-debounce via rAF — instant on modern browsers
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(apply);
+        });
+
+        // Escape clears search
+        searchInput.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && searchInput.value) {
+                e.preventDefault();
+                searchInput.value = "";
+                state.q = "";
+                apply();
+            }
+        });
+    }
+
+    // ── Clear search button ──
+    if (searchClear) {
+        searchClear.addEventListener("click", function () {
+            state.q = "";
+            if (searchInput) {
+                searchInput.value = "";
+                searchInput.focus();
+            }
+            apply();
+        });
+    }
+
+    // ── Segmented difficulty filters ──
+    for (var k = 0; k < segBtns.length; k++) {
+        segBtns[k].addEventListener("click", function () {
+            var d = this.getAttribute("data-difficulty") || "all";
+            state.difficulty = d;
+            apply();
+        });
+    }
+
+    // ── Reset buttons ──
+    function reset() {
+        state.q = "";
+        state.difficulty = "all";
+        if (searchInput) searchInput.value = "";
+        apply();
+        if (searchInput) searchInput.focus();
+    }
+    if (resetBtn) resetBtn.addEventListener("click", reset);
+    if (emptyReset) emptyReset.addEventListener("click", reset);
+
+    // ── "/" keyboard shortcut ──
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "/") return;
+        var tag = (e.target && e.target.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable)) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (!searchInput) return;
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+    });
+
+    // ── Animate progress ring (existing behavior) ──
+    var ring = document.querySelector(".progress-ring-fill");
     if (ring) {
-        var target = parseFloat(ring.getAttribute('data-progress')) || 0;
+        var target = parseFloat(ring.getAttribute("data-progress")) || 0;
         if (target > 0) {
-            ring.style.strokeDasharray = '0, 100';
-            // Double rAF ensures the browser commits the initial state first
+            ring.style.strokeDasharray = "0, 100";
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    ring.style.strokeDasharray = target + ', 100';
+                    ring.style.strokeDasharray = target + ", 100";
                 });
             });
         }
     }
+
+    // ── Initial apply ──
+    apply();
 })();
 </script>
 {% endblock %}

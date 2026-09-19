@@ -1,97 +1,117 @@
-{% extends 'base.html' %} {% load static %} {% block content %}
-<div class="container py-5 d-flex justify-content-center">
-  <div class="lc-card" style="max-width: 420px; width: 100%; margin: 0 auto">
-    <!-- BashaByte Logo -->
-    <div class="text-center mb-3">
-      <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40" />
-    </div>
+{% extends 'base.html' %}
+{% load static %}
 
-    <h3 class="text-center mb-1">Sign In to BashaByte</h3>
-    <p class="text-center text-lc-secondary small mb-4">
-      Enter your credentials to access your account
-    </p>
+{% block title %}Sign In — BashaByte{% endblock %}
 
-    <!-- Non-field errors (invalid credentials, inactive account, etc.) -->
-    {% if form.non_field_errors %}
-    <div
-      class="mb-3 p-2 rounded"
-      style="
-        color: var(--hard-color);
-        background-color: var(--orange-bg);
-        border: 1px solid var(--border-color);
-      "
-    >
-      {{ form.non_field_errors }}
-    </div>
-    {% endif %}
+{% block content %}
+<div class="bb-users">
+  <div class="bb-auth-wrap">
 
-    <!-- Login form -->
-    <form method="post" action="{% url 'users:login' %}">
-      {% csrf_token %}
+    <!-- ── Left: brand visual panel ── -->
+    <aside class="bb-auth-visual" aria-hidden="true">
+      <a class="bb-visual-brand" href="/">
+        <img src="{% static 'images/logo.png' %}" alt="" />
+        <span>BashaByte</span>
+      </a>
 
-      <!-- Username / Email field -->
-      <div class="mb-3">
-        <label for="id_username_or_email" class="form-label"
-          >Username or Email</label
-        >
-        <input
-          type="text"
-          name="username_or_email"
-          id="id_username_or_email"
-          class="lc-input"
-          value="{{ form.username_or_email.value|default:'' }}"
-          placeholder="Enter username or email"
-          required
-        />
-        {% if form.username_or_email.errors %} {{ form.username_or_email.errors
-        }} {% endif %}
+      <div class="bb-visual-copy">
+        <span class="bb-visual-eyebrow">Welcome back</span>
+        <h2 class="bb-visual-title">Pick up where you<br /><em>left off.</em></h2>
+        <p class="bb-visual-lede">
+          Your progress, streaks, and next challenge are waiting. Sign in to
+          keep building the developer you want to become.
+        </p>
       </div>
 
-      <!-- Password field -->
-      <div class="mb-3">
-        <label for="id_password" class="form-label">Password</label>
-        <div class="password-input-wrap">
-          <input
-            type="password"
-            name="password"
-            id="id_password"
-            class="lc-input"
-            placeholder="Enter your password"
-            required
-            autocomplete="current-password"
-          />
-          <button
-            type="button"
-            class="password-toggle"
-            data-target="id_password"
-            aria-label="Show password"
-          >
-            <i class="bi bi-eye"></i>
-          </button>
-        </div>
-        {% if form.password.errors %}
-        <div class="mt-1 small" style="color: var(--hard-color)">
-          {{ form.password.errors }}
-        </div>
+      <div class="bb-visual-footer">
+        <span class="bb-visual-dot"></span>
+        <span><b>Live</b> workspace ready</span>
+      </div>
+    </aside>
+
+    <!-- ── Right: form panel ── -->
+    <section class="bb-auth-panel">
+      <div class="bb-auth-card">
+
+        <header class="bb-auth-head">
+          <div class="bb-auth-kicker">Account access</div>
+          <h1 class="bb-auth-title">Sign in to BashaByte</h1>
+          <p class="bb-auth-sub">
+            Enter your credentials to continue your practice session.
+          </p>
+        </header>
+
+        {% if form.non_field_errors %}
+          <div class="bb-form-alert" role="alert">
+            {{ form.non_field_errors }}
+          </div>
         {% endif %}
-      </div>
 
-      <!-- Forgot password link -->
-      <div class="text-end mb-3">
-        <a href="{% url 'users:reset_password' %}" class="lc-link small"
-          >Forgot Password?</a
-        >
-      </div>
+        <form method="post" action="{% url 'users:login' %}" novalidate>
+          {% csrf_token %}
 
-      <!-- Submit button -->
-      <button type="submit" class="btn-lc-orange w-100 mb-3">Log In</button>
+          <div class="bb-field">
+            <label for="id_username_or_email" class="bb-label">
+              <span>Username or Email</span>
+            </label>
+            <input
+              type="text"
+              name="username_or_email"
+              id="id_username_or_email"
+              class="bb-input"
+              value="{{ form.username_or_email.value|default:'' }}"
+              placeholder="you@example.com"
+              required
+              autocomplete="username"
+              autofocus
+            />
+            {% if form.username_or_email.errors %}
+              <div class="bb-field-error">{{ form.username_or_email.errors }}</div>
+            {% endif %}
+          </div>
 
-      <!-- Register link -->
-      <div class="text-center">
-        <span class="text-lc-secondary">Don't have an account?</span>
-        <a href="{% url 'users:register' %}" class="lc-link">Sign up</a>
+          <div class="bb-field">
+            <label for="id_password" class="bb-label">
+              <span>Password</span>
+              <a href="{% url 'users:reset_password' %}" class="bb-label-hint bb-auth-right-link" style="text-decoration:none;">Forgot?</a>
+            </label>
+            <div class="password-input-wrap">
+              <input
+                type="password"
+                name="password"
+                id="id_password"
+                class="bb-input"
+                placeholder="Enter your password"
+                required
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-target="id_password"
+                aria-label="Show password"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <div class="bb-field-error">{{ form.password.errors }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="bb-btn">
+            Sign in <i class="bi bi-arrow-right"></i>
+          </button>
+        </form>
+
+        <div class="bb-auth-links">
+          <span>New to BashaByte?</span>
+          <a href="{% url 'users:register' %}">Create an account →</a>
+        </div>
+
       </div>
-    </form>
+    </section>
+
   </div>
 </div>
 {% endblock %}

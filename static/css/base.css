@@ -590,3 +590,29 @@ body {
         transition: none !important; animation: none !important;
     }
 }
+/* ══════════════════════════════════════════════════════
+   Users Section — shared scope
+   Redirects the brand accent from orange → green
+   ONLY inside .bb-users. Rest of app is untouched.
+══════════════════════════════════════════════════════ */
+.bb-users {
+    --orange:        #247A4B;
+    --orange-hover:  #2E9059;
+    --orange-bg:     rgba(36, 122, 75, 0.10);
+}
+[data-theme="dark"] .bb-users {
+    --orange:        #00E887;
+    --orange-hover:  #22FFA0;
+    --orange-bg:     rgba(0, 232, 135, 0.12);
+}
+
+/* Auth pages get a minimal navbar: brand + theme toggle only. */
+.auth-page .lc-navbar .navbar-toggler,
+.auth-page .lc-navbar .navbar-collapse .navbar-nav,
+.auth-page .lc-navbar .navbar-collapse .d-flex > a,
+.auth-page .lc-navbar .navbar-collapse .d-flex > .dropdown {
+    display: none !important;
+}
+.auth-page .lc-navbar .navbar-collapse {
+    display: flex !important;
+}

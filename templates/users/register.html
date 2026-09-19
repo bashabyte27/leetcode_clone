@@ -1,185 +1,189 @@
-{% extends 'base.html' %} {% load static %} {% block content %}
-<div class="container py-5 d-flex justify-content-center">
-  <div class="lc-card" style="max-width: 420px; width: 100%; margin: 0 auto">
-    <!-- BashaByte Logo -->
-    <div class="text-center mb-3">
-      <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40" />
-    </div>
+{% extends 'base.html' %}
+{% load static %}
 
-    <!-- Icon and heading -->
-    <div class="text-center mb-2">
-      <i class="bi bi-person-plus fs-2 text-lc-secondary"></i>
-    </div>
-    <h3 class="text-center mb-1">Create Account</h3>
-    <p class="text-center text-lc-secondary small mb-4">
-      Join BashaByte and start coding
-    </p>
+{% block title %}Create Account — BashaByte{% endblock %}
 
-    <!-- Non-field errors -->
-    {% if form.non_field_errors %}
-    <div
-      class="mb-3 p-2 rounded"
-      style="
-        color: var(--hard-color);
-        background-color: var(--orange-bg);
-        border: 1px solid var(--border-color);
-      "
-    >
-      {{ form.non_field_errors }}
-    </div>
-    {% endif %}
+{% block content %}
+<div class="bb-users">
+  <div class="bb-auth-wrap">
 
-    <!-- Registration form -->
-    <form method="post" action="{% url 'users:register' %}">
-      {% csrf_token %}
+    <!-- ── Left: brand visual panel ── -->
+    <aside class="bb-auth-visual" aria-hidden="true">
+      <a class="bb-visual-brand" href="/">
+        <img src="{% static 'images/logo.png' %}" alt="" />
+        <span>BashaByte</span>
+      </a>
 
-      <!-- Username field -->
-      <div class="mb-3">
-        <label for="id_user_name" class="form-label">Username</label>
-        <input
-          type="text"
-          name="user_name"
-          id="id_user_name"
-          class="lc-input"
-          value="{{ form.user_name.value|default:'' }}"
-          placeholder="coder123"
-          required
-        />
-        {% if form.user_name.errors %}
-        <div class="mt-1 small" style="color: var(--hard-color)">
-          {{ form.user_name.errors }}
-        </div>
-        {% endif %}
+      <div class="bb-visual-copy">
+        <span class="bb-visual-eyebrow">Start today</span>
+        <h2 class="bb-visual-title">Begin the journey<br />to <em>production-ready.</em></h2>
+        <p class="bb-visual-lede">
+          Structured courses, real coding practice, and career momentum — all
+          in one focused workspace built for serious developers.
+        </p>
       </div>
 
-      <!-- Email field -->
-      <div class="mb-3">
-        <label for="id_email" class="form-label">Email address</label>
-        <input
-          type="email"
-          name="email"
-          id="id_email"
-          class="lc-input"
-          value="{{ form.email.value|default:'' }}"
-          placeholder="you@example.com"
-          required
-        />
-        {% if form.email.errors %}
-        <div class="mt-1 small" style="color: var(--hard-color)">
-          {{ form.email.errors }}
-        </div>
-        {% endif %}
+      <div class="bb-visual-footer">
+        <span class="bb-visual-dot"></span>
+        <span><b>Free</b> forever · No credit card</span>
       </div>
+    </aside>
 
-      <!-- Mobile number field (optional) -->
-      <div class="mb-3">
-        <label for="id_mobile_no" class="form-label"
-          >Mobile number (optional)</label
-        >
-        <input
-          type="tel"
-          name="mobile_no"
-          id="id_mobile_no"
-          class="lc-input"
-          value="{{ form.mobile_no.value|default:'' }}"
-          placeholder="+91 9876543210"
-        />
-        {% if form.mobile_no.errors %}
-        <div class="mt-1 small" style="color: var(--hard-color)">
-          {{ form.mobile_no.errors }}
-        </div>
+    <!-- ── Right: form panel ── -->
+    <section class="bb-auth-panel">
+      <div class="bb-auth-card">
+
+        <header class="bb-auth-head">
+          <div class="bb-auth-kicker">New account</div>
+          <h1 class="bb-auth-title">Create your account</h1>
+          <p class="bb-auth-sub">
+            Join BashaByte and start solving problems today.
+          </p>
+        </header>
+
+        {% if form.non_field_errors %}
+          <div class="bb-form-alert" role="alert">
+            {{ form.non_field_errors }}
+          </div>
         {% endif %}
-      </div>
 
-      <!-- Password field -->
-      <div class="mb-3">
-        <label for="id_password1" class="form-label">Password</label>
-        <div class="password-input-wrap">
-          <input
-            type="password"
-            name="password1"
-            id="id_password1"
-            class="lc-input"
-            placeholder="Create a strong password"
-            required
-            autocomplete="new-password"
-          />
-          <button
-            type="button"
-            class="password-toggle"
-            data-target="id_password1"
-            aria-label="Show password"
-          >
-            <i class="bi bi-eye"></i>
+        <form method="post" action="{% url 'users:register' %}" novalidate>
+          {% csrf_token %}
+
+          <div class="bb-field">
+            <label for="id_user_name" class="bb-label"><span>Username</span></label>
+            <input
+              type="text"
+              name="user_name"
+              id="id_user_name"
+              class="bb-input"
+              value="{{ form.user_name.value|default:'' }}"
+              placeholder="coder123"
+              required
+              autocomplete="username"
+              autofocus
+            />
+            {% if form.user_name.errors %}
+              <div class="bb-field-error">{{ form.user_name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="bb-field">
+            <label for="id_email" class="bb-label"><span>Email address</span></label>
+            <input
+              type="email"
+              name="email"
+              id="id_email"
+              class="bb-input"
+              value="{{ form.email.value|default:'' }}"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+            {% if form.email.errors %}
+              <div class="bb-field-error">{{ form.email.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="bb-field">
+            <label for="id_mobile_no" class="bb-label">
+              <span>Mobile number</span>
+              <span class="bb-label-hint">Optional</span>
+            </label>
+            <input
+              type="tel"
+              name="mobile_no"
+              id="id_mobile_no"
+              class="bb-input"
+              value="{{ form.mobile_no.value|default:'' }}"
+              placeholder="+91 9876543210"
+              autocomplete="tel"
+            />
+            {% if form.mobile_no.errors %}
+              <div class="bb-field-error">{{ form.mobile_no.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="bb-field">
+            <label for="id_password1" class="bb-label"><span>Password</span></label>
+            <div class="password-input-wrap">
+              <input
+                type="password"
+                name="password1"
+                id="id_password1"
+                class="bb-input"
+                placeholder="Create a strong password"
+                required
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-target="id_password1"
+                aria-label="Show password"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% if form.password1.errors %}
+              <div class="bb-field-error">{{ form.password1.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="bb-field">
+            <label for="id_password2" class="bb-label"><span>Confirm password</span></label>
+            <div class="password-input-wrap">
+              <input
+                type="password"
+                name="password2"
+                id="id_password2"
+                class="bb-input"
+                placeholder="Confirm your password"
+                required
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-target="id_password2"
+                aria-label="Show password"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% if form.password2.errors %}
+              <div class="bb-field-error">{{ form.password2.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="bb-field">
+            <label class="bb-check">
+              <input
+                type="checkbox"
+                name="terms"
+                id="id_terms"
+                required
+              />
+              <span>
+                I agree to the <a href="#">Terms of Service</a> and
+                <a href="#">Privacy Policy</a>.
+              </span>
+            </label>
+          </div>
+
+          <button type="submit" name="send-otp" class="bb-btn">
+            Create account <i class="bi bi-arrow-right"></i>
           </button>
-        </div>
-        {% if form.password1.errors %}
-        <div class="mt-1 small" style="color: var(--hard-color)">
-          {{ form.password1.errors }}
-        </div>
-        {% endif %}
-      </div>
+        </form>
 
-      <!-- Confirm password field -->
-      <div class="mb-3">
-        <label for="id_password2" class="form-label">Confirm password</label>
-        <div class="password-input-wrap">
-          <input
-            type="password"
-            name="password2"
-            id="id_password2"
-            class="lc-input"
-            placeholder="Confirm your password"
-            required
-            autocomplete="new-password"
-          />
-          <button
-            type="button"
-            class="password-toggle"
-            data-target="id_password2"
-            aria-label="Show password"
-          >
-            <i class="bi bi-eye"></i>
-          </button>
+        <div class="bb-auth-links">
+          <span>Already have an account?</span>
+          <a href="{% url 'users:login' %}">Sign in →</a>
         </div>
-        {% if form.password2.errors %}
-        <div class="mt-1 small" style="color: var(--hard-color)">
-          {{ form.password2.errors }}
-        </div>
-        {% endif %}
-      </div>
 
-      <!-- Terms checkbox -->
-      <div class="mb-4">
-        <div class="form-check">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            name="terms"
-            id="id_terms"
-            required
-          />
-          <label
-            class="form-check-label text-lc-secondary"
-            style="font-size: 0.9rem"
-          >
-            I agree to the <a href="#" class="lc-link">Terms of Service</a> and
-            <a href="#" class="lc-link">Privacy Policy</a>
-          </label>
-        </div>
       </div>
+    </section>
 
-      <!-- Submit button -->
-      <button type="submit" name="send-otp" class="btn-lc-orange w-100 mb-3">
-        Create Account
-      </button>
-
-      <!-- Login link -->
-      <div class="text-center">
-        <span class="text-lc-secondary">Already have an account?</span>
-        <a href="{% url 'users:login' %}" class="lc-link">Log in</a>
-      </div>
-    </form>
   </div>
 </div>
 {% endblock %}
