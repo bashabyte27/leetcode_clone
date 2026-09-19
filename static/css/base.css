@@ -474,3 +474,119 @@ body {
 .auth-page .lc-navbar .navbar-collapse {
     display: flex !important;
 }
+/* ══════════════════════════════════════════════════════
+   Problems Page — Page Head, Table Polish, Sidebar
+   (appended block — all rules use existing CSS variables)
+══════════════════════════════════════════════════════ */
+
+/* ── Page header ── */
+.page-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 14px; margin-bottom: 22px; }
+.page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-heading); margin: 0 0 2px; line-height: 1.2; }
+.page-sub { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.page-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.stat-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); padding: 3px 10px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-card); }
+.stat-pill i { font-size: 12px; opacity: 0.8; }
+.stat-pill strong { color: var(--text-primary); font-weight: 600; }
+
+/* ── Problems table micro-polish ── */
+.problem-title { font-weight: 500; transition: color 0.15s ease; }
+.status-solved   { color: var(--easy-color); font-size: 15px; }
+.status-unsolved { color: var(--text-secondary); font-size: 14px; opacity: 0.55; transition: opacity 0.15s ease, color 0.15s ease; }
+.lc-table tr:hover .status-unsolved { opacity: 0.9; }
+.lc-table tbody tr { transition: background-color 0.15s ease; }
+.lc-table tbody td { vertical-align: middle; }
+.lc-table th { font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; font-size: 11px; }
+.acceptance-bar { height: 4px; background-color: var(--bg-secondary); border-radius: 2px; overflow: hidden; }
+.acceptance-bar .progress-bar { background-color: var(--orange); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* ── Sidebar shared ── */
+.sb-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px 16px 14px; transition: border-color 0.2s ease, background-color 0.2s ease; }
+.sb-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sb-head i { font-size: 14px; color: var(--text-secondary); line-height: 1; transition: color 0.15s ease; }
+.sb-head h6 { margin: 0; font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-heading); }
+.sb-card:hover .sb-head i { color: var(--orange); }
+
+/* ── Your Progress ── */
+.progress-hero { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; }
+.progress-ring-wrap { position: relative; width: 84px; height: 84px; flex-shrink: 0; }
+.progress-ring { width: 100%; height: 100%; display: block; }
+.progress-ring-track { fill: none; stroke: var(--bg-secondary); stroke-width: 3; }
+.progress-ring-fill { fill: none; stroke: var(--orange); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 1.1s cubic-bezier(0.22, 1, 0.36, 1); }
+.progress-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.progress-ring-percent { font-size: 17px; font-weight: 700; color: var(--text-heading); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.progress-ring-pct { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); margin-left: 1px; }
+.progress-summary { min-width: 0; }
+.progress-summary-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.progress-summary-sub { font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; }
+.progress-breakdown { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-color); }
+.pb-row { display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 10px; --solved: 0; --total: 1; }
+.pb-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+.pb-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pb-dot.easy   { background: var(--easy-color);   box-shadow: 0 0 0 2px var(--easy-bg); }
+.pb-dot.medium { background: var(--medium-color); box-shadow: 0 0 0 2px var(--medium-bg); }
+.pb-dot.hard   { background: var(--hard-color);   box-shadow: 0 0 0 2px var(--hard-bg); }
+.pb-bar { display: block; width: 100%; height: 4px; background-color: var(--bg-secondary); border-radius: 3px; overflow: hidden; }
+.pb-fill { display: block; height: 100%; width: calc(var(--solved) / var(--total) * 100%); border-radius: 3px; animation: barGrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.pb-fill.easy   { background: var(--easy-color); }
+.pb-fill.medium { background: var(--medium-color); }
+.pb-fill.hard   { background: var(--hard-color); }
+.pb-count { font-size: 11px; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: 0.01em; }
+.pb-count strong { color: var(--text-primary); font-weight: 600; }
+@keyframes barGrow { from { width: 0; } }
+.sb-auth-prompt { text-align: center; padding: 18px 6px 6px; }
+.sb-auth-prompt .bi-lock { font-size: 26px; color: var(--text-secondary); opacity: 0.7; display: block; margin-bottom: 10px; }
+.sb-auth-prompt p { color: var(--text-secondary); font-size: 12.5px; margin: 0 0 14px; line-height: 1.5; }
+
+/* ── Daily Challenge ── */
+.dc-card { background: radial-gradient(circle at top right, var(--orange-bg), transparent 62%), var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 15px 16px 16px; transition: border-color 0.2s ease; }
+.dc-card:hover { border-color: var(--orange); }
+.dc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 11.5px; color: var(--text-secondary); }
+.dc-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; color: var(--text-heading); }
+.dc-title i { color: var(--orange); font-size: 13px; }
+.dc-card h6 { font-size: 14.5px; font-weight: 600; color: var(--text-heading); margin: 0 0 10px; line-height: 1.35; }
+.dc-meta { margin-bottom: 12px; }
+.dc-cta { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 8px 12px; background-color: var(--orange); color: #000; font-size: 12.5px; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background-color 0.15s ease, transform 0.15s ease; }
+.dc-cta:hover { background-color: var(--orange-hover); color: #000; transform: translateY(-1px); }
+.dc-cta i { font-size: 12px; }
+
+/* ── Study Plans ── */
+.plan-list { display: flex; flex-direction: column; gap: 8px; }
+.plan-item { padding: 10px 12px 9px; border: 1px solid var(--border-color); border-radius: 8px; background-color: transparent; transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
+.plan-item:hover { border-color: var(--orange); background-color: var(--orange-bg); transform: translateX(2px); }
+.plan-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.plan-name { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-primary); min-width: 0; }
+.plan-name i { font-size: 13px; color: var(--text-secondary); transition: color 0.15s ease; }
+.plan-item:hover .plan-name i { color: var(--orange); }
+.plan-level { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; letter-spacing: 0.02em; text-transform: uppercase; }
+.plan-level.beginner     { background: var(--easy-bg);   color: var(--easy-color); }
+.plan-level.intermediate { background: var(--medium-bg); color: var(--medium-color); }
+.plan-level.advanced     { background: var(--hard-bg);   color: var(--hard-color); }
+.plan-bar { height: 3px; background-color: var(--bg-secondary); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.plan-fill { height: 100%; background-color: var(--orange); border-radius: 2px; transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+.plan-cta { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; transition: color 0.15s ease; }
+.plan-cta i { font-size: 10.5px; transition: transform 0.2s ease; }
+.plan-item:hover .plan-cta { color: var(--orange); }
+.plan-item:hover .plan-cta i { transform: translateX(3px); }
+
+/* ── Popular Topics ── */
+.topic-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+.topic-chip { display: inline-flex; align-items: center; padding: 5px 10px; font-size: 11.5px; font-weight: 500; color: var(--text-secondary); background-color: var(--bg-secondary); border: 1px solid transparent; border-radius: 6px; cursor: pointer; line-height: 1.35; transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
+.topic-chip:hover { color: var(--orange); background-color: var(--orange-bg); border-color: var(--orange); transform: translateY(-1px); }
+.topic-chip:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+/* ── Responsive + reduced motion ── */
+@media (max-width: 991.98px) {
+    .page-head { align-items: flex-start; }
+    .progress-ring-wrap { width: 76px; height: 76px; }
+    .progress-ring-percent { font-size: 15.5px; }
+}
+@media (max-width: 575.98px) {
+    .page-stats { width: 100%; }
+    .sb-card { padding: 14px; }
+    .pb-row { grid-template-columns: 52px 1fr auto; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .progress-ring-fill, .pb-fill, .plan-fill, .acceptance-bar .progress-bar {
+        transition: none !important; animation: none !important;
+    }
+}

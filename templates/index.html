@@ -22,14 +22,10 @@
   <body class="landing-page">
     <nav class="navbar navbar-expand-lg lc-navbar landing-nav" id="mainNavbar">
       <div class="landing-shell nav-shell">
-        <a
-          class="navbar-brand brand-lockup"
-          href="/"
-          aria-label="BashaByte home"
-          ><img src="{% static 'images/logo.png' %}" alt="" /><span
-            >Basha<span class="brand-mark">Byte</span></span
-          ></a
-        >
+        <a class="navbar-brand brand-lockup" href="/" aria-label="BashaByte home">
+          <img src="{% static 'images/logo.png' %}" alt="" />
+          <span>Basha<span class="brand-mark">Byte</span></span>
+        </a>
         <div class="nav-actions">
           <button
             class="theme-toggle"
@@ -41,14 +37,15 @@
             <i class="bi bi-sun-fill" id="themeIcon"></i>
           </button>
           <a href="{% url 'users:login' %}" class="nav-signin">Login</a>
-          <a href="/users/register/" class="nav-cta"
-            >Register <i class="bi bi-arrow-up-right"></i
-          ></a>
+          <a href="/users/register/" class="nav-cta">
+            Register <i class="bi bi-arrow-up-right"></i>
+          </a>
         </div>
       </div>
     </nav>
 
     <main>
+      <!-- ═══════════════ HERO ═══════════════ -->
       <section class="hero-section landing-shell">
         <div class="hero-copy reveal">
           <div class="eyebrow">
@@ -61,123 +58,103 @@
             of developers.
           </p>
           <div class="hero-actions">
-            <a href="/users/register/" class="button button-primary"
-              >Start for free <i class="bi bi-arrow-up-right"></i></a
-            ><a href="/problems/" class="button button-secondary"
-              ><i class="bi bi-play-circle"></i> Explore the platform</a
-            >
+            <a href="/users/register/" class="button button-primary">
+              Start for free <i class="bi bi-arrow-up-right"></i>
+            </a>
+            <a href="/problems/" class="button button-secondary">
+              <i class="bi bi-play-circle"></i> Explore the platform
+            </a>
           </div>
           <div class="hero-note">
             <i class="bi bi-check2-circle"></i> No credit card required
             <span></span> Practice at your own pace
           </div>
         </div>
-        <div
-          class="hero-product reveal"
-          aria-label="BashaByte coding workspace preview"
-        >
+
+        <div class="hero-product reveal" aria-label="BashaByte coding workspace preview">
           <div class="product-window">
             <div class="window-bar">
               <div class="window-dots"><i></i><i></i><i></i></div>
-              <span>BashaByte / two-sum.py</span
-              ><span class="window-status"><b></b> Live workspace</span>
+              <span>BashaByte / two-sum.py</span>
+              <span class="window-status"><b></b> Live workspace</span>
             </div>
             <div class="workspace-grid">
               <aside class="workspace-sidebar">
-                <span>PROBLEM 001</span><strong>Two Sum</strong><em>EASY</em>
+                <span>PROBLEM 001</span>
+                <strong>Two Sum</strong>
+                <em>EASY</em>
                 <hr />
-                <span>Algorithms</span><span>Arrays & Hashing</span
-                ><span>17 min session</span>
+                <span>Algorithms</span>
+                <span>Arrays &amp; Hashing</span>
+                <span>17 min session</span>
                 <div class="side-progress"><b></b></div>
                 <small>Daily progress <b>72%</b></small>
               </aside>
-              <div class="editor-pane">
+
+              <div class="editor-pane" id="heroEditor">
                 <div class="editor-tabs">
-                  <span class="active"
-                    ><i class="bi bi-filetype-py"></i> solution.py</span
-                  ><span>tests.py</span>
+                  <span class="active"><i class="bi bi-filetype-py"></i> solution.py</span>
+                  <span>tests.py</span>
                 </div>
-                <div class="code-lines">
-                  <code
-                    ><i>01</i> <b>def</b> <em>two_sum</em>(nums, target):</code
-                  ><code><i>02</i> seen = {}</code
-                  ><code
-                    ><i>03</i> <b>for</b> index, value <b>in</b>
-                    <em>enumerate</em>(nums):</code
-                  ><code><i>04</i> complement = target - value</code
-                  ><code><i>05</i> <b>if</b> complement <b>in</b> seen:</code
-                  ><code><i>06</i> <b>return</b> [seen[complement], index]</code
-                  ><code><i>07</i> seen[value] = index</code
-                  ><code><i>08</i> </code
-                  ><code><i>09</i> <b>return</b> []</code>
+                <div class="code-lines" id="heroCode" aria-label="Python solution code">
+                  <code><i>01</i> <b>def</b> <em>two_sum</em>(nums, target):</code>
+                  <code><i>02</i> seen = {}</code>
+                  <code><i>03</i> <b>for</b> index, value <b>in</b> <em>enumerate</em>(nums):</code>
+                  <code><i>04</i> complement = target - value</code>
+                  <code><i>05</i> <b>if</b> complement <b>in</b> seen:</code>
+                  <code><i>06</i> <b>return</b> [seen[complement], index]</code>
+                  <code><i>07</i> seen[value] = index</code>
+                  <code><i>08</i> </code>
+                  <code><i>09</i> <b>return</b> []</code>
                 </div>
                 <div class="editor-footer">
-                  <span><i class="bi bi-git"></i> main</span
-                  ><span>Python 3.12</span
-                  ><button><i class="bi bi-play-fill"></i> Run tests</button>
+                  <span><i class="bi bi-git"></i> main</span>
+                  <span>Python 3.12</span>
+                  <button type="button"><i class="bi bi-play-fill"></i> Run tests</button>
                 </div>
               </div>
+
               <aside class="result-pane">
                 <div class="result-heading">
-                  <span>TEST RESULTS</span
-                  ><b><i class="bi bi-check2"></i> Accepted</b>
+                  <span>TEST RESULTS</span>
+                  <b><i class="bi bi-check2"></i> Accepted</b>
                 </div>
                 <div class="result-score">
                   <strong>100</strong><span>/ 100</span>
                 </div>
                 <div class="result-bar"><b></b></div>
                 <div class="result-meta">
-                  <span>Runtime<strong>42 ms</strong></span
-                  ><span>Memory<strong>14.2 MB</strong></span>
+                  <span>Runtime<strong>42 ms</strong></span>
+                  <span>Memory<strong>14.2 MB</strong></span>
                 </div>
                 <div class="test-list">
-                  <span
-                    ><i class="bi bi-check-circle-fill"></i> Example 1
-                    <b>Passed</b></span
-                  ><span
-                    ><i class="bi bi-check-circle-fill"></i> Example 2
-                    <b>Passed</b></span
-                  ><span
-                    ><i class="bi bi-check-circle-fill"></i> Hidden tests
-                    <b>Passed</b></span
-                  >
+                  <span><i class="bi bi-check-circle-fill"></i> Example 1 <b>Passed</b></span>
+                  <span><i class="bi bi-check-circle-fill"></i> Example 2 <b>Passed</b></span>
+                  <span><i class="bi bi-check-circle-fill"></i> Hidden tests <b>Passed</b></span>
                 </div>
               </aside>
             </div>
           </div>
           <div class="product-caption">
-            <span><b></b> A place to think, test, and improve</span
-            ><span>01 / 04</span>
+            <span><b></b> A place to think, test, and improve</span>
+            <span>01 / 04</span>
           </div>
         </div>
       </section>
 
-      <section
-        class="stats-section landing-shell reveal-stagger"
-        aria-label="Platform statistics"
-      >
+      <!-- ═══════════════ STATS ═══════════════ -->
+      <section class="stats-section landing-shell reveal-stagger" aria-label="Platform statistics">
         <div class="stats-intro">
           <span class="section-kicker">Built for momentum</span>
           <p>Small sessions compound<br />into serious progress.</p>
         </div>
-        <div class="stat-item">
-          <strong data-counter="500" data-suffix="+">500+</strong
-          ><span>Practice problems</span>
-        </div>
-        <div class="stat-item">
-          <strong data-counter="10" data-suffix="+">10+</strong
-          ><span>Expert courses</span>
-        </div>
-        <div class="stat-item">
-          <strong data-counter="50" data-suffix="K+">50K+</strong
-          ><span>Active students</span>
-        </div>
-        <div class="stat-item">
-          <strong data-counter="95" data-suffix="%">95%</strong
-          ><span>Placement rate</span>
-        </div>
+        <div class="stat-item"><strong data-counter="500" data-suffix="+">500+</strong><span>Practice problems</span></div>
+        <div class="stat-item"><strong data-counter="10" data-suffix="+">10+</strong><span>Expert courses</span></div>
+        <div class="stat-item"><strong data-counter="50" data-suffix="K+">50K+</strong><span>Active students</span></div>
+        <div class="stat-item"><strong data-counter="95" data-suffix="%">95%</strong><span>Placement rate</span></div>
       </section>
 
+      <!-- ═══════════════ STORY ═══════════════ -->
       <section class="story-section landing-shell" id="curriculum">
         <div class="story-heading reveal">
           <span class="section-kicker">One connected system</span>
@@ -189,152 +166,108 @@
         </div>
         <div class="story-grid">
           <article class="story-panel panel-editor reveal">
-            <div class="panel-top">
-              <span>01</span><i class="bi bi-braces"></i>
-            </div>
+            <div class="panel-top"><span>01</span><i class="bi bi-braces"></i></div>
             <div class="mini-code">
-              <span>// your next chapter</span
-              ><span><b>const</b> foundation = <em>"strong"</em>;</span
-              ><span><b>const</b> practice = <em>"daily"</em>;</span
-              ><span><b>const</b> trajectory = foundation + practice;</span>
+              <span>// your next chapter</span>
+              <span><b>const</b> foundation = <em>"strong"</em>;</span>
+              <span><b>const</b> practice = <em>"daily"</em>;</span>
+              <span><b>const</b> trajectory = foundation + practice;</span>
             </div>
             <div class="panel-copy">
               <h3>Learn with context.</h3>
-              <p>
-                Deep courses in Python, Java, DSA, databases, system design, and
-                AI that connect concepts to real work.
-              </p>
-              <a href="#courses"
-                >Explore the curriculum <i class="bi bi-arrow-up-right"></i
-              ></a>
+              <p>Deep courses in Python, Java, DSA, databases, system design, and AI that connect concepts to real work.</p>
+              <a href="#courses">Explore the curriculum <i class="bi bi-arrow-up-right"></i></a>
             </div>
           </article>
           <article class="story-panel panel-chart reveal">
-            <div class="panel-top">
-              <span>02</span><i class="bi bi-activity"></i>
-            </div>
+            <div class="panel-top"><span>02</span><i class="bi bi-activity"></i></div>
             <div class="chart-wrap">
               <span>100<br /><br />50<br /><br />0</span>
               <div class="chart">
-                <svg
-                  viewBox="0 0 430 140"
-                  preserveAspectRatio="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M0 119 C35 121 41 101 70 105 S106 83 130 91 S164 71 190 79 S223 55 252 63 S283 35 310 49 S350 23 375 30 S405 12 430 16"
-                  />
+                <svg viewBox="0 0 430 140" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M0 119 C35 121 41 101 70 105 S106 83 130 91 S164 71 190 79 S223 55 252 63 S283 35 310 49 S350 23 375 30 S405 12 430 16" />
                 </svg>
               </div>
             </div>
             <div class="panel-copy">
               <h3>See yourself improve.</h3>
-              <p>
-                Progress tracking that makes consistency visible, so you always
-                know what to work on next.
-              </p>
-              <a href="#progress"
-                >Make progress visible <i class="bi bi-arrow-up-right"></i
-              ></a>
+              <p>Progress tracking that makes consistency visible, so you always know what to work on next.</p>
+              <a href="#progress">Make progress visible <i class="bi bi-arrow-up-right"></i></a>
             </div>
           </article>
           <article class="story-panel panel-contest reveal" id="contests">
-            <div class="panel-top">
-              <span>03</span><i class="bi bi-lightning-charge"></i>
-            </div>
+            <div class="panel-top"><span>03</span><i class="bi bi-lightning-charge"></i></div>
             <div class="contest-time">
-              <span>WEEKLY CONTEST</span><strong>02 : 14 : 38</strong
-              ><small>Saturday, 20:00 UTC</small>
+              <span>WEEKLY CONTEST</span>
+              <strong>02 : 14 : 38</strong>
+              <small>Saturday, 20:00 UTC</small>
             </div>
             <div class="panel-copy">
               <h3>Raise the stakes.</h3>
-              <p>
-                Compete in live contests, learn from the leaderboard, and
-                sharpen the instincts interviews demand.
-              </p>
-              <a href="#community"
-                >Find your edge <i class="bi bi-arrow-up-right"></i
-              ></a>
+              <p>Compete in live contests, learn from the leaderboard, and sharpen the instincts interviews demand.</p>
+              <a href="#community">Find your edge <i class="bi bi-arrow-up-right"></i></a>
             </div>
           </article>
         </div>
       </section>
 
+      <!-- ═══════════════ CURRICULUM ═══════════════ -->
       <section class="curriculum-section" id="courses">
         <div class="landing-shell curriculum-layout">
           <div class="curriculum-intro reveal">
             <span class="section-kicker">The curriculum</span>
             <h2>Go broad.<br /><em>Go deep.</em></h2>
-            <p>
-              Practical tracks for the whole developer journey, from your first
-              function to your next system.
-            </p>
-            <a href="/users/register/" class="text-link"
-              >Start exploring <i class="bi bi-arrow-up-right"></i
-            ></a>
+            <p>Practical tracks for the whole developer journey, from your first function to your next system.</p>
+            <a href="/users/register/" class="text-link">Start exploring <i class="bi bi-arrow-up-right"></i></a>
           </div>
           <div class="track-list reveal-stagger">
-            <div class="track-row">
-              <span>01</span><strong>Python & Java</strong
-              ><small>Foundations / OOP / Patterns</small
-              ><i class="bi bi-arrow-up-right"></i>
-            </div>
-            <div class="track-row">
-              <span>02</span><strong>Data structures & algorithms</strong
-              ><small>Problems / Interviews / DSA</small
-              ><i class="bi bi-arrow-up-right"></i>
-            </div>
-            <div class="track-row">
-              <span>03</span><strong>Full-stack development</strong
-              ><small>Django / APIs / Deployment</small
-              ><i class="bi bi-arrow-up-right"></i>
-            </div>
-            <div class="track-row">
-              <span>04</span><strong>AI & machine learning</strong
-              ><small>LLMs / Agents / Models</small
-              ><i class="bi bi-arrow-up-right"></i>
-            </div>
-            <div class="track-row">
-              <span>05</span><strong>System design</strong
-              ><small>Scale / Architecture / Tradeoffs</small
-              ><i class="bi bi-arrow-up-right"></i>
-            </div>
+            <div class="track-row"><span>01</span><strong>Python &amp; Java</strong><small>Foundations / OOP / Patterns</small><i class="bi bi-arrow-up-right"></i></div>
+            <div class="track-row"><span>02</span><strong>Data structures &amp; algorithms</strong><small>Problems / Interviews / DSA</small><i class="bi bi-arrow-up-right"></i></div>
+            <div class="track-row"><span>03</span><strong>Full-stack development</strong><small>Django / APIs / Deployment</small><i class="bi bi-arrow-up-right"></i></div>
+            <div class="track-row"><span>04</span><strong>AI &amp; machine learning</strong><small>LLMs / Agents / Models</small><i class="bi bi-arrow-up-right"></i></div>
+            <div class="track-row"><span>05</span><strong>System design</strong><small>Scale / Architecture / Tradeoffs</small><i class="bi bi-arrow-up-right"></i></div>
           </div>
         </div>
       </section>
+
+      <!-- ═══════════════ COMMUNITY + ORBIT ═══════════════ -->
       <section class="community-section landing-shell" id="community">
         <div class="community-copy reveal">
           <span class="section-kicker">More than a problem set</span>
           <h2>A practice space that<br /><em>keeps you moving.</em></h2>
-          <p>
-            Get unstuck with smart hints. Build confidence in contests. Share
-            your thinking with a community that speaks your language.
-          </p>
+          <p>Get unstuck with smart hints. Build confidence in contests. Share your thinking with a community that speaks your language.</p>
           <div class="community-points">
-            <span><i class="bi bi-check2"></i> Real-time code execution</span
-            ><span><i class="bi bi-check2"></i> AI-powered guidance</span
-            ><span><i class="bi bi-check2"></i> Peer discussion & review</span>
+            <span><i class="bi bi-check2"></i> Real-time code execution</span>
+            <span><i class="bi bi-check2"></i> AI-powered guidance</span>
+            <span><i class="bi bi-check2"></i> Peer discussion &amp; review</span>
           </div>
         </div>
-        <div class="orbit-visual reveal">
-          <div class="orbit-center">
-            <img src="{% static 'images/logo.png' %}" alt="" /><strong
-              >BB</strong
-            ><span>your workspace</span>
-          </div>
-          <div class="orbit-node node-one">
-            <i class="bi bi-code-slash"></i><span>Practice</span>
-          </div>
-          <div class="orbit-node node-two">
-            <i class="bi bi-chat-square-text"></i><span>Discuss</span>
-          </div>
-          <div class="orbit-node node-three">
-            <i class="bi bi-bar-chart-line"></i><span>Grow</span>
-          </div>
+
+        <div class="orbit-visual reveal" aria-hidden="true">
+          <div class="orbit-glow"></div>
           <div class="orbit-ring ring-one"></div>
           <div class="orbit-ring ring-two"></div>
+
+          <div class="orbit-wave"></div>
+          <div class="orbit-wave"></div>
+          <div class="orbit-wave"></div>
+
+          <div class="orbit-spin orbit-spin-outer"><b></b></div>
+          <div class="orbit-spin orbit-spin-inner"><b></b></div>
+
+          <div class="orbit-center">
+            <img src="{% static 'images/logo.png' %}" alt="" />
+            <strong>BB</strong>
+            <span>your workspace</span>
+          </div>
+
+          <div class="orbit-node node-one"><i class="bi bi-code-slash"></i><span>Practice</span></div>
+          <div class="orbit-node node-two"><i class="bi bi-chat-square-text"></i><span>Discuss</span></div>
+          <div class="orbit-node node-three"><i class="bi bi-bar-chart-line"></i><span>Grow</span></div>
         </div>
       </section>
+
+      <!-- ═══════════════ FINAL CTA ═══════════════ -->
       <section class="final-cta landing-shell reveal">
         <div>
           <span class="section-kicker">Your next level starts here</span>
@@ -342,49 +275,69 @@
         </div>
         <div class="final-action">
           <p>A clearer path to the developer you want to become.</p>
-          <a href="/users/register/" class="button button-primary"
-            >Join BashaByte <i class="bi bi-arrow-up-right"></i
-          ></a>
+          <a href="/users/register/" class="button button-primary">
+            Join BashaByte <i class="bi bi-arrow-up-right"></i>
+          </a>
         </div>
       </section>
     </main>
 
+    <!-- ═══════════════ FOOTER ═══════════════ -->
     <footer class="lc-footer landing-footer">
-      <div class="landing-shell footer-grid">
-        <div class="footer-brand">
-          <a class="brand-lockup" href="/"
-            ><img src="{% static 'images/logo.png' %}" alt="" /><span
-              >Basha<span class="brand-mark">Byte</span></span
-            ></a
-          >
-          <p>Practice with purpose.<br />Build for what is next.</p>
+      <div class="landing-shell footer-lead">
+        <div class="footer-lead-copy">
+          <span class="section-kicker">The next step is yours</span>
+          <h2>Build the developer<br />you want to <em>become.</em></h2>
+          <p>
+            Thousands of learners are turning daily practice into long-term
+            craft. BashaByte is the workspace that keeps them moving.
+          </p>
+          <a href="/users/register/" class="button button-primary">
+            Join BashaByte <i class="bi bi-arrow-up-right"></i>
+          </a>
         </div>
-        <div>
-          <span class="footer-label">Explore</span
-          ><a href="/problems/">Problems</a><a href="#courses">Courses</a
-          ><a href="#contests">Contests</a>
-        </div>
-        <div>
-          <span class="footer-label">Connect</span
-          ><a href="#community">Discuss</a
-          ><a href="{% url 'users:login' %}">Sign in</a
-          ><a href="/users/register/">Register</a>
-        </div>
-        <div class="footer-note">
-          <span class="footer-label">BashaByte / 2025</span>
-          <p>For curious minds and<br />serious builders.</p>
+        <div class="footer-cols">
+          <div>
+            <span class="footer-label">Explore</span>
+            <a href="/problems/">Problems</a>
+            <a href="#courses">Courses</a>
+            <a href="#contests">Contests</a>
+          </div>
+          <div>
+            <span class="footer-label">Learn</span>
+            <a href="#curriculum">Curriculum</a>
+            <a href="#progress">Progress</a>
+            <a href="#community">Community</a>
+          </div>
+          <div>
+            <span class="footer-label">Community</span>
+            <a href="#community">Discuss</a>
+            <a href="#contests">Leaderboards</a>
+            <a href="#community">Events</a>
+          </div>
+          <div>
+            <span class="footer-label">Account</span>
+            <a href="{% url 'users:login' %}">Sign in</a>
+            <a href="/users/register/">Register</a>
+            <a href="/">Home</a>
+          </div>
         </div>
       </div>
+
       <div class="landing-shell footer-bottom">
-        <span>© 2025 BashaByte. All rights reserved.</span
-        ><span
-          >Made for the next commit <i class="bi bi-arrow-up-right"></i
-        ></span>
+        <a class="brand-lockup" href="/">
+          <img src="{% static 'images/logo.png' %}" alt="" />
+          <span>Basha<span class="brand-mark">Byte</span></span>
+        </a>
+        <span class="footer-copy">© 2025 BashaByte. All rights reserved.</span>
+        <span class="footer-mark">Made for the next commit <i class="bi bi-arrow-up-right"></i></span>
       </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/test.js' %}"></script>
+
+    <!-- Theme toggle (unchanged) -->
     <script>
       (function () {
         const html = document.documentElement;
@@ -393,11 +346,10 @@
         const savedTheme = localStorage.getItem("bb-theme") || "dark";
         function updateTheme(theme) {
           html.setAttribute("data-theme", theme);
-          themeIcon.className =
-            theme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
+          themeIcon.className = theme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
           toggleBtn.setAttribute(
             "aria-label",
-            theme === "dark" ? "Switch to light theme" : "Switch to dark theme",
+            theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
           );
         }
         updateTheme(savedTheme);
@@ -407,6 +359,102 @@
           localStorage.setItem("bb-theme", nextTheme);
           updateTheme(nextTheme);
         });
+      })();
+    </script>
+
+    <!-- Hero typing animation (self-contained, no dependencies) -->
+    <script>
+      (function heroTyping() {
+        const container = document.getElementById("heroCode");
+        const editor = document.getElementById("heroEditor");
+        if (!container || !editor) return;
+
+        const prefersReduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+        const lines = container.querySelectorAll("code");
+        const queue = [];
+
+        // Wrap each visible character in a span; skip line numbers.
+        lines.forEach(function (line) {
+          const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+          const nodes = [];
+          while (walker.nextNode()) {
+            const n = walker.currentNode;
+            if (n.parentElement && n.parentElement.closest("i")) continue;
+            nodes.push(n);
+          }
+          nodes.forEach(function (node) {
+            const frag = document.createDocumentFragment();
+            const text = node.textContent;
+            for (let i = 0; i < text.length; i++) {
+              const span = document.createElement("span");
+              span.className = "ch ch-hidden";
+              span.textContent = text[i];
+              frag.appendChild(span);
+              queue.push(span);
+            }
+            node.parentNode.replaceChild(frag, node);
+          });
+        });
+
+        // Reduced motion — reveal instantly.
+        if (prefersReduced || queue.length === 0) {
+          queue.forEach(function (s) { s.classList.remove("ch-hidden"); });
+          editor.classList.add("typing-done");
+          return;
+        }
+
+        // Caret element that travels with typing.
+        const caret = document.createElement("span");
+        caret.className = "typing-caret";
+        caret.setAttribute("aria-hidden", "true");
+
+        let i = 0;
+        function step() {
+          if (i >= queue.length) {
+            if (caret.parentNode) caret.parentNode.removeChild(caret);
+            editor.classList.add("typing-done");
+            return;
+          }
+          const span = queue[i];
+          span.parentNode.insertBefore(caret, span);
+          span.classList.remove("ch-hidden");
+          const ch = span.textContent;
+          i++;
+
+          // Natural timing
+          let delay = 14 + Math.random() * 14;
+          if (ch === " ") delay = 10;
+          if (ch === "(" || ch === ")" || ch === ":" || ch === ",") delay = 18;
+          const isLastOfLine =
+            span.parentElement && span.parentElement.lastChild === span;
+          if (isLastOfLine) delay = 150 + Math.random() * 60;
+
+          setTimeout(step, delay);
+        }
+
+        setTimeout(step, 380);
+      })();
+
+      // Reveal observer — safety net if test.js doesn't already handle it.
+      (function revealSafety() {
+        if (!("IntersectionObserver" in window)) return;
+        const nodes = document.querySelectorAll(".reveal, .reveal-stagger");
+        if (!nodes.length) return;
+        const io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) {
+                e.target.classList.add("reveal-visible");
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.14, rootMargin: "0px 0px -60px 0px" }
+        );
+        nodes.forEach(function (el) { io.observe(el); });
       })();
     </script>
   </body>
