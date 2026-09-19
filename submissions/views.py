@@ -99,14 +99,31 @@ def submit_code(request, problem_slug):
         accepted = result.results.filter(
             status=SubmissionStatusChoices.ACCEPTED
         ).count()
+        accepted_submissions = Submission.objects.filter(
+            problem=problem,
+            language=language,
+            status=SubmissionStatusChoices.ACCEPTED,
+        ).exclude(runtime_ms__isnull=True)
 
         return JsonResponse({
             'submission_id': result.id,
+            'code': result.code,
             'status': result.status,
+            'language': result.language.name if result.language else language.name,
             'runtime_ms': str(result.runtime_ms),
             'memory_kb': str(result.memory_kb) if result.memory_kb else None,
             'accepted': accepted,
             'total': total,
+            'submitted_at': result.submitted_at.isoformat(),
+            'runtime_percentile': str(result.runtime_percentile) if result.runtime_percentile is not None else None,
+            'memory_percentile': str(result.memory_percentile) if result.memory_percentile is not None else None,
+            'performance': [
+                {
+                    'runtime_ms': str(item.runtime_ms) if item.runtime_ms is not None else None,
+                    'memory_kb': str(item.memory_kb) if item.memory_kb is not None else None,
+                }
+                for item in accepted_submissions.only('runtime_ms', 'memory_kb')
+            ],
             'test_case_results': test_case_results,
         })
 
@@ -250,6 +267,11 @@ def submission_detail(request, submission_id):
     )
 
     results = submission.results.select_related('test_case').order_by('test_case__order_num')
+    accepted_submissions = Submission.objects.filter(
+        problem=submission.problem,
+        language=submission.language,
+        status=SubmissionStatusChoices.ACCEPTED,
+    ).exclude(runtime_ms__isnull=True)
 
     results_data = [{
         'tc_num': r.test_case.order_num,
@@ -266,6 +288,16 @@ def submission_detail(request, submission_id):
         'status': submission.status,
         'language': submission.language.name if submission.language else None,
         'runtime_ms': str(submission.runtime_ms) if submission.runtime_ms is not None else None,
+        'memory_kb': str(submission.memory_kb) if submission.memory_kb is not None else None,
+        'runtime_percentile': str(submission.runtime_percentile) if submission.runtime_percentile is not None else None,
+        'memory_percentile': str(submission.memory_percentile) if submission.memory_percentile is not None else None,
         'submitted_at': submission.submitted_at.isoformat(),
+        'performance': [
+            {
+                'runtime_ms': str(item.runtime_ms) if item.runtime_ms is not None else None,
+                'memory_kb': str(item.memory_kb) if item.memory_kb is not None else None,
+            }
+            for item in accepted_submissions.only('runtime_ms', 'memory_kb')
+        ],
         'results': results_data,
     })

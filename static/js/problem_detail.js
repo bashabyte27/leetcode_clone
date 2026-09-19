@@ -144,6 +144,13 @@
     });
   }
 
+  const timerReset = document.getElementById('timer-reset');
+  if (timerReset) {
+    timerReset.addEventListener('click', function () {
+      resetTimer();
+    });
+  }
+
   /* ══════════════════════════
      LEFT PANEL TABS
   ══════════════════════════ */
@@ -855,6 +862,129 @@
   }
 
   /* ══════════════════════════
+     SUBMISSION STATUS TAB
+  ══════════════════════════ */
+  const submissionTab = document.getElementById('editor-view-tab-submission');
+  const submissionTabClose = document.getElementById('editor-view-tab-submission-close');
+  const codeTab = document.getElementById('editor-view-tab-code');
+  const codePanel = document.getElementById('editor-view-code');
+  const submissionPanel = document.getElementById('editor-view-submission');
+  const submissionStatusContent = document.getElementById('submission-status-content');
+
+  function activateEditorView(view) {
+    const isSubmission = view === 'submission';
+    if (codeTab) codeTab.classList.toggle('active', !isSubmission);
+    if (submissionTab) submissionTab.classList.toggle('active', isSubmission);
+    if (codePanel) codePanel.classList.toggle('active', !isSubmission);
+    if (submissionPanel) submissionPanel.classList.toggle('active', isSubmission);
+    if (!isSubmission && window.editor) window.editor.layout();
+  }
+
+  if (codeTab) codeTab.addEventListener('click', function () { activateEditorView('code'); });
+  if (submissionTab) submissionTab.addEventListener('click', function () { activateEditorView('submission'); });
+  function closeSubmissionTab() {
+    if (!submissionTab) return;
+    submissionTab.hidden = true;
+    submissionTab.style.display = '';
+    activateEditorView('code');
+  }
+  if (submissionTabClose) {
+    submissionTabClose.addEventListener('click', function (event) {
+      event.stopPropagation();
+      closeSubmissionTab();
+    });
+    submissionTabClose.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeSubmissionTab();
+    });
+  }
+
+  function submissionStatusClass(status) {
+    return String(status || '').toLowerCase() === 'accepted' ? 'accepted' : 'failed';
+  }
+
+  function statusAcknowledgement(status) {
+    const accepted = submissionStatusClass(status) === 'accepted';
+    return '<span class="submission-ack ' + (accepted ? 'ack-success' : 'ack-failure') + '" aria-hidden="true"></span>';
+  }
+
+  function performanceGraph(data) {
+    const samples = data.performance || [];
+    const runtimeSamples = samples.map(function (item) { return parseFloat(item.runtime_ms); }).filter(Number.isFinite);
+    const memorySamples = samples.map(function (item) { return parseFloat(item.memory_kb); }).filter(Number.isFinite);
+    let mode = 'runtime';
+
+    function graphMarkup(kind) {
+      const values = kind === 'runtime' ? runtimeSamples : memorySamples;
+      const current = parseFloat(kind === 'runtime' ? data.runtime_ms : data.memory_kb);
+      if (!Number.isFinite(current) || values.length === 0) {
+        return '<div class="performance-empty">Performance distribution is not available yet.</div>';
+      }
+      const all = values.concat([current]).sort(function (a, b) { return a - b; });
+      const min = all[0];
+      const max = all[all.length - 1] || min + 1;
+      const bins = Array(10).fill(0);
+      values.forEach(function (value) {
+        const index = Math.min(9, Math.floor(((value - min) / Math.max(1, max - min)) * 10));
+        bins[index] += 1;
+      });
+      const peak = Math.max.apply(null, bins.concat([1]));
+      const position = ((current - min) / Math.max(1, max - min)) * 100;
+      const percent = Math.round((values.filter(function (value) { return value >= current; }).length / values.length) * 100);
+      return '<div class="performance-chart" data-graph-kind="' + kind + '">' +
+        '<div class="performance-y-axis"><span>100%</span><span>50%</span><span>0%</span></div>' +
+        '<div class="performance-plot"><div class="performance-grid"></div><div class="performance-bars">' + bins.map(function (count) { return '<i style="height:' + Math.max(3, (count / peak) * 100) + '%"></i>'; }).join('') + '</div><div class="performance-marker" style="left:' + position + '%"><b></b><span>' + current + (kind === 'runtime' ? ' ms' : ' KB') + '<small>' + percent + '% of submissions</small></span></div><div class="performance-x-axis"><span>' + min.toFixed(1) + '</span><span>' + ((min + max) / 2).toFixed(1) + '</span><span>' + max.toFixed(1) + '</span></div></div></div>';
+    }
+
+    function render() {
+      const graph = document.getElementById('submission-performance-graph');
+      if (graph) graph.innerHTML = graphMarkup(mode);
+      document.querySelectorAll('[data-performance-mode]').forEach(function (button) { button.classList.toggle('active', button.dataset.performanceMode === mode); });
+    }
+
+    const controls = '<div class="performance-head"><div><span class="submission-section-label">Performance</span><h4>How your submission compares</h4></div><div class="performance-switch"><button type="button" data-performance-mode="runtime">Runtime</button><button type="button" data-performance-mode="memory">Memory</button></div></div><div id="submission-performance-graph"></div>';
+    return { html: controls, init: function () { document.querySelectorAll('[data-performance-mode]').forEach(function (button) { button.addEventListener('click', function () { mode = button.dataset.performanceMode; render(); }); }); render(); } };
+  }
+
+  function renderSubmissionStatus(data) {
+    if (!submissionStatusContent || !submissionTab) return;
+    const status = submissionStatusClass(data.status);
+    const accepted = Number(data.accepted || 0);
+    const total = Number(data.total || (data.test_case_results || []).length);
+    const results = data.test_case_results || data.results || [];
+    const graph = status === 'accepted' ? performanceGraph(data) : null;
+    const cases = results.map(function (result) {
+      const passed = result.status === 'accepted' || result.status === 'success';
+      const details = passed ? '' : '<div class="submission-case-details"><div><b>Input</b><pre>' + escapeHtml(result.input || '') + '</pre></div><div><b>Expected</b><pre>' + escapeHtml(result.expected || '') + '</pre></div><div><b>Actual</b><pre>' + escapeHtml(result.actual || '') + '</pre></div></div>';
+      return '<div class="submission-case ' + (passed ? 'passed' : 'failed') + '"><button type="button" class="submission-case-row" data-case-toggle><span class="submission-case-indicator" aria-hidden="true"></span><span>Case ' + escapeHtml(result.tc_num) + '</span><strong>' + (passed ? 'Passed' : titleize(result.status)) + '</strong></button>' + details + '</div>';
+    }).join('');
+    submissionTab.hidden = false;
+    submissionTab.style.display = '';
+    submissionTab.className = 'editor-view-tab editor-view-tab-submission status-' + status + ' active';
+    document.getElementById('editor-view-tab-submission-label').textContent = status === 'accepted' ? 'Accepted' : titleize(data.status);
+    submissionStatusContent.innerHTML = '<div class="submission-status-header"><div><span class="submission-section-label">Submission status</span><h3>' + statusAcknowledgement(data.status) + (status === 'accepted' ? 'Accepted' : titleize(data.status)) + '</h3><p>' + accepted + ' / ' + total + ' test cases passed</p></div><span class="submission-status-time">' + escapeHtml(data.submitted_at || 'Just now') + '</span></div>' +
+      '<div class="submission-meta"><span>Language<strong>' + escapeHtml(data.language || getSelectedLanguage()) + '</strong></span><span>Runtime<strong>' + escapeHtml(data.runtime_ms || '—') + ' ms</strong></span><span>Memory<strong>' + escapeHtml(data.memory_kb || '—') + ' KB</strong></span><span>Passed<strong>' + accepted + ' / ' + total + '</strong></span></div>' +
+      (graph ? '<div class="submission-performance">' + graph.html + '</div>' : '') +
+      '<div class="submission-section-label">Test cases</div><div class="submission-cases">' + cases + '</div>' +
+      '<div class="submission-section-label submitted-code-label">Submitted code</div><pre class="submitted-code"><code>' + escapeHtml(data.code || getEditorCode()) + '</code></pre>';
+    submissionStatusContent.querySelectorAll('[data-case-toggle]').forEach(function (button) { button.addEventListener('click', function () { const details = button.nextElementSibling; if (details) details.classList.toggle('open'); }); });
+    if (graph) graph.init();
+    activateEditorView('submission');
+  }
+
+  function renderSubmissionPending() {
+    if (!submissionTab || !submissionStatusContent) return;
+    submissionTab.hidden = false;
+    submissionTab.style.display = '';
+    submissionTab.className = 'editor-view-tab editor-view-tab-submission status-pending active';
+    document.getElementById('editor-view-tab-submission-label').textContent = 'Pending';
+    submissionStatusContent.innerHTML = '<div class="submission-pending"><span class="pending-loader"></span><div><strong>Pending</strong><span>Your submission is being evaluated.</span></div></div>';
+    activateEditorView('submission');
+  }
+
+  /* ══════════════════════════
      RUN BUTTON
   ══════════════════════════ */
   const btnRun = document.getElementById('btn-run');
@@ -931,10 +1061,7 @@
 
       setButtonLoading(btnRun, true);
       setButtonLoading(btnSubmit, true);
-      switchToTestResultTab();
-
-      const container = document.getElementById('test-result-content');
-      if (container) container.innerHTML = skeletonHTML();
+      renderSubmissionPending();
 
       try {
         const res = await fetch('/submissions/submit/' + PROBLEM_SLUG + '/', {
@@ -956,9 +1083,7 @@
         } catch (_) {
           const bodyText = await res.text().catch(function () { return ''; });
           const snippet = bodyText.substring(0, 200);
-          if (container) container.innerHTML = '<div class="result-status-banner compile">' +
-            '<div class="result-banner-title">Server error (' + res.status + ')</div>' +
-            '<div class="result-stats-row"><span>' + escapeHtml(snippet) + '</span></div></div>';
+          renderSubmissionStatus({ status: 'compile_error', accepted: 0, total: 0, actual: snippet, code: getEditorCode(), language: getSelectedLanguage() });
           try { clearErrorHighlights(); } catch (_) {}
           const subTab = document.getElementById('tab-submissions');
           if (subTab) subTab.classList.remove('loaded');
@@ -967,16 +1092,12 @@
 
         if (data.error) {
           try { clearErrorHighlights(); } catch (_) {}
-          if (container) {
-            container.innerHTML = '<div class="result-status-banner runtime">' +
-              '<div class="result-banner-title">' + escapeHtml(data.error) + '</div>' +
-              '</div>';
-          }
+          renderSubmissionStatus({ status: 'runtime_error', accepted: 0, total: 0, actual: data.error, code: getEditorCode(), language: getSelectedLanguage() });
           const subTab = document.getElementById('tab-submissions');
           if (subTab) subTab.classList.remove('loaded');
           return;
         }
-        renderSubmitResult(data);
+        renderSubmissionStatus(data);
 
         // Reset timer once the solution passes every test case
         if (data.status === 'accepted') {
@@ -987,9 +1108,7 @@
         const subTab = document.getElementById('tab-submissions');
         if (subTab) subTab.classList.remove('loaded');
       } catch (err) {
-        if (container) {
-          container.innerHTML = '<div class="empty-state">Network error: ' + escapeHtml(err.message || err) + '</div>';
-        }
+        renderSubmissionStatus({ status: 'runtime_error', accepted: 0, total: 0, actual: err.message || err, code: getEditorCode(), language: getSelectedLanguage() });
       } finally {
         setButtonLoading(btnRun, false);
         setButtonLoading(btnSubmit, false);
@@ -1250,6 +1369,89 @@
           localStorage.setItem(draftLangKey, this.value);
         });
       }
+    });
+  }
+
+  /* ══════════════════════════
+     HISTORICAL SUBMISSION DETAILS
+  ══════════════════════════ */
+  function submissionStatusLabel(status) {
+    return titleize(status || 'Unknown');
+  }
+
+  function submissionDetailHTML(data) {
+    const results = data.results || [];
+    const accepted = results.filter(function (result) {
+      return result.status === 'accepted' || result.status === 'success';
+    }).length;
+    const statusClass = data.status === 'accepted' ? 'accepted' : 'failed';
+    const resultRows = results.map(function (result, index) {
+      const passed = result.status === 'accepted' || result.status === 'success';
+      const details = passed ? '' :
+        '<div class="submission-detail-case-body">' +
+        (result.input !== undefined ? '<div><b>Input</b><pre>' + escapeHtml(result.input) + '</pre></div>' : '') +
+        (result.expected !== undefined ? '<div><b>Expected</b><pre>' + escapeHtml(result.expected) + '</pre></div>' : '') +
+        (result.actual !== undefined ? '<div><b>Actual</b><pre>' + escapeHtml(result.actual) + '</pre></div>' : '') +
+        '</div>';
+      return '<div class="submission-detail-case ' + (passed ? 'passed' : 'failed') + '">' +
+        '<button type="button" class="submission-detail-case-head" data-case-toggle="' + index + '">' +
+        '<span>' + (passed ? '✓' : '✕') + ' Case ' + escapeHtml(result.tc_num) + '</span>' +
+        '<span>' + submissionStatusLabel(result.status) + '</span></button>' + details + '</div>';
+    }).join('');
+
+    return '<div class="submission-detail-panel">' +
+      '<div class="submission-detail-header"><div><button type="button" class="submission-detail-back" data-submission-back>← Back to submissions</button>' +
+      '<h3>Submission #' + escapeHtml(data.submission_id) + '</h3></div><span class="submission-detail-status ' + statusClass + '">' + submissionStatusLabel(data.status) + '</span></div>' +
+      '<div class="submission-detail-meta"><span>Language<strong>' + escapeHtml(data.language || '—') + '</strong></span>' +
+      '<span>Runtime<strong>' + escapeHtml(data.runtime_ms || '—') + ' ms</strong></span>' +
+      '<span>Memory<strong>' + escapeHtml(data.memory_kb || '—') + ' KB</strong></span>' +
+      '<span>Passed<strong>' + accepted + ' / ' + results.length + '</strong></span>' +
+      '<span>Submitted<strong>' + escapeHtml(data.submitted_at || '—') + '</strong></span></div>' +
+      '<div class="submission-detail-code"><div class="submission-detail-section-title">Submitted code</div><pre><code>' + escapeHtml(data.code || '') + '</code></pre></div>' +
+      '<div class="submission-detail-section-title">Test cases</div><div class="submission-detail-cases">' + (resultRows || '<div class="empty-state">No testcase results available.</div>') + '</div></div>';
+  }
+
+  function loadHistoricalSubmission(row) {
+    const url = row && row.dataset.detailUrl;
+    if (!url) return;
+    renderSubmissionPending();
+    fetch(url)
+      .then(function (response) {
+        if (!response.ok) throw new Error('Could not load this submission.');
+        return response.json();
+      })
+      .then(function (data) {
+        renderSubmissionStatus({
+          submission_id: data.submission_id,
+          code: data.code,
+          status: data.status,
+          language: data.language,
+          runtime_ms: data.runtime_ms,
+          memory_kb: data.memory_kb,
+          submitted_at: data.submitted_at,
+          performance: data.performance,
+          results: data.results,
+          accepted: (data.results || []).filter(function (result) { return result.status === 'accepted'; }).length,
+          total: (data.results || []).length,
+        });
+      })
+      .catch(function (error) {
+        renderSubmissionStatus({ status: 'runtime_error', accepted: 0, total: 0, actual: error.message, code: '', language: '' });
+      });
+  }
+
+  const submissionsTab = document.getElementById('tab-submissions');
+  if (submissionsTab) {
+    submissionsTab.addEventListener('click', function (event) {
+      const row = event.target.closest('[data-submission-trigger]');
+      if (row) loadHistoricalSubmission(row);
+    });
+    submissionsTab.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const row = event.target.closest('[data-submission-trigger]');
+      if (!row) return;
+      event.preventDefault();
+      loadHistoricalSubmission(row);
     });
   }
 

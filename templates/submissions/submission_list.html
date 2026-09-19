@@ -1,5 +1,4 @@
-{% load time_extras %}
-{% if submissions %}
+{% load time_extras %} {% if submissions %}
 <table class="submissions-table">
   <thead>
     <tr>
@@ -13,21 +12,40 @@
   </thead>
   <tbody>
     {% for sub in submissions %}
-    <tr class="submission-row {% if sub.is_accepted %}accepted{% else %}failed{% endif %}" data-submission-id="{{ sub.id }}">
+    <tr
+      class="submission-row {% if sub.is_accepted %}accepted{% else %}failed{% endif %}"
+      data-submission-id="{{ sub.id }}"
+      data-submission-trigger
+      data-detail-url="{% url 'submissions:submission_detail' sub.id %}"
+      tabindex="0"
+      role="button"
+      aria-label="View submission {{ sub.id }} details"
+    >
       <td>
-        <span class="status-text {% if sub.is_accepted %}text-green{% else %}text-red{% endif %}">
+        <span
+          class="status-text {% if sub.is_accepted %}text-green{% else %}text-red{% endif %}"
+        >
           {{ sub.get_status_display }}
         </span>
       </td>
-      <td><span class="lang-badge">{{ sub.language.name|default:"—" }}</span></td>
-      <td>{% if sub.runtime_ms != None %}{{ sub.runtime_ms }} ms{% else %}—{% endif %}</td>
-      <td>{% if sub.memory_kb != None %}{{ sub.memory_kb|floatformat:0 }} KB{% else %}—{% endif %}</td>
+      <td>
+        <span class="lang-badge"
+          >{{ sub.language.name|default:'Unknown' }}</span
+        >
+      </td>
+      <td>{% if sub.runtime_ms != None %}{{ sub.runtime_ms }} ms{% else %}&mdash;{% endif %}</td>
+      <td>{% if sub.memory_kb != None %}{{ sub.memory_kb|floatformat:0 }} KB{% else %}&mdash;{% endif %}</td>
       <td>{{ sub.solve_time_seconds|mmss }}</td>
-      <td><span class="time-ago">{{ sub.submitted_at|timesince }} ago</span></td>
+
+      <td>
+        <span class="time-ago">{{ sub.submitted_at|timesince }} ago</span>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 {% else %}
-<div class="empty-state">No submissions yet — click Submit to make your first attempt.</div>
+<div class="empty-state">
+  No submissions yet - click Submit to make your first attempt.
+</div>
 {% endif %}

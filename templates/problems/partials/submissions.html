@@ -15,19 +15,30 @@
     <tr
       class="submission-row {% if sub.is_accepted %}accepted{% else %}failed{% endif %}"
       data-submission-id="{{ sub.id }}"
+      data-submission-trigger
+      data-detail-url="{% url 'submissions:submission_detail' sub.id %}"
+      tabindex="0"
+      role="button"
+      aria-label="View submission {{ sub.id }} details"
     >
       <td>
-        <span class="status-text {% if sub.is_accepted %}text-green{% else %}text-red{% endif %}">
+        <span
+          class="status-text {% if sub.is_accepted %}text-green{% else %}text-red{% endif %}"
+        >
           {{ sub.get_status_display }}
         </span>
         <div class="time-ago">{{ sub.submitted_at|timesince }} ago</div>
       </td>
       <td>
-        <span class="lang-badge">{{ sub.language.name }}</span>
+        <span class="lang-badge"
+          >{{ sub.language.name|default:'Unknown' }}</span
+        >
       </td>
-      <td>{% if sub.runtime_ms != None %}{{ sub.runtime_ms }} ms{% else %}—{% endif %}</td>
-      <td>{% if sub.memory_kb != None %}{{ sub.memory_kb|floatformat:0 }} KB{% else %}—{% endif %}</td>
-      <td><span class="time-ago">{{ sub.submitted_at|timesince }} ago</span></td>
+      <td>{% if sub.runtime_ms != None %}{{ sub.runtime_ms }} ms{% else %}&mdash;{% endif %}</td>
+      <td>{% if sub.memory_kb != None %}{{ sub.memory_kb|floatformat:0 }} KB{% else %}&mdash;{% endif %}</td>
+      <td>
+        <span class="time-ago">{{ sub.submitted_at|timesince }} ago</span>
+      </td>
     </tr>
     {% empty %}
     <tr>

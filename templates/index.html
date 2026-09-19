@@ -1,463 +1,413 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BashaByte — Master Coding. Land Your Dream Job.</title>
-
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Base CSS -->
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <!-- Home CSS -->
-    <link rel="stylesheet" href="{% static 'css/home.css' %}">
-</head>
-<body>
-
-<!-- ══════════════════════════════════════
-     Navbar
-══════════════════════════════════════ -->
-<nav class="navbar navbar-expand-lg lc-navbar sticky-top">
-    <div class="container-fluid px-3 h-100">
-
-        <a class="navbar-brand d-flex align-items-center gap-2 me-4 text-decoration-none" href="/">
-            <img src="{% static 'images/logo.png' %}" alt="BashaByte" style="height:26px;">
-            <span style="color:var(--text-primary);font-weight:600;font-size:15px;">BashaByte</span>
-        </a>
-
-        <button class="navbar-toggler border-0 btn-lc-ghost"
-                type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-            <i class="bi bi-list fs-5"></i>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNav">
-            <ul class="navbar-nav me-auto gap-1 align-items-lg-center">
-                <li class="nav-item"><a class="nav-link" href="/problems/">Problems</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Courses</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Contests</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Discuss</a></li>
-            </ul>
-            <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
-                <button class="theme-toggle" id="themeToggle">
-                    <i class="bi bi-sun-fill" id="themeIcon"></i>
-                </button>
-                <a href="/users/login/" class="btn-lc-outline">Sign In</a>
-                <a href="/users/register/" class="btn-lc-orange">Register</a>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b100e" />
+    <title>BashaByte | Build the skills that move your career</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/home.css' %}" />
+  </head>
+  <body class="landing-page">
+    <nav class="navbar navbar-expand-lg lc-navbar landing-nav" id="mainNavbar">
+      <div class="landing-shell nav-shell">
+        <a
+          class="navbar-brand brand-lockup"
+          href="/"
+          aria-label="BashaByte home"
+          ><img src="{% static 'images/logo.png' %}" alt="" /><span
+            >Basha<span class="brand-mark">Byte</span></span
+          ></a
+        >
+        <div class="nav-actions">
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            type="button"
+            aria-label="Switch theme"
+            title="Switch theme"
+          >
+            <i class="bi bi-sun-fill" id="themeIcon"></i>
+          </button>
+          <a href="{% url 'users:login' %}" class="nav-signin">Login</a>
+          <a href="/users/register/" class="nav-cta"
+            >Register <i class="bi bi-arrow-up-right"></i
+          ></a>
         </div>
-    </div>
-</nav>
+      </div>
+    </nav>
 
-<!-- ══════════════════════════════════════
-     Hero Section
-══════════════════════════════════════ -->
-<section class="hero-section">
-    <div class="container">
-        <div class="row justify-content-center text-center">
-            <div class="col-lg-8">
-                <div class="hero-tag mb-3">
-                    <i class="bi bi-lightning-charge-fill me-1" style="color:var(--orange);"></i>
-                    <span>The #1 Platform for Coding & Career Growth</span>
-                </div>
-                <h1 class="hero-title">Master Coding.<br>Land Your Dream Job.</h1>
-                <p class="hero-subtitle mt-3">
-                    Python · Java · DSA · PostgreSQL · System Design · Django & DRF · Generative AI · Agentic AI · Machine Learning
-                </p>
-                <div class="d-flex flex-wrap gap-3 justify-content-center mt-4">
-                    <a href="/users/register/" class="btn-lc-orange py-2 px-4 fs-6">
-                        Start Learning Free <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
-                    <a href="/problems/" class="btn-lc-outline py-2 px-4 fs-6">
-                        Browse Problems <i class="bi bi-code-slash ms-1"></i>
-                    </a>
-                </div>
-            </div>
+    <main>
+      <section class="hero-section landing-shell">
+        <div class="hero-copy reveal">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span> The developer learning platform
+          </div>
+          <h1>Learn deeply.<br /><em>Build boldly.</em></h1>
+          <p class="hero-lede">
+            BashaByte brings structured courses, real coding practice, and
+            career momentum into one focused workspace for the next generation
+            of developers.
+          </p>
+          <div class="hero-actions">
+            <a href="/users/register/" class="button button-primary"
+              >Start for free <i class="bi bi-arrow-up-right"></i></a
+            ><a href="/problems/" class="button button-secondary"
+              ><i class="bi bi-play-circle"></i> Explore the platform</a
+            >
+          </div>
+          <div class="hero-note">
+            <i class="bi bi-check2-circle"></i> No credit card required
+            <span></span> Practice at your own pace
+          </div>
         </div>
-    </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     Stats Section
-══════════════════════════════════════ -->
-<section class="stats-section">
-    <div class="container">
-        <div class="row g-3 text-center">
-            <div class="col-6 col-md-3">
-                <div class="stat-card lc-card p-3">
-                    <div class="stat-number" style="color:var(--orange);">500+</div>
-                    <div class="stat-label text-lc-secondary">Practice Problems</div>
-                </div>
+        <div
+          class="hero-product reveal"
+          aria-label="BashaByte coding workspace preview"
+        >
+          <div class="product-window">
+            <div class="window-bar">
+              <div class="window-dots"><i></i><i></i><i></i></div>
+              <span>BashaByte / two-sum.py</span
+              ><span class="window-status"><b></b> Live workspace</span>
             </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card lc-card p-3">
-                    <div class="stat-number" style="color:var(--orange);">10+</div>
-                    <div class="stat-label text-lc-secondary">Expert Courses</div>
+            <div class="workspace-grid">
+              <aside class="workspace-sidebar">
+                <span>PROBLEM 001</span><strong>Two Sum</strong><em>EASY</em>
+                <hr />
+                <span>Algorithms</span><span>Arrays & Hashing</span
+                ><span>17 min session</span>
+                <div class="side-progress"><b></b></div>
+                <small>Daily progress <b>72%</b></small>
+              </aside>
+              <div class="editor-pane">
+                <div class="editor-tabs">
+                  <span class="active"
+                    ><i class="bi bi-filetype-py"></i> solution.py</span
+                  ><span>tests.py</span>
                 </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card lc-card p-3">
-                    <div class="stat-number" style="color:var(--orange);">50K+</div>
-                    <div class="stat-label text-lc-secondary">Active Students</div>
+                <div class="code-lines">
+                  <code
+                    ><i>01</i> <b>def</b> <em>two_sum</em>(nums, target):</code
+                  ><code><i>02</i> seen = {}</code
+                  ><code
+                    ><i>03</i> <b>for</b> index, value <b>in</b>
+                    <em>enumerate</em>(nums):</code
+                  ><code><i>04</i> complement = target - value</code
+                  ><code><i>05</i> <b>if</b> complement <b>in</b> seen:</code
+                  ><code><i>06</i> <b>return</b> [seen[complement], index]</code
+                  ><code><i>07</i> seen[value] = index</code
+                  ><code><i>08</i> </code
+                  ><code><i>09</i> <b>return</b> []</code>
                 </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="stat-card lc-card p-3">
-                    <div class="stat-number" style="color:var(--orange);">95%</div>
-                    <div class="stat-label text-lc-secondary">Placement Rate</div>
+                <div class="editor-footer">
+                  <span><i class="bi bi-git"></i> main</span
+                  ><span>Python 3.12</span
+                  ><button><i class="bi bi-play-fill"></i> Run tests</button>
                 </div>
+              </div>
+              <aside class="result-pane">
+                <div class="result-heading">
+                  <span>TEST RESULTS</span
+                  ><b><i class="bi bi-check2"></i> Accepted</b>
+                </div>
+                <div class="result-score">
+                  <strong>100</strong><span>/ 100</span>
+                </div>
+                <div class="result-bar"><b></b></div>
+                <div class="result-meta">
+                  <span>Runtime<strong>42 ms</strong></span
+                  ><span>Memory<strong>14.2 MB</strong></span>
+                </div>
+                <div class="test-list">
+                  <span
+                    ><i class="bi bi-check-circle-fill"></i> Example 1
+                    <b>Passed</b></span
+                  ><span
+                    ><i class="bi bi-check-circle-fill"></i> Example 2
+                    <b>Passed</b></span
+                  ><span
+                    ><i class="bi bi-check-circle-fill"></i> Hidden tests
+                    <b>Passed</b></span
+                  >
+                </div>
+              </aside>
             </div>
+          </div>
+          <div class="product-caption">
+            <span><b></b> A place to think, test, and improve</span
+            ><span>01 / 04</span>
+          </div>
         </div>
-    </div>
-</section>
+      </section>
 
-<!-- ══════════════════════════════════════
-     Courses Section
-══════════════════════════════════════ -->
-<section class="home-section">
-    <div class="container">
-        <div class="section-header text-center mb-4">
-            <h2 class="section-title">Everything You Need to Succeed</h2>
-            <p class="text-lc-secondary mt-2">From absolute basics to advanced — all in one place</p>
+      <section
+        class="stats-section landing-shell reveal-stagger"
+        aria-label="Platform statistics"
+      >
+        <div class="stats-intro">
+          <span class="section-kicker">Built for momentum</span>
+          <p>Small sessions compound<br />into serious progress.</p>
         </div>
-        <div class="row g-3">
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-filetype-py"></i></div>
-                    <h6 class="course-name">Python Programming</h6>
-                    <p class="course-desc text-lc-secondary">OOP, decorators, generators and real world projects.</p>
-                    <span class="badge-easy">All Levels</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-filetype-java"></i></div>
-                    <h6 class="course-name">Java Programming</h6>
-                    <p class="course-desc text-lc-secondary">Multithreading, JVM internals and design patterns.</p>
-                    <span class="badge-medium">Intermediate</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-diagram-3"></i></div>
-                    <h6 class="course-name">Data Structures & Algorithms</h6>
-                    <p class="course-desc text-lc-secondary">Arrays, graphs, DP, trees — crack any coding interview.</p>
-                    <span class="badge-hard">Advanced</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-database"></i></div>
-                    <h6 class="course-name">Database with PostgreSQL</h6>
-                    <p class="course-desc text-lc-secondary">ACID, indexing, query optimization and DB design.</p>
-                    <span class="badge-easy">Beginner</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-gear-wide-connected"></i></div>
-                    <h6 class="course-name">System Design</h6>
-                    <p class="course-desc text-lc-secondary">Scalability, microservices, load balancing.</p>
-                    <span class="badge-hard">Advanced</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-layers"></i></div>
-                    <h6 class="course-name">Full Stack: Django & DRF</h6>
-                    <p class="course-desc text-lc-secondary">REST APIs, authentication, deployment.</p>
-                    <span class="badge-hard">Advanced</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-robot"></i></div>
-                    <h6 class="course-name">Generative AI</h6>
-                    <p class="course-desc text-lc-secondary">LLMs, prompt engineering, GPT, diffusion models.</p>
-                    <span class="badge-hard">Advanced</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-cpu"></i></div>
-                    <h6 class="course-name">Agentic AI</h6>
-                    <p class="course-desc text-lc-secondary">Autonomous agents and multi-agent systems.</p>
-                    <span class="badge-hard">Advanced</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-graph-up"></i></div>
-                    <h6 class="course-name">Machine Learning</h6>
-                    <p class="course-desc text-lc-secondary">Scikit-learn, TensorFlow, neural networks.</p>
-                    <span class="badge-hard">Advanced</span>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="course-card lc-card lc-card-hover p-3">
-                    <div class="course-icon mb-2"><i class="bi bi-plug"></i></div>
-                    <h6 class="course-name">API Dev with Django REST</h6>
-                    <p class="course-desc text-lc-secondary">Production grade RESTful APIs, testing and docs.</p>
-                    <span class="badge-medium">Intermediate</span>
-                </div>
-            </div>
-
+        <div class="stat-item">
+          <strong data-counter="500" data-suffix="+">500+</strong
+          ><span>Practice problems</span>
         </div>
-    </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     Features Section
-══════════════════════════════════════ -->
-<section class="home-section" style="background-color:var(--bg-secondary);">
-    <div class="container">
-        <div class="section-header text-center mb-4">
-            <h2 class="section-title">Why BashaByte?</h2>
-            <p class="text-lc-secondary mt-2">Everything you need in one platform</p>
+        <div class="stat-item">
+          <strong data-counter="10" data-suffix="+">10+</strong
+          ><span>Expert courses</span>
         </div>
-        <div class="row g-3">
-
-            <div class="col-md-6 col-lg-4">
-                <div class="feature-card lc-card p-3 d-flex gap-3">
-                    <div class="feature-icon"><i class="bi bi-puzzle"></i></div>
-                    <div>
-                        <h6 class="mb-1">Practice Problems</h6>
-                        <p class="text-lc-secondary mb-0" style="font-size:13px;">500+ curated challenges with real time judge.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="feature-card lc-card p-3 d-flex gap-3">
-                    <div class="feature-icon"><i class="bi bi-trophy"></i></div>
-                    <div>
-                        <h6 class="mb-1">Live Contests</h6>
-                        <p class="text-lc-secondary mb-0" style="font-size:13px;">Weekly ranked contests with global leaderboards.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="feature-card lc-card p-3 d-flex gap-3">
-                    <div class="feature-icon"><i class="bi bi-play-circle"></i></div>
-                    <div>
-                        <h6 class="mb-1">Full Courses</h6>
-                        <p class="text-lc-secondary mb-0" style="font-size:13px;">10+ industry vetted tracks with coding labs.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="feature-card lc-card p-3 d-flex gap-3">
-                    <div class="feature-icon"><i class="bi bi-patch-check"></i></div>
-                    <div>
-                        <h6 class="mb-1">Certificate on Completion</h6>
-                        <p class="text-lc-secondary mb-0" style="font-size:13px;">Verified shareable certificates for every course.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="feature-card lc-card p-3 d-flex gap-3">
-                    <div class="feature-icon"><i class="bi bi-lightbulb"></i></div>
-                    <div>
-                        <h6 class="mb-1">AI Powered Hints</h6>
-                        <p class="text-lc-secondary mb-0" style="font-size:13px;">Smart hints and code suggestions using GenAI.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="feature-card lc-card p-3 d-flex gap-3">
-                    <div class="feature-icon"><i class="bi bi-bar-chart-line"></i></div>
-                    <div>
-                        <h6 class="mb-1">Progress Tracking</h6>
-                        <p class="text-lc-secondary mb-0" style="font-size:13px;">Analytics dashboard to monitor your journey.</p>
-                    </div>
-                </div>
-            </div>
-
+        <div class="stat-item">
+          <strong data-counter="50" data-suffix="K+">50K+</strong
+          ><span>Active students</span>
         </div>
-    </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     How It Works
-══════════════════════════════════════ -->
-<section class="home-section">
-    <div class="container">
-        <div class="section-header text-center mb-4">
-            <h2 class="section-title">Your Path to Success</h2>
-            <p class="text-lc-secondary mt-2">Three simple steps to land your dream job</p>
+        <div class="stat-item">
+          <strong data-counter="95" data-suffix="%">95%</strong
+          ><span>Placement rate</span>
         </div>
-        <div class="row g-3 text-center">
-            <div class="col-md-4">
-                <div class="step-card lc-card p-4">
-                    <div class="step-number mb-3">1</div>
-                    <i class="bi bi-person-plus fs-2 mb-2" style="color:var(--orange);"></i>
-                    <h6 class="mt-2">Create Account</h6>
-                    <p class="text-lc-secondary mb-0" style="font-size:13px;">Sign up in seconds and unlock the entire platform.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="step-card lc-card p-4">
-                    <div class="step-number mb-3">2</div>
-                    <i class="bi bi-laptop-code fs-2 mb-2" style="color:var(--orange);"></i>
-                    <h6 class="mt-2">Learn & Practice</h6>
-                    <p class="text-lc-secondary mb-0" style="font-size:13px;">Study courses and solve real coding problems daily.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="step-card lc-card p-4">
-                    <div class="step-number mb-3">3</div>
-                    <i class="bi bi-rocket-takeoff fs-2 mb-2" style="color:var(--orange);"></i>
-                    <h6 class="mt-2">Get Hired</h6>
-                    <p class="text-lc-secondary mb-0" style="font-size:13px;">Showcase certificates, ace interviews, land your dream job.</p>
-                </div>
-            </div>
+      </section>
+
+      <section class="story-section landing-shell" id="curriculum">
+        <div class="story-heading reveal">
+          <span class="section-kicker">One connected system</span>
+          <h2>From first principles<br />to <em>production-ready.</em></h2>
+          <p>
+            Follow a clear path, then make it your own. Every part of BashaByte
+            turns passive watching into active skill.
+          </p>
         </div>
-    </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     Testimonials
-══════════════════════════════════════ -->
-<section class="home-section" style="background-color:var(--bg-secondary);">
-    <div class="container">
-        <div class="section-header text-center mb-4">
-            <h2 class="section-title">What Our Students Say</h2>
+        <div class="story-grid">
+          <article class="story-panel panel-editor reveal">
+            <div class="panel-top">
+              <span>01</span><i class="bi bi-braces"></i>
+            </div>
+            <div class="mini-code">
+              <span>// your next chapter</span
+              ><span><b>const</b> foundation = <em>"strong"</em>;</span
+              ><span><b>const</b> practice = <em>"daily"</em>;</span
+              ><span><b>const</b> trajectory = foundation + practice;</span>
+            </div>
+            <div class="panel-copy">
+              <h3>Learn with context.</h3>
+              <p>
+                Deep courses in Python, Java, DSA, databases, system design, and
+                AI that connect concepts to real work.
+              </p>
+              <a href="#courses"
+                >Explore the curriculum <i class="bi bi-arrow-up-right"></i
+              ></a>
+            </div>
+          </article>
+          <article class="story-panel panel-chart reveal">
+            <div class="panel-top">
+              <span>02</span><i class="bi bi-activity"></i>
+            </div>
+            <div class="chart-wrap">
+              <span>100<br /><br />50<br /><br />0</span>
+              <div class="chart">
+                <svg
+                  viewBox="0 0 430 140"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M0 119 C35 121 41 101 70 105 S106 83 130 91 S164 71 190 79 S223 55 252 63 S283 35 310 49 S350 23 375 30 S405 12 430 16"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div class="panel-copy">
+              <h3>See yourself improve.</h3>
+              <p>
+                Progress tracking that makes consistency visible, so you always
+                know what to work on next.
+              </p>
+              <a href="#progress"
+                >Make progress visible <i class="bi bi-arrow-up-right"></i
+              ></a>
+            </div>
+          </article>
+          <article class="story-panel panel-contest reveal" id="contests">
+            <div class="panel-top">
+              <span>03</span><i class="bi bi-lightning-charge"></i>
+            </div>
+            <div class="contest-time">
+              <span>WEEKLY CONTEST</span><strong>02 : 14 : 38</strong
+              ><small>Saturday, 20:00 UTC</small>
+            </div>
+            <div class="panel-copy">
+              <h3>Raise the stakes.</h3>
+              <p>
+                Compete in live contests, learn from the leaderboard, and
+                sharpen the instincts interviews demand.
+              </p>
+              <a href="#community"
+                >Find your edge <i class="bi bi-arrow-up-right"></i
+              ></a>
+            </div>
+          </article>
         </div>
-        <div class="row g-3">
+      </section>
 
-            <div class="col-md-4">
-                <div class="lc-card p-3">
-                    <div class="mb-2" style="color:var(--orange);">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    </div>
-                    <p style="font-size:13px;">"BashaByte transformed my career. The DSA course and contests are on another level — I cleared FAANG interviews!"</p>
-                    <div style="font-size:13px;font-weight:600;">— Priya Sharma</div>
-                    <div class="text-lc-secondary" style="font-size:12px;">Software Engineer @ Google</div>
-                </div>
+      <section class="curriculum-section" id="courses">
+        <div class="landing-shell curriculum-layout">
+          <div class="curriculum-intro reveal">
+            <span class="section-kicker">The curriculum</span>
+            <h2>Go broad.<br /><em>Go deep.</em></h2>
+            <p>
+              Practical tracks for the whole developer journey, from your first
+              function to your next system.
+            </p>
+            <a href="/users/register/" class="text-link"
+              >Start exploring <i class="bi bi-arrow-up-right"></i
+            ></a>
+          </div>
+          <div class="track-list reveal-stagger">
+            <div class="track-row">
+              <span>01</span><strong>Python & Java</strong
+              ><small>Foundations / OOP / Patterns</small
+              ><i class="bi bi-arrow-up-right"></i>
             </div>
-
-            <div class="col-md-4">
-                <div class="lc-card p-3">
-                    <div class="mb-2" style="color:var(--orange);">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    </div>
-                    <p style="font-size:13px;">"The AI track is mind blowing! From zero to building my own LLM app in weeks. Best platform I have ever used."</p>
-                    <div style="font-size:13px;font-weight:600;">— Rahul Mehta</div>
-                    <div class="text-lc-secondary" style="font-size:12px;">ML Engineer @ Microsoft</div>
-                </div>
+            <div class="track-row">
+              <span>02</span><strong>Data structures & algorithms</strong
+              ><small>Problems / Interviews / DSA</small
+              ><i class="bi bi-arrow-up-right"></i>
             </div>
-
-            <div class="col-md-4">
-                <div class="lc-card p-3">
-                    <div class="mb-2" style="color:var(--orange);">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
-                    </div>
-                    <p style="font-size:13px;">"Full stack Django course helped me build production apps. The AI hints feature is a real game changer!"</p>
-                    <div style="font-size:13px;font-weight:600;">— Anjali Reddy</div>
-                    <div class="text-lc-secondary" style="font-size:12px;">Full Stack Developer @ Flipkart</div>
-                </div>
+            <div class="track-row">
+              <span>03</span><strong>Full-stack development</strong
+              ><small>Django / APIs / Deployment</small
+              ><i class="bi bi-arrow-up-right"></i>
             </div>
-
+            <div class="track-row">
+              <span>04</span><strong>AI & machine learning</strong
+              ><small>LLMs / Agents / Models</small
+              ><i class="bi bi-arrow-up-right"></i>
+            </div>
+            <div class="track-row">
+              <span>05</span><strong>System design</strong
+              ><small>Scale / Architecture / Tradeoffs</small
+              ><i class="bi bi-arrow-up-right"></i>
+            </div>
+          </div>
         </div>
-    </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     CTA Banner
-══════════════════════════════════════ -->
-<section class="cta-section">
-    <div class="container text-center">
-        <h2 class="section-title mb-2">Ready to Start Your Coding Journey?</h2>
-        <p class="text-lc-secondary mb-4">Join 50,000+ developers who mastered their skills with BashaByte.</p>
-        <a href="/users/register/" class="btn-lc-orange py-2 px-4 fs-6">
-            Join for Free <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-    </div>
-</section>
-
-<!-- ══════════════════════════════════════
-     Footer
-══════════════════════════════════════ -->
-<footer class="lc-footer border-lc-top">
-    <div class="container">
-        <div class="row gy-4">
-
-            <div class="col-md-5">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <img src="{% static 'images/logo.png' %}" alt="BashaByte" style="height:24px;">
-                    <span style="font-weight:600;">BashaByte</span>
-                </div>
-                <p class="text-lc-secondary" style="font-size:13px;">The ultimate coding ecosystem — courses, contests, and career prep.</p>
-            </div>
-
-            <div class="col-md-3 col-6">
-                <h6 class="mb-3">Quick Links</h6>
-                <ul class="list-unstyled footer-links">
-                    <li><a href="/problems/" class="lc-link">Problems</a></li>
-                    <li><a href="#" class="lc-link">Courses</a></li>
-                    <li><a href="#" class="lc-link">Contests</a></li>
-                    <li><a href="/users/login/" class="lc-link">Login</a></li>
-                    <li><a href="/users/register/" class="lc-link">Register</a></li>
-                </ul>
-            </div>
-
-            <div class="col-md-4 col-6">
-                <h6 class="mb-3">Resources</h6>
-                <ul class="list-unstyled footer-links">
-                    <li><a href="#" class="lc-link">Documentation</a></li>
-                    <li><a href="#" class="lc-link">Blog</a></li>
-                    <li><a href="#" class="lc-link">Support</a></li>
-                </ul>
-            </div>
-
+      </section>
+      <section class="community-section landing-shell" id="community">
+        <div class="community-copy reveal">
+          <span class="section-kicker">More than a problem set</span>
+          <h2>A practice space that<br /><em>keeps you moving.</em></h2>
+          <p>
+            Get unstuck with smart hints. Build confidence in contests. Share
+            your thinking with a community that speaks your language.
+          </p>
+          <div class="community-points">
+            <span><i class="bi bi-check2"></i> Real-time code execution</span
+            ><span><i class="bi bi-check2"></i> AI-powered guidance</span
+            ><span><i class="bi bi-check2"></i> Peer discussion & review</span>
+          </div>
         </div>
-
-        <div class="border-lc-top mt-4 pt-3 text-center text-lc-secondary" style="font-size:13px;">
-            &copy; 2025 BashaByte. All rights reserved.
+        <div class="orbit-visual reveal">
+          <div class="orbit-center">
+            <img src="{% static 'images/logo.png' %}" alt="" /><strong
+              >BB</strong
+            ><span>your workspace</span>
+          </div>
+          <div class="orbit-node node-one">
+            <i class="bi bi-code-slash"></i><span>Practice</span>
+          </div>
+          <div class="orbit-node node-two">
+            <i class="bi bi-chat-square-text"></i><span>Discuss</span>
+          </div>
+          <div class="orbit-node node-three">
+            <i class="bi bi-bar-chart-line"></i><span>Grow</span>
+          </div>
+          <div class="orbit-ring ring-one"></div>
+          <div class="orbit-ring ring-two"></div>
         </div>
+      </section>
+      <section class="final-cta landing-shell reveal">
+        <div>
+          <span class="section-kicker">Your next level starts here</span>
+          <h2>Make the hours<br /><em>count.</em></h2>
+        </div>
+        <div class="final-action">
+          <p>A clearer path to the developer you want to become.</p>
+          <a href="/users/register/" class="button button-primary"
+            >Join BashaByte <i class="bi bi-arrow-up-right"></i
+          ></a>
+        </div>
+      </section>
+    </main>
 
-    </div>
-</footer>
+    <footer class="lc-footer landing-footer">
+      <div class="landing-shell footer-grid">
+        <div class="footer-brand">
+          <a class="brand-lockup" href="/"
+            ><img src="{% static 'images/logo.png' %}" alt="" /><span
+              >Basha<span class="brand-mark">Byte</span></span
+            ></a
+          >
+          <p>Practice with purpose.<br />Build for what is next.</p>
+        </div>
+        <div>
+          <span class="footer-label">Explore</span
+          ><a href="/problems/">Problems</a><a href="#courses">Courses</a
+          ><a href="#contests">Contests</a>
+        </div>
+        <div>
+          <span class="footer-label">Connect</span
+          ><a href="#community">Discuss</a
+          ><a href="{% url 'users:login' %}">Sign in</a
+          ><a href="/users/register/">Register</a>
+        </div>
+        <div class="footer-note">
+          <span class="footer-label">BashaByte / 2025</span>
+          <p>For curious minds and<br />serious builders.</p>
+        </div>
+      </div>
+      <div class="landing-shell footer-bottom">
+        <span>© 2025 BashaByte. All rights reserved.</span
+        ><span
+          >Made for the next commit <i class="bi bi-arrow-up-right"></i
+        ></span>
+      </div>
+    </footer>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Theme Toggle -->
-<script src="{% static 'js/test.js' %}"></script>
-<script>
-    const html = document.documentElement;
-    const toggleBtn = document.getElementById('themeToggle');
-    const themeIcon = document.getElementById('themeIcon');
-    const savedTheme = localStorage.getItem('bb-theme') || 'dark';
-    html.setAttribute('data-theme', savedTheme);
-    updateIcon(savedTheme);
-    toggleBtn.addEventListener('click', function() {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('bb-theme', next);
-        updateIcon(next);
-    });
-    function updateIcon(theme) {
-        themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-    }
-</script>
-
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/test.js' %}"></script>
+    <script>
+      (function () {
+        const html = document.documentElement;
+        const toggleBtn = document.getElementById("themeToggle");
+        const themeIcon = document.getElementById("themeIcon");
+        const savedTheme = localStorage.getItem("bb-theme") || "dark";
+        function updateTheme(theme) {
+          html.setAttribute("data-theme", theme);
+          themeIcon.className =
+            theme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
+          toggleBtn.setAttribute(
+            "aria-label",
+            theme === "dark" ? "Switch to light theme" : "Switch to dark theme",
+          );
+        }
+        updateTheme(savedTheme);
+        toggleBtn.addEventListener("click", function () {
+          const nextTheme =
+            html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          localStorage.setItem("bb-theme", nextTheme);
+          updateTheme(nextTheme);
+        });
+      })();
+    </script>
+  </body>
 </html>

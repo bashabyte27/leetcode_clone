@@ -15,7 +15,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% if request.path == '/users/login/' or request.path == '/users/register/' %}auth-page{% endif %}">
 
 <!-- ══════════════════════════════════════
      Navbar
@@ -29,13 +29,14 @@
             <span>BashaByte</span>
         </a>
 
-        <!-- Mobile Toggler -->
+        {% block navbar_toggle %}
         <button class="navbar-toggler border-0 btn-lc-ghost"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#mainNav">
             <i class="bi bi-list fs-5"></i>
         </button>
+        {% endblock %}
 
         <!-- Nav Links + Right Side -->
         <div class="collapse navbar-collapse" id="mainNav">
@@ -43,25 +44,26 @@
 
 
 
-            <!-- Center Links -->
+            {% block primary_nav %}
             <ul class="navbar-nav me-auto gap-1 align-items-lg-center">
                 <li class="nav-item">
-                    <a class="nav-link {% block nav_problems %}{% endblock %}"
+                    <a class="nav-link"
                        href="/problems/">Problems</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% block nav_courses %}{% endblock %}"
+                    <a class="nav-link"
                        href="#">Courses</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% block nav_contests %}{% endblock %}"
+                    <a class="nav-link"
                        href="#">Contests</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% block nav_discuss %}{% endblock %}"
+                    <a class="nav-link"
                        href="#">Discuss</a>
                 </li>
             </ul>
+            {% endblock %}
 
             <!-- Right Side -->
             <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
@@ -71,6 +73,7 @@
                     <i class="bi bi-sun-fill" id="themeIcon"></i>
                 </button>
 
+                {% block account_nav %}
                 {% if request.user.is_authenticated %}
                     <!-- Profile Dropdown -->
                     <div class="dropdown">
@@ -99,9 +102,10 @@
                         </ul>
                     </div>
                 {% else %}
-                    <a href="/users/login/" class="btn-lc-outline">Sign In</a>
+                    <a href="{% url 'users:login' %}" class="btn-lc-outline">Sign In</a>
                     <a href="/users/register/" class="btn-lc-orange">Register</a>
                 {% endif %}
+                {% endblock %}
 
             </div>
         </div>

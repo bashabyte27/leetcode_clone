@@ -1,13 +1,9 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block content %}
+{% extends 'base.html' %} {% load static %} {% block content %}
 <div class="container py-5 d-flex justify-content-center">
-  <div class="lc-card" style="max-width: 420px; width: 100%; margin: 0 auto;">
-    
+  <div class="lc-card" style="max-width: 420px; width: 100%; margin: 0 auto">
     <!-- BashaByte Logo -->
     <div class="text-center mb-3">
-      <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40">
+      <img src="{% static 'images/logo.png' %}" alt="BashaByte" height="40" />
     </div>
 
     <h3 class="text-center mb-1">Sign In to BashaByte</h3>
@@ -17,9 +13,16 @@
 
     <!-- Non-field errors (invalid credentials, inactive account, etc.) -->
     {% if form.non_field_errors %}
-      <div class="mb-3 p-2 rounded" style="color: var(--hard-color); background-color: var(--orange-bg); border: 1px solid var(--border-color);">
-        {{ form.non_field_errors }}
-      </div>
+    <div
+      class="mb-3 p-2 rounded"
+      style="
+        color: var(--hard-color);
+        background-color: var(--orange-bg);
+        border: 1px solid var(--border-color);
+      "
+    >
+      {{ form.non_field_errors }}
+    </div>
     {% endif %}
 
     <!-- Login form -->
@@ -28,44 +31,60 @@
 
       <!-- Username / Email field -->
       <div class="mb-3">
-        <label for="id_username_or_email" class="form-label">Username or Email</label>
-        <input type="text" name="username_or_email" id="id_username_or_email"
-              class="lc-input"
-              value="{{ form.username_or_email.value|default:'' }}"
-              placeholder="Enter username or email" required>
-        {% if form.username_or_email.errors %}
-            {{ form.username_or_email.errors }}
-        {% endif %}
+        <label for="id_username_or_email" class="form-label"
+          >Username or Email</label
+        >
+        <input
+          type="text"
+          name="username_or_email"
+          id="id_username_or_email"
+          class="lc-input"
+          value="{{ form.username_or_email.value|default:'' }}"
+          placeholder="Enter username or email"
+          required
+        />
+        {% if form.username_or_email.errors %} {{ form.username_or_email.errors
+        }} {% endif %}
       </div>
 
       <!-- Password field -->
       <div class="mb-3">
         <label for="id_password" class="form-label">Password</label>
         <div class="password-input-wrap">
-          <input type="password" name="password" id="id_password"
-                 class="lc-input" placeholder="Enter your password"
-                 required autocomplete="current-password">
-          <button type="button" class="password-toggle"
-                  data-target="id_password" aria-label="Show password">
+          <input
+            type="password"
+            name="password"
+            id="id_password"
+            class="lc-input"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            data-target="id_password"
+            aria-label="Show password"
+          >
             <i class="bi bi-eye"></i>
           </button>
         </div>
         {% if form.password.errors %}
-          <div class="mt-1 small" style="color: var(--hard-color);">
-            {{ form.password.errors }}
-          </div>
+        <div class="mt-1 small" style="color: var(--hard-color)">
+          {{ form.password.errors }}
+        </div>
         {% endif %}
       </div>
 
       <!-- Forgot password link -->
       <div class="text-end mb-3">
-        <a href="{% url 'users:reset_password' %}" class="lc-link small">Forgot Password?</a>
+        <a href="{% url 'users:reset_password' %}" class="lc-link small"
+          >Forgot Password?</a
+        >
       </div>
 
       <!-- Submit button -->
-      <button type="submit" class="btn-lc-orange w-100 mb-3">
-        Log In
-      </button>
+      <button type="submit" class="btn-lc-orange w-100 mb-3">Log In</button>
 
       <!-- Register link -->
       <div class="text-center">
@@ -73,7 +92,6 @@
         <a href="{% url 'users:register' %}" class="lc-link">Sign up</a>
       </div>
     </form>
-
   </div>
 </div>
 {% endblock %}

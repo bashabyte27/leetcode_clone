@@ -132,6 +132,9 @@ def register_view(request):
 
 
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('problems:problem_list')
+
     form = LoginForm()
     if request.method == 'POST':
         form = LoginForm(request,data=request.POST)
