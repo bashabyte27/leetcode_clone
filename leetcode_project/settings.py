@@ -66,6 +66,8 @@ INSTALLED_APPS = [
     'premium',
     'study_plans',
     'courses',
+    'leaderboard',
+    'staff',
 ]
 
 MIDDLEWARE = [

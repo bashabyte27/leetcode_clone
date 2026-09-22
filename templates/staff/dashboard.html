@@ -1,0 +1,15 @@
+{% extends "staff/base.html" %}
+{% block title %}Staff desk | BashaByte{% endblock %}
+{% block staff_content %}
+<div class="staff-page-head"><div><div class="staff-eyebrow">Public platform</div><h2>Good work leaves a trail.</h2><p>Users, problems, and the signals that connect them.</p></div></div>
+<div class="staff-metric-grid">
+  <a class="staff-metric" href="{% url 'staff:user_list' %}"><span>Users</span><strong>{{ user_count }}</strong><small>{{ active_user_count }} active</small></a>
+  <a class="staff-metric" href="{% url 'staff:problem_list' %}"><span>Problems</span><strong>{{ problem_count }}</strong><small>{{ active_problem_count }} public</small></a>
+  <div class="staff-metric"><span>Submissions</span><strong>{{ submission_count }}</strong><small>{{ accepted_count }} accepted</small></div>
+</div>
+<section class="staff-panel"><div class="staff-panel-head"><div><div class="staff-eyebrow">Live pulse</div><h3>Recent submissions</h3></div><a class="staff-link" href="{% url 'staff:user_list' %}">Browse users <i class="bi bi-arrow-up-right"></i></a></div>
+  <div class="staff-table-wrap"><table class="staff-table"><thead><tr><th>User</th><th>Problem</th><th>Status</th><th>When</th></tr></thead><tbody>
+  {% for item in recent_submissions %}<tr><td><a href="{% url 'staff:user_detail' item.user.id %}">{{ item.user.user_name }}</a></td><td>{{ item.problem.title }}</td><td><span class="status status-{{ item.status }}">{{ item.get_status_display }}</span></td><td>{{ item.submitted_at|date:"M d, H:i" }}</td></tr>{% empty %}<tr><td colspan="4" class="staff-empty">No submissions yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

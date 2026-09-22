@@ -1,0 +1,872 @@
+==================================================
+1. PROJECT OVERVIEW
+==================================================
+BashaByte is the current Django-based coding platform in this repository. It is a LeetCode-style practice site with additional capabilities for learning, discussion, contests, and premium access. The app is not a generic blog or admin-only project; it is built around users solving coding problems, submitting solutions, reviewing results, and interacting with community content.
+
+Main purpose:
+- Problem practice and coding challenge workflow
+- Submission and judging against test cases
+- User profiles and progress tracking
+- Courses, study plans, discussions, and contests
+- Premium access controls for paid features
+
+Current technology stack:
+- Backend: Django 5.2
+- Frontend: Django templates + custom CSS + vanilla JavaScript
+- Database: SQLite by default for local development; PostgreSQL is supported via DATABASE_URL and dj-database-url
+- Authentication: Django auth framework integrated with a custom Users model
+- Execution engine: Judge0 HTTP API
+- Deployment support: Gunicorn, WhiteNoise, Render host configuration, environment variables via python-dotenv
+- Additional libraries: requests, resend, pandas/openpyxl, Pillow, dj-database-url, psycopg2-binary
+
+Current frontend approach:
+- Server-rendered templates dominate the app
+- Problem page uses a full-screen two-panel/three-panel layout with Monaco editor embedded in a custom page shell
+- JavaScript uses fetch() for AJAX interactions and partial HTML reloads
+- The main interactive page is templates/problems/problem_detail.html plus static/js/problem_detail.js
+- Base UI styling is split across static/css and a Bootstrap-based base template; the problem page uses custom CSS and direct DOM behavior
+
+Database:
+- Local default database is db.sqlite3 in the project root
+- The project is prepared for PostgreSQL in production via DATABASE_URL and postgres-friendly deployment settings
+- Models are spread across multiple Django apps, with all app-level data tied together by FK relationships to users.Users and problems.Problem
+
+Code execution technology:
+- The execution layer uses Judge0 via HTTP requests
+- Judge0 is configured via settings.JUDGE0_URL, JUDGE0_AUTH_TOKEN, and JUDGE0_TIMEOUT
+- Judge0 is used for both:
+  - Run code against sample cases
+  - Submit code against all hidden/visible test cases
+- Request/response logic is centered in submissions/judge0.py and submissions/judge.py
+
+Deployment-related technologies if present:
+- whitenoise.middleware.WhiteNoiseMiddleware is enabled
+- STATICFILES_STORAGE uses WhiteNoise manifest storage
+- STATIC_ROOT = BASE_DIR / 'staticfiles'
+- MEDIA_ROOT = BASE_DIR / 'media'
+- ALLOWED_HOSTS accepts localhost, 127.0.0.1, testserver, .onrender.com, and additional env-provided hosts
+- CSRF_TRUSTED_ORIGINS includes Render hosts
+- Deployment is clearly oriented toward Render hosting, but the project is still primarily a local Django app in this repo
+
+==================================================
+2. PROJECT STRUCTURE
+==================================================
+The project is organized as a single Django project with multiple apps. These are the architecturally important ones:
+
+- users/
+  Responsibility: custom authentication, user profiles, stats, follows, notifications, reset/verification token flows
+  Important models: Users, UserProfile, UserStats, Session, OAuthProvider, PasswordResetToken, EmailVerificationToken, UserFollow, Notification, AuditLog
+  Important views/services: register_view, login_view, logout_view, reset_password, profile_view
+  Important URLs: /users/register/, /users/login/, /users/logout/, /users/profile/<username>/, /users/reset-password/
+  Interaction: core identity app; other apps reference users.Users and rely on Django auth/session system
+
+- problems/
+  Responsibility: problem catalog, tags, companies, test cases, hints, editorial, daily challenges, lists, reports, bookmarks
+  Important models: Problem, Language, Tag, Company, TestCase, CodeTemplate, Editorial, DailyChallenge, Bookmark, ProblemReport, UserNote, ProblemList, ProblemListItem
+  Important views/services: problem_list, problem_detail, shuffle_problem, editorial, submission_history, problem_get_list
+  Important URLs: /problems/, /problems/shuffle/, /problems/<slug>/, /problems/problems-panel/, /problems/<slug>/editorial, /problems/<slug>/submissions
+  Interaction: main content source for practice; users and submissions both reference Problem
+
+- submissions/
+  Responsibility: store attempts, run code, submit code, evaluate code, track per-test-case results and accepted-problem state
+  Important models: Submission, SubmissionResult, CodeRun, UserSolvedProblem, SubmissionStatusChoices
+  Important services: judge_submission(), run_code() in judge.py; Judge0 client wrapper in judge0.py
+  Important URLs: /submissions/submit/<problem_slug>/, /submissions/run/<problem_slug>/, /submissions/<problem_slug>/, /submissions/detail/<submission_id>/
+  Interaction: trades directly with Problem and Language, and consumes Judge0; user-visible results appear from this app
+
+- discussions/
+  Responsibility: per-problem discussion threads and nested comments; votes; lazy-loaded problem discussion tab
+  Important models: Discussion, Comment, Vote
+  Important views: discussion_tab, post_comment, vote_comment
+  Important URLs: /discussions/problems/<slug>/, /discussions/problems/<slug>/comment/, /discussions/comments/<comment_id>/vote/
+  Interaction: attached to Problem and Users; frontend tab is loaded via JSON HTML response from the problem page
+
+- contests/
+  Responsibility: contest lifecycle, contest-specific problems, participant ranking, contest submissions, rating deltas
+  Important models: Contest, ContestProblem, ContestParticipant, ContestSubmission, ContestRating
+  Important views: contest_list (minimal stub, not fully developed)
+  Important URLs: /contests/
+  Interaction: built around Problem and submissions.Submission; contest submissions wrap a standard Submission object
+
+- premium/
+  Responsibility: subscription plan management and payment ledger
+  Important models: SubscriptionPlan, Subscription, PaymentTransaction
+  Important views: premium_content (simple placeholder/landing page)
+  Important URLs: /premium/
+  Interaction: uses users.Users for user subscriptions; controls premium access in pricing and gating logic
+
+- study_plans/
+  Responsibility: curated learning plans with day-based content and user progress tracking
+  Important models: StudyPlan, StudyPlanItem, UserStudyPlan, UserStudyPlanProgress
+  Important views: study_plan_list (minimal stub)
+  Important URLs: /study-plans/
+  Interaction: references Problem and users.Users; plan completion is tracked per problem/day
+
+- courses/
+  Responsibility: course catalog and media-uploaded education content
+  Important models: Courses
+  Important views: course_list
+  Important URLs: /courses/ via app include in project urls? The project root includes the app only if used; currently courses URLs are not included at root-level, so this is a partial/unfinished app in this repo
+  Interaction: independent content app, not deeply connected to problems/submissions yet
+
+- leetcode_project/
+  Responsibility: project configuration and global URL routing
+  Important files: settings.py, urls.py, asgi.py, wsgi.py
+  Interaction: house Django settings and include all app URLs
+
+- static/, templates/
+  Responsibility: frontend assets and shared templates
+  Important items: base.html, problem_detail.html, static/css/problem_detail.css, static/js/problem_detail.js, static/css/discussion.css
+  Interaction: these are used by the Django templates and JS-powered editor problem UI
+
+- data/problems/
+  Responsibility: problem data import source; currently includes the Excel/CSV-style import dataset used by the management command
+
+==================================================
+3. DATABASE / MODEL ARCHITECTURE
+==================================================
+Core model relationships in plain-text form:
+
+User (users.Users)
+├── UserProfile (1:1)
+├── UserStats (1:1)
+├── Session (many)
+├── OAuthProvider (many)
+├── PasswordResetToken (many)
+├── EmailVerificationToken (1:1)
+├── UserFollow (as follower)
+├── UserFollow (as following)
+├── Notification (many)
+├── AuditLog (many)
+├── Submission (many)
+├── CodeRun (many)
+├── UserSolvedProblem (many)
+├── Problem (created_problems, many)
+├── Bookmark (many)
+├── ProblemReport (many)
+├── UserNote (many)
+├── ProblemList (many)
+├── Subscription (many)
+├── PaymentTransaction (many)
+├── Discussion (many)
+├── Comment (many)
+├── Vote (many)
+├── Contest (created_contests)
+├── ContestParticipant (many)
+├── ContestRating (many)
+├── StudyPlan enrolment / completion records
+└── Courses are not directly linked to User in the current model
+
+Problem (problems.Problem)
+├── Language (via CodeTemplate, Submission, Discussion, CodeRun)
+├── Tag (many-to-many through ProblemTag)
+├── Company (many-to-many through ProblemCompany)
+├── TestCase (many)
+├── ProblemHint (many)
+├── CodeTemplate (many)
+├── Editorial (1:1)
+├── DailyChallenge (many)
+├── Bookmark (many)
+├── ProblemReport (many)
+├── UserNote (many)
+├── ProblemListItem (many via list appearances)
+├── Submission (many)
+├── Discussion (many)
+├── ContestProblem (many)
+├── StudyPlanItem (many)
+└── UserSolvedProblem (many)
+
+Submission (submissions.Submission)
+├── User
+├── Problem
+├── Language
+├── SubmissionResult (many)
+├── ContestSubmission (1:1, reverse relation)
+└── best_for reference from UserSolvedProblem.best_submission
+
+Contest
+├── ContestProblem (many)
+├── ContestParticipant (many)
+├── ContestRating (many)
+└── each ContestParticipant may have ContestSubmission rows per contest problem
+
+Important models and field details:
+- Users.id is a UUIDField primary key.
+- Users.user_name is unique and validated; email is the Django auth username field.
+- Users.role is a TextChoices field with USER / MODERATOR / ADMIN.
+- Problem.order_num is unique and acts like the LeetCode numeric ID.
+- Problem.slug is unique and is the URL slug used in routes.
+- TestCase uses unique_together = (problem, order_num) and supports sample vs hidden case separation.
+- SubmissionStatusChoices is a central shared enum imported by contests models.
+- Discussion.vote_count and Comment.vote_count are denormalized counters updated by vote logic.
+- UserStats is a denormalized stats table with solved-by-difficulty counts and contest_rating.
+- UserSolvedProblem is a denormalized O(1) solved lookup table.
+- Premium subscription records store Stripe IDs and billing period metadata.
+
+Important keys and relationships:
+- ForeignKeys are the main relationship mechanism across apps.
+- OneToOneFields are used for UserProfile, UserStats, Editorial, EmailVerificationToken.
+- ManyToManyFields are explicit through-model relations for tags and companies.
+- unique_together is heavily used for integrity: user + problem, problem + tag, contest + problem, user + contest, etc.
+
+Important indexes / constraints:
+- Users indexes cover email, user_name, role+is_active, is_premium+is_active
+- Problem indexes cover difficulty+is_active, is_premium+is_active, slug, order_num
+- Submission indexes cover user+problem, user+status, problem+status, problem+language+status, submitted_at
+- Contest indexes cover start_time and contest_type ordering
+- Premium indexes cover user+status and status+current_period_end
+- Generic voting indexes cover content_type + object_id and user
+
+Important dependency pattern:
+- Many app models depend on users.Users and problems.Problem.
+- The execution flow depends on Problem + Language + TestCase + Submission.
+- Contest logic wraps Submission without duplicating the full problem model.
+
+==================================================
+4. USER AND AUTHENTICATION SYSTEM
+==================================================
+Current custom user model:
+- Custom auth model is users.Users.
+- It inherits AbstractBaseUser, PermissionsMixin.
+- AUTH_USER_MODEL = 'users.Users' is set in leetcode_project/settings.py.
+- USERNAME_FIELD is email; REQUIRED_FIELDS is ['user_name'].
+- Unique username and unique email are enforced.
+- The user has fields like is_verified, is_premium, is_active, role, avatar_url, created_at, updated_at.
+
+Authentication flow:
+- Django auth middleware handles sessions.
+- Login uses Django's login(request, user) and redirects to the problem list after successful login.
+- Logout uses django.contrib.auth.logout() and redirects to home page.
+- The app uses standard Django session cookies and request.user.
+
+Registration:
+- users/views.py register_view creates a User from RegisterForm.
+- Current implementation temporarily bypasses email OTP flow by immediately creating the user and redirecting to login.
+- There are OTP utilities in place for email verification and password reset, but the active registration path does not require email verification before account creation.
+- Resend emails are attempted only if a provider key is configured; otherwise the OTP is generated but not sent.
+
+Login:
+- users/views.py login_view checks if request.user.is_authenticated and then redirects to problems:problem_list.
+- If form is valid, login(request, form.user_cache) is called.
+- This is a standard Django auth login with a custom user model.
+
+Logout:
+- users/views.py logout_view calls logout(request) and redirects to home.
+
+Email/password verification:
+- EmailVerificationToken and PasswordResetToken models exist.
+- Password reset flow is implemented in users/views.py reset_password using OTP and session-based step 2 flow.
+- The project has resend API support, but the app currently does not enforce email verification in the main registration route.
+
+OAuth/social auth:
+- OAuthProvider model exists with provider_name, provider_user_id, access_token, refresh_token, expires_at.
+- It supports Google, GitHub, LinkedIn style providers.
+- There is no active OAuth login implementation in the current URLs or views; the model is ready for future integration.
+
+Existing user roles:
+- UserRoleChoices: USER, MODERATOR, ADMIN
+- Role affects moderator-style capabilities and admin access in principle.
+- The current app uses role metadata rather than heavy permission enforcement in every view.
+
+Profiles:
+- UserProfile is a 1:1 profile table with bio, location, website, GitHub, LinkedIn, Twitter, company.
+- profile_view loads profile data and public stats for a target user.
+- Profile pages compute solved counts, acceptance rate, total problems, and placement among users.
+
+Sessions:
+- Django session auth handles login state.
+- There is also a custom Session model in users/models.py that tracks per-user session metadata, token hash, user agent, IP address, device type, expiry.
+- This is more of a supplemental audit/session model than the core auth session backend.
+
+Permissions:
+- Django PermissionsMixin is present on Users.
+- The app uses is_staff and is_superuser through Django admin and custom role logic.
+- Most user access gating is done by @login_required and by checking request.user in views, not by a deep custom permission layer.
+
+Global platform functionality:
+- The custom user model and the Django auth/session system are global platform features.
+- They affect all apps, including submissions, problems, discussions, premium, and contests.
+
+==================================================
+5. PROBLEMS MODULE
+==================================================
+This is the foundation of the platform and the main user-facing practice flow.
+
+Problem lifecycle:
+User
+↓
+Problem list
+↓
+Problem detail page
+↓
+Monaco editor
+↓
+Run / Submit
+↓
+Submission system
+↓
+Code execution
+↓
+Result
+↓
+Submission history
+
+Problem model:
+- problems.models.Problem contains the problem catalog entry.
+- Fields include order_num, title, slug, description, difficulty, acceptance_rate, likes, dislikes, is_premium, is_active, created_by.
+- Difficulty uses DifficultyChoices: easy / medium / hard.
+- Problems are ordered by order_num and can be filtered by active status and difficulty.
+- Problem.slug is the public URL slug.
+
+Difficulty:
+- easy, medium, hard via DifficultyChoices.
+- Profiles and user stats aggregate solved counts by difficulty.
+
+Topics / tags:
+- Tag model stores tag names and slug.
+- ProblemTag is the join table between Problem and Tag.
+- Tags appear on the problem detail page as topic pills.
+
+Companies:
+- Company model stores company names, slug, and logo_url.
+- ProblemCompany stores frequency values for company-question association.
+
+Test cases:
+- TestCase is attached to a problem and contains input_data, expected_output, is_sample, explanation, order_num.
+- Test cases are used in both sample display and judge execution.
+- They are unique per problem + order_num.
+- Sample cases are shown on the problem page; hidden full cases are used for submit-flow evaluation.
+
+Supported languages:
+- Language model centralizes language metadata.
+- Languages are seeded by import_problems.py with Python, Java, C++, C, JavaScript, Go, Rust.
+- Each Language has a name, slug, version, judge_id, and is_active.
+- judge_id matches Judge0 language IDs.
+
+URLs:
+- /problems/ -> list page
+- /problems/shuffle/ -> random problem redirect
+- /problems/<slug>/ -> problem detail page
+- /problems/problems-panel/ -> side panel HTML list
+- /problems/<slug>/editorial -> editorial partial
+- /problems/<slug>/submissions -> submission history partial
+- /problems/problems -> legacy/secondary route present in urls.py as a direct alias to another partial loader
+
+Views:
+- problem_list: builds the main list view, plus solved counts and progress pills
+- problem_detail: renders the full interactive problem page and sample cases
+- shuffle_problem: sends user to a random active problem
+- problem_get_list: loads the problem list panel for the drawer UI
+- editorial: loads editorial partial
+- submission_history: user-specific history for a problem
+
+Services:
+- The Problem module itself does not contain complex business logic beyond access and display.
+- Most execution/workflow logic sits in the submissions app, but the problem page is the integration point for editor, sample case display, and AJAX submission requests.
+
+Templates:
+- templates/problems/problem_detail.html is the main interactive problem page
+- It includes problem description, tabs for Description / Editorial / Discussion / Submissions
+- It includes the Monaco editor, theme toggle, timer, language selector, case panes, and result panel
+
+JavaScript:
+- static/js/problem_detail.js is the main client-side orchestrator
+- It handles:
+  - Monaco setup
+  - theme switching
+  - editor autosave
+  - timer logic
+  - run and submit requests
+  - result rendering
+  - discussion tab fetching
+  - code error line highlighting
+- It communicates with /submissions/run/<slug>/ and /submissions/submit/<slug>/ via fetch()
+
+Execution flow:
+- The user opens a problem page.
+- The page loads sample cases and a preloaded editor state.
+- The user selects a language and writes code.
+- Clicking Run triggers a POST to /submissions/run/<problem_slug>/.
+- The backend validates input and code safety, fetches sample cases, executes via Judge0, and returns per-test-case results.
+- Clicking Submit triggers POST to /submissions/submit/<problem_slug>/.
+- The backend creates a Submission row, judges it against all test cases, stores results, and returns final status and per-case results.
+
+Judge0 integration:
+- Judge0 is called from submissions/judge0.py and submissions/judge.py.
+- It maps Judge0 result IDs to BashaByte statuses: accepted, wrong_answer, time_limit_exceeded, compile_error, runtime_error, internal_error.
+- Batch execution is used for submit mode; single execution is used for run mode.
+
+Results storage:
+- Submission stores the aggregate metadata for the full attempt.
+- SubmissionResult stores each test-case result, including actual_output, expected_output, status, runtime_ms, memory_kb.
+- CodeRun stores ad-hoc run history without affecting stats.
+- UserSolvedProblem is denormalized to provide cached solved state.
+
+Stable working parts that should not be unnecessarily rewritten:
+- Problem/detail page structure and Monaco-driven execution flow
+- Problem model + language/testcase schema
+- Submission result flow and Judge0 mapping
+- URL naming used by the frontend fetches
+- Problem list and detail page conventions around slug-based navigation
+
+==================================================
+6. SUBMISSIONS / CODE EXECUTION
+==================================================
+Submission model:
+- submissions.models.Submission is the main user attempt record.
+- Fields include user, problem, language, code, status, runtime_ms, memory_kb, solve_time_seconds, submitted_at.
+- It stores the final result for a run or submit attempt.
+- The model has indexes for user+problem, user+status, problem+status, problem+language+status, and submitted_at.
+- Submission.is_accepted is a convenience property.
+
+Run vs Submit behavior:
+- Run mode is for custom sample validation in the editor and is not considered a formal accepted submission.
+- Submit mode creates a Submission row and tests the program against all relevant test cases.
+- Run uses CodeRun semantics for temporary output checks; Submit persists a judged attempt and influences solved stats.
+
+Execution request architecture:
+- /submissions/run/<problem_slug>/ executes the run_code view.
+- /submissions/submit/<problem_slug>/ executes the submit_code view.
+- Both parse JSON body payloads and expect code + language + optional custom input or elapsed time.
+- Both validate problem existence, active status, and language existence.
+- Both perform code safety checks before execution.
+
+Judge0 or execution provider:
+- submission/judge0.py wraps requests to Judge0 endpoints.
+- execute_single() submits a single code execution and waits for the result.
+- execute_batch() submits multiple test cases in one batch and polls for completion.
+- This is the current execution provider used by the platform.
+
+Status handling:
+- The main mapping lives in submissions/judge.py JUDGE0_STATUS_MAP.
+- This maps Judge0 status IDs to BashaByte statuses:
+  - accepted
+  - wrong_answer
+  - time_limit_exceeded
+  - compile_error
+  - runtime_error
+  - internal_error
+- The backend stops at the first failing test case to follow a LeetCode-like behavior.
+
+Output/error handling:
+- Output is compared against expected_output with newline normalization.
+- For compile errors: compiler output or stderr is surfaced.
+- For runtime errors: stderr or compile_output is surfaced.
+- For wrong answer: stdout is captured and compared to expected output.
+- For time limit: runtime_ms is surfaced and execution result is marked accordingly.
+
+Time and memory limits:
+- Judge0 integration is configured via the global JUDGE0_TIMEOUT settings.
+- memory_kb is captured if Judge0 provides it.
+- the project is currently relying on Judge0's own limit system rather than a custom per-problem limiter in Django.
+
+Accepted / Wrong Answer / etc. handling:
+- Accepted submissions set status=accepted.
+- The final submission status is the first failing status encountered when processing test cases in order.
+- SubmissionResult rows capture the result for each test case individually.
+- If a user solves a problem, the project also tracks solved-state records via UserSolvedProblem.
+
+Submission history:
+- Each user can view their full submission history per problem via the submissions list template.
+- Problem detail page includes a submissions tab and the detailed list is returned as HTML partials.
+- The associated Submission rows are the canonical history trail for code attempts.
+
+Relationships to users and problems:
+- Submission.user -> users.Users
+- Submission.problem -> problems.Problem
+- Submission.language -> problems.Language
+- SubmissionResult.submission -> Submission
+- SubmissionResult.test_case -> problems.TestCase
+- CodeRun.user and CodeRun.problem are likewise connected to the same user/problem models
+
+==================================================
+7. COURSES MODULE
+==================================================
+The current courses app is lightweight and simpler than the problems/submissions infrastructure.
+
+Course model:
+- courses.models.Courses stores title, description, duration, is_paid, price, rating, created_at, last_updated, thumbnail, intro_video, attachment.
+- Media fields point to uploads under media/courses/*.
+
+Current architecture:
+- The app is a catalog listing app rather than a fully integrated learning system.
+- It exposes a basic course list view and a course list template.
+- This is not deeply tied to Problem, Submission, or User progress yet.
+
+Important fields:
+- thumbnail uses ImageField
+- intro_video uses FileField
+- attachment uses FileField
+- price and is_paid support a paywall-style catalog flow, but no live enrollment logic is clearly evident in the current app
+
+Public-user workflow:
+- The course list is a simple listing page for a public user
+- There is no visible current enrollment/progress system in the app at present
+
+Relationship to other apps:
+- There is no strong course-to-problem mapping implemented in the currently visible code
+- The app is independent from the code execution flow and from the users auth flow beyond using the same Django auth context
+
+==================================================
+8. CONTESTS MODULE
+==================================================
+Contests are implemented as a distinct app but are not yet feature-complete in the visible views.
+
+Contest model:
+- Contest contains title, slug, description, contest_type, start_time, end_time, is_virtual, is_published, created_by
+- The app supports contest types: weekly, biweekly, virtual, special
+- Duration is computed from start_time and end_time via Contest.duration_minutes
+
+Contest problems:
+- ContestProblem links a Contest to a Problem and includes order_num and points.
+- It prevents duplicate problems in the same contest and duplicate ordering positions.
+
+Participants and rankings:
+- ContestParticipant stores rank, score, penalty_minutes, finish_time, registered_at for a user in a contest.
+- Unique_together = (user, contest)
+- Participant is the person-level contest participation record
+
+Contest submissions:
+- ContestSubmission links a ContestParticipant and a ContestProblem to a single Submission object using OneToOneField.
+- This allows one standardized Submission to support a contest entry while still giving contest score metadata.
+- ContestSubmission has score_gained, is_accepted, penalty_minutes.
+
+Contest ratings:
+- ContestRating stores user rating before and after a contest, along with delta and rank.
+- This mirrors ELO-style ranking history and updates user stats in the broader platform model.
+
+Important relationships:
+- Contest -> ContestProblem -> Problem
+- ContestParticipant -> User
+- ContestSubmission -> Submission
+- ContestRating -> User
+
+Current status:
+- The models are well-defined, but the actual contest UI/logic is minimal in the current repo; contest_list in contests/views.py is a stub returning a simple HttpResponse.
+
+==================================================
+9. DISCUSSIONS MODULE
+==================================================
+The discussions app implements community discussion around a problem.
+
+Discussion model:
+- Discussion is attached to a Problem and a User.
+- It has title, content, discussion_type, optional language, views, vote_count, comment_count, is_pinned, is_hidden, created_at, updated_at.
+- discussion_type can be general, solution, question, editorial.
+- There is a lazy-created general discussion thread per problem.
+
+Comment model:
+- Comment is attached to a Discussion and User.
+- It supports a single-level reply hierarchy via parent = ForeignKey('self').
+- Comments are nested only one level deep in practice.
+
+Vote model:
+- Vote is generic, using Django ContentType + GenericForeignKey for both Discussion and Comment.
+- Voting uses upvote (+1) and downvote (-1).
+- The total vote_count is recalculated from Vote rows before returning response data.
+
+Current workflow:
+- The problem detail page loads the discussion tab via AJAX.
+- _get_discussion() creates a general discussion thread lazily per problem if it does not exist.
+- post_comment() creates a top-level comment or reply.
+- vote_comment() toggles a vote or removes it if the same vote is clicked again.
+
+Moderation:
+- There are is_hidden fields on both Discussion and Comment.
+- Hidden content is filtered out from UI rendering but not deleted.
+- This supports moderation without losing data.
+
+User relations:
+- Discussion.user -> Users
+- Comment.user -> Users
+- Vote.user -> Users
+
+==================================================
+10. PREMIUM MODULE
+==================================================
+The premium app is a subscription and billing layer.
+
+Current controls:
+- SubscriptionPlan defines plan metadata: name, slug, description, price_monthly, price_yearly, currency, features, stripe IDs, is_active.
+- Subscription tracks user + plan + billing_cycle + status + Stripe IDs + current_period_start / end and cancellation state.
+- PaymentTransaction records Stripe events in an append-only ledger.
+
+How it interacts with users/features:
+- users.Users has is_premium as a direct flag.
+- The platform uses subscription status and plan membership as the basis for premium access checks on premium features.
+- The app is structured for Stripe integration but does not have a full public purchase flow implemented in the current visible code.
+- Some premium restrictions are planned at the model level, especially in study_plans (StudyPlan.is_premium), but the visible app is not yet fully enforcing them in all routes.
+
+Current status:
+- The premium app is present and modeled, but the actual pricing UI is not yet a complete working end-to-end purchase flow in this repo.
+
+==================================================
+11. URL / REQUEST FLOW
+==================================================
+Important URL patterns in the current project:
+
+Project root:
+- / -> TemplateView for home page
+- /admin/ -> Django admin
+- /users/ -> users app routes
+- /problems/ -> problems app routes
+- /contests/ -> contests app routes
+- /submissions/ -> submissions app routes
+- /discussions/ -> discussions app routes
+- /premium/ -> premium app routes
+- /study-plans/ -> study_plans app routes
+
+Users:
+- /users/register/
+- /users/login/
+- /users/reset-password/
+- /users/profile/<username>/
+- /users/logout/
+
+Problems:
+- /problems/
+- /problems/shuffle/
+- /problems/<slug>/
+- /problems/problems-panel/
+- /problems/<slug>/editorial
+- /problems/<slug>/submissions
+
+Submissions:
+- /submissions/submit/<problem_slug>/
+- /submissions/run/<problem_slug>/
+- /submissions/<problem_slug>/
+- /submissions/detail/<submission_id>/
+
+Discussions:
+- /discussions/problems/<problem_slug>/
+- /discussions/problems/<problem_slug>/comment/
+- /discussions/comments/<comment_id>/vote/
+
+Major request flow examples:
+1. User logs in -> users/login -> Django auth -> redirect to /problems/
+2. User opens a problem -> /problems/<slug>/ -> problem_detail.html -> JS loads editor + sample cases
+3. User clicks Run -> fetch POST /submissions/run/<slug>/ -> Judge0 executes sample cases -> returns JSON results
+4. User clicks Submit -> fetch POST /submissions/submit/<slug>/ -> create Submission + SubmissionResult rows -> Judge0 evaluates all cases -> returns final status and results
+5. User opens discussion tab -> AJAX GET /discussions/problems/<slug>/ -> discussion HTML rendered and inserted into the tab
+6. User posts a comment -> POST /discussions/problems/<slug>/comment/ -> backend creates Comment and re-renders discussion HTML
+
+==================================================
+12. IMPORTANT FRONTEND ARCHITECTURE
+==================================================
+Templates:
+- templates/base.html is the global shell with navbar, theme toggle, Bootstrap, base styling hooks
+- templates/index.html is the site landing/home page
+- templates/problems/problem_detail.html is the advanced interactive problem page
+- templates/users/... holds login/register/profile pages
+- templates/submissions/submission_list.html and discussion partials are also used as return fragments
+
+CSS structure:
+- static/css/base.css: general app styling
+- static/css/users.css: user/auth styling
+- static/css/problem_detail.css: large custom styling for the interactive problem page
+- static/css/discussion.css: discussion/threads styling
+- static/css/home.css, profile.css, problems.css: additional app-specific CSS
+
+JavaScript structure:
+- static/js/problem_detail.js is the key interactive script
+- It handles Monaco, timer, theme toggle, fetches, run/submit flows, tab switching, result panels, and error highlighting
+- The project uses direct fetch() calls to Django views, not a JS framework or API layer
+
+Monaco integration:
+- Monaco is loaded from the CDN via loader.min.js
+- The editor is instantiated inside templates/problems/problem_detail.html and configured in problem_detail.js
+- It supports theme switching, autosave, zoom controls, cursor tracking, and syntax language changes
+
+AJAX/fetch usage:
+- Discussion tab is lazily loaded from a Django view and inserted into the page container
+- Problem discussion comments and votes are done through fetch/post JSON
+- Run and submit are implemented via fetch POST requests to the Submission endpoints
+- Drawer/problem panel list is fetched from /problems/problems-panel/
+
+Theme system:
+- The app uses HTML attribute data-theme and localStorage keys like editorTheme and bb-theme
+- Theme toggle logic exists both in base.html and problem_detail.html for different pages
+
+Reusable UI components:
+- Navbar / user menu / dropdowns are reused in base template
+- Problem detail toolbar includes run / submit / timer / language controls
+- Case pill tabs and result sections are reused for sample/testcases and submission output
+
+==================================================
+13. MANAGEMENT COMMANDS / DATA IMPORT
+==================================================
+Important management commands currently present:
+
+- problems/management/commands/import_problems.py
+  Purpose: import problem data and test cases from an Excel workbook
+  Data sources: data/problems/import_data.xlsx
+  Behavior:
+    - Creates Language rows for Python/Java/C++/C/JavaScript/Go/Rust
+    - Reads Problems sheet and updates/inserts Problem records by order_num
+    - Reads TestCases sheet and updates/inserts TestCase rows per problem+order_num
+  This is the current data-loading path for the main problem set.
+
+- courses/management/commands/seed_courses.py
+  Purpose: bulk insert or seed course catalog entries
+
+- courses/management/commands/update_courses.py
+  Purpose: update course media metadata or file references in the DB
+
+Data import architecture:
+- Problems come from an Excel file rather than a custom management fixture
+- Language IDs are mapped to Judge0 language IDs in the import command
+- There is no separate ETL pipeline or API import system for the current platform beyond this management command
+
+==================================================
+14. DEPLOYMENT / ENVIRONMENT
+==================================================
+The project is prepared for deployment on Render and similar platforms, while still being runnable locally.
+
+Current configuration highlights:
+- DEBUG = os.getenv('DEBUG', 'True') == 'True'
+- SECRET_KEY comes from environment or fallback value
+- ALLOWED_HOSTS includes localhost, localhost variants, and Render hosts
+- CSRF_TRUSTED_ORIGINS includes Render origins
+- DATABASE_URL is read and used if present; otherwise SQLite is used
+- WhiteNoise is enabled for static files
+- Gunicorn is included as a dependency for deployment
+- STATIC_ROOT and STATICFILES_STORAGE are configured for production serving
+- MEDIA_ROOT points to /media in the project for uploaded files
+
+Environment variables currently relevant:
+- SECRET_KEY: Django secret key
+- DEBUG: debug flag
+- DATABASE_URL: Postgres database URL when using production DB
+- ALLOWED_HOSTS: extra allowed hosts
+- CSRF_TRUSTED_ORIGINS: additional trusted origins
+- RENDER_EXTERNAL_HOSTNAME: Render host name
+- JUDGE0_URL: Judge0 instance URL
+- JUDGE0_AUTH_TOKEN: Judge0 auth token if required
+- JUDGE0_TIMEOUT: polling timeout in seconds
+- RESEND_API_KEY: used for OTP email sending
+
+Do not expose credentials or secrets in docs; only variable names and purpose are documented here.
+
+==================================================
+15. DO NOT BREAK THESE
+==================================================
+These are important working contracts of the current implementation:
+
+- Existing URL patterns must remain compatible for the frontend and tests; the current slug-based problem routes and submission routes are meaningful contracts.
+- The custom Users model is the platform-wide identity contract; changing it is a major architectural change.
+- Problem, Submission, Language, and TestCase relationships are core platform contracts and should not be re-modeled casually.
+- The judge execution pipeline must remain linked to Problem + TestCase + SubmissionResult + Judge0 mapping.
+- Django auth session/login/logout behavior is global and should not be reworked without explicit planning.
+- Monaco + fetch-based problem page flow is the live interactive workflow for coding practice.
+- Existing problem detail page JavaScript expects predictable fetch routes and JSON payload conventions.
+- The default local database is SQLite, but production can switch to PostgreSQL via DATABASE_URL without rewriting the app layer.
+- The app already uses a custom Django auth model with a direct Users model; do not switch to a generic auth user abstraction unless that is a planned migration.
+- Problem list/detail URLs and slug-based navigation are currently relied on by the UI.
+
+==================================================
+16. CURRENT LIMITATIONS / TECHNICAL DEBT
+==================================================
+Documented limitations based on the actual code:
+
+- Some apps are intentionally minimal or uncompleted: contests, premium, study_plans, and courses have limited visible route and UI work compared to the problems and submissions flow.
+- The root project URLs include some app routes but not all app directories are equally complete; the app architecture is uneven across apps.
+- The registration flow currently bypasses email OTP verification in practice; email verification logic exists but is not enforced in the active path.
+- The courses app is not deeply integrated with users or problem progress.
+- The premium app is modeled but not fully wired into actual access checks across all pages.
+- The contests app is modeled but the contest runtime and user interaction flow are not fully implemented in views.
+- The app uses a direct custom auth model and some session audit tables, but there is no fully central permissions layer beyond Django standard auth + role metadata.
+- Some code has a small amount of partial or placeholder content, which is expected in a development project; do not assume it is a full-production SaaS implementation.
+
+==================================================
+17. FUTURE PRODUCT DIRECTION
+==================================================
+This is the future direction described by the product and should be treated separately from the current implementation.
+
+BashaByte will have two connected experiences:
+
+1. PUBLIC BASHA BYTE
+bashabyte.com
+For worldwide users.
+
+The current functionality is planned to continue:
+- Problems
+- Courses
+- Contests
+- Discussions
+- Submissions
+- Profiles
+- Practice
+- Premium
+
+2. BASHA BYTE FOR COLLEGES
+A multi-college/tenant platform where colleges can use:
+- Problems
+- Courses
+- Assessments
+- Assignments/tasks
+- Student management
+- Faculty management
+- Performance tracking
+- Reports
+- Analytics
+
+Planned college hierarchy:
+BashaByte
+└── Project Admin
+└── Colleges
+    ├── College Admin
+    ├── Departments
+    │   └── HOD / Department Admin
+    │   ├── Faculty
+    │   └── Students
+
+This is a FUTURE architecture direction only.
+Do NOT implement it now.
+
+==================================================
+18. FUTURE COLLEGE PLATFORM — IMPORTANT DESIGN PRINCIPLES
+==================================================
+These are planned requirements, not current implementation:
+
+- Multiple colleges must use the same Django application.
+- College data must be isolated between tenants.
+- Public BashaByte users must continue working independently of colleges.
+- Existing Problems and Submission infrastructure should be reused for college coding activities where appropriate.
+- College-specific assessments should use the existing coding execution infrastructure rather than creating a second execution system.
+- Platform-level roles and college-level roles should be separated conceptually.
+- Avoid creating a separate Django project for every college.
+- Avoid unnecessary microservices or major framework changes.
+- The existing Django + Templates + Vanilla JavaScript architecture should remain the foundation unless there is a strong technical reason to change it.
+
+==================================================
+19. AI DEVELOPMENT GUIDELINES
+==================================================
+1. Read BASHABYTE_CONTEXT.txt before making architectural changes.
+2. Do not assume the architecture. Verify relevant source files when implementing changes.
+3. Do not rebuild working modules unnecessarily.
+4. Preserve existing backend/frontend contracts unless a change is explicitly planned.
+5. Before modifying database architecture, inspect the relevant existing models.
+6. Before changing authentication or permissions, inspect the existing User/authentication implementation.
+7. Before changing Problems/Submissions, understand the existing execution flow.
+8. Prefer incremental changes over large rewrites.
+9. Do not introduce a new framework or major technology without a clear requirement.
+10. Never expose secrets or credentials in documentation.
+
+Important operational rule:
+Future AI assistants should treat the current codebase as a working platform with a strong custom-auth + problem/submission architecture. Do not rewrite this into a new pattern unless a requirement explicitly changes the system.
+
+==================================================
+CURRENT APP INVENTORY
+==================================================
+The current Django apps in this project are:
+- users
+- problems
+- contests
+- submissions
+- discussions
+- premium
+- study_plans
+- courses
+- leetcode_project (project config)
+
+All major apps are represented above in the architecture documentation.

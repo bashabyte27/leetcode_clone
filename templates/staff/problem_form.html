@@ -1,0 +1,60 @@
+{% extends "staff/base.html" %}
+{% block title %}Create problem | Staff | BashaByte{% endblock %}
+{% block staff_content %}
+<div class="staff-page-head">
+	<div>
+		<div class="staff-eyebrow">Content / new</div>
+		<h2>Create a problem</h2>
+		<p>The URL slug is generated automatically from the title.</p>
+	</div>
+</div>
+
+<section class="staff-panel staff-form-panel">
+	<form method="post">
+		{% csrf_token %}
+
+		<div class="form-section-heading">
+			<span class="form-section-number">01</span>
+			<div><h3>Problem details</h3><p>These fields appear on the public problem page.</p></div>
+		</div>
+
+		<div class="staff-form-grid">
+			<label>Title
+				<input name="title" required value="{{ request.POST.title }}" placeholder="Two Sum">
+			</label>
+			<label>Problem number <span class="hint">Optional</span>
+				<input name="order_num" type="number" min="1" value="{{ request.POST.order_num }}" placeholder="1">
+			</label>
+			<label>Difficulty
+				<select name="difficulty" required>
+					{% for value,label in difficulties %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+				</select>
+			</label>
+			<label class="check-label"><input type="checkbox" name="is_premium"> Premium problem</label>
+		</div>
+
+		<label>Description
+			<textarea name="description" rows="9" required placeholder="Describe the problem, input, output, and constraints.">{{ request.POST.description }}</textarea>
+		</label>
+
+		<div class="form-section-heading testcase-heading">
+			<span class="form-section-number">02</span>
+			<div><h3>Test cases</h3><p>Add them as JSON, or leave blank and import them later.</p></div>
+		</div>
+
+		<div class="testcase-help">
+			<p>Each object needs <code>input_data</code> and <code>expected_output</code>. Use <code>is_sample: true</code> for cases visible to users.</p>
+			<pre>[{"input_data":"[2,7]","expected_output":"9","is_sample":true}]</pre>
+		</div>
+
+		<label>Test cases JSON <span class="hint">One JSON list containing all cases</span>
+			<textarea name="test_cases" rows="7" placeholder='[{"input_data":"[2,7]","expected_output":"9","is_sample":true}]'>{{ request.POST.test_cases }}</textarea>
+		</label>
+
+		<div class="form-footer">
+			<span class="form-note"><i class="bi bi-info-circle"></i> The slug and test case numbers are generated automatically.</span>
+			<button class="staff-button" type="submit"><i class="bi bi-check2"></i> Create problem</button>
+		</div>
+	</form>
+</section>
+{% endblock %}

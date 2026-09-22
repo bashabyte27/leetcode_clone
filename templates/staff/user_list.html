@@ -1,0 +1,9 @@
+{% extends "staff/base.html" %}
+{% block title %}Users | Staff | BashaByte{% endblock %}
+{% block staff_content %}
+<div class="staff-page-head"><div><div class="staff-eyebrow">People</div><h2>Users</h2><p>Search accounts, inspect progress, and protect access.</p></div><div class="staff-actions"><a class="staff-button secondary" href="{% url 'staff:user_import' %}"><i class="bi bi-upload"></i>Import</a><a class="staff-button" href="{% url 'staff:user_create' %}"><i class="bi bi-plus-lg"></i>Create user</a></div></div>
+<form class="staff-search" method="get"><i class="bi bi-search"></i><input name="q" value="{{ query }}" placeholder="Search username or email"><button>Search</button></form>
+<section class="staff-panel"><div class="staff-panel-head"><h3>{{ paginator.count }} accounts</h3></div><div class="staff-table-wrap"><table class="staff-table"><thead><tr><th>Identity</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead><tbody>
+{% for user in page_obj %}<tr><td><a class="staff-identity" href="{% url 'staff:user_detail' user.id %}"><span class="staff-avatar">{{ user.user_name|slice:":1"|upper }}</span><span><b>{{ user.user_name }}</b><small>{{ user.email }}</small></span></a></td><td>{{ user.get_role_display }}</td><td><span class="status status-{{ user.is_active|yesno:'accepted,wrong_answer' }}">{{ user.is_active|yesno:'Active,Blocked' }}</span></td><td>{{ user.created_at|date:"M d, Y" }}</td><td><a class="icon-link" title="Open profile" href="{% url 'staff:user_detail' user.id %}"><i class="bi bi-arrow-up-right"></i></a></td></tr>{% empty %}<tr><td colspan="5" class="staff-empty">No users match this search.</td></tr>{% endfor %}
+</tbody></table></div>{% include "staff/pagination.html" %}</section>
+{% endblock %}

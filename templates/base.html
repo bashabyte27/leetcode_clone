@@ -51,6 +51,9 @@
                     <a class="nav-link" href="/problems/">Problems</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link{% if request.resolver_match.app_name == 'leaderboard' %} active{% endif %}" href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="#">Courses</a>
                 </li>
                 <li class="nav-item">

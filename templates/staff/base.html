@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff.css' %}">{% endblock %}
+{% block primary_nav %}
+<ul class="navbar-nav me-auto gap-1 align-items-lg-center">
+  <li class="nav-item"><a class="nav-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}" href="{% url 'staff:dashboard' %}">Staff desk</a></li>
+  <li class="nav-item"><a class="nav-link{% if 'user' in request.resolver_match.url_name %} active{% endif %}" href="{% url 'staff:user_list' %}">Users</a></li>
+  <li class="nav-item"><a class="nav-link{% if 'problem' in request.resolver_match.url_name %} active{% endif %}" href="{% url 'staff:problem_list' %}">Problems</a></li>
+</ul>
+{% endblock %}
+{% block content %}
+<main class="staff-shell">
+  <aside class="staff-rail">
+    <div class="staff-kicker">BashaByte / staff</div>
+    <h1 class="staff-rail-title">Operations desk</h1>
+    <p class="staff-rail-copy">Keep the public practice experience healthy, useful, and moving.</p>
+    <nav class="staff-side-nav" aria-label="Staff navigation">
+      <a href="{% url 'staff:dashboard' %}"><i class="bi bi-grid-1x2"></i>Overview</a>
+      <a href="{% url 'staff:user_list' %}"><i class="bi bi-people"></i>Users</a>
+      <a href="{% url 'staff:problem_list' %}"><i class="bi bi-code-square"></i>Problems</a>
+    </nav>
+  </aside>
+  <section class="staff-content">
+    {% if messages %}{% for message in messages %}<div class="staff-message {{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+    {% block staff_content %}{% endblock %}
+  </section>
+</main>
+{% endblock %}

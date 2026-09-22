@@ -263,6 +263,9 @@ def judge_submission(submission_id):
 
             if tc_status == SubmissionStatusChoices.ACCEPTED:
                 actual_output = stdout
+                if stdout.replace('\r\n', '\n').strip() != expected_output:
+                    tc_status = SubmissionStatusChoices.WRONG_ANSWER
+                    final_status = SubmissionStatusChoices.WRONG_ANSWER
             elif tc_status == SubmissionStatusChoices.WRONG_ANSWER:
                 actual_output = stdout
                 if final_status == SubmissionStatusChoices.ACCEPTED:

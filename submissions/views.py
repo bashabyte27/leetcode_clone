@@ -213,9 +213,10 @@ def run_code(request, problem_slug):
                 status = "Runtime Error"
                 actual_output = error
             elif status == 'accepted':
-                status = "success"
-            elif (actual_output or '').replace('\r\n', '\n').strip() == expected_output.replace('\r\n', '\n').strip():
-                status = "success"
+                if (actual_output or '').replace('\r\n', '\n').strip() == expected_output.replace('\r\n', '\n').strip():
+                    status = "success"
+                else:
+                    status = "Wrong Answer"
             else:
                 status = "Wrong Answer"
 

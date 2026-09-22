@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Leaderboard | BashaByte{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+<link rel="stylesheet" href="{% static 'css/leaderboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page leaderboard-page">
+  <div class="container-xl px-3 px-md-4">
+
+    {# ── Hero ── #}
+    <header class="lb-hero">
+      <div class="lb-hero-main">
+        <p class="lb-eyebrow">Compete · Improve · Grow</p>
+        <h1 class="lb-title">Leaderboard</h1>
+        <p class="lb-sub">See how you compare with other BashaByte developers.</p>
+      </div>
+
+      <div class="lb-scoring" aria-label="Points per solved problem">
+        <span class="lb-scoring-label">Scoring</span>
+        {% for item in scoring %}
+          <span class="lb-score-chip lb-score-{{ item.css }}">
+            {{ item.label }} <strong>+{{ item.points }}</strong>
+          </span>
+        {% endfor %}
+        <span class="lb-scoring-note">Counted once per problem</span>
+      </div>
+    </header>
+
+    {# ── Period tabs — real links, backend filters via ?period= ── #}
+    <nav class="lb-tabs" role="tablist" aria-label="Leaderboard period">
+      <a href="?period=all"
+         class="lb-tab {% if not period or period == 'all' %}is-active{% endif %}"
+         role="tab"
+         {% if not period or period == 'all' %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+        All Time
+      </a>
+      <a href="?period=week"
+         class="lb-tab {% if period == 'week' %}is-active{% endif %}"
+         role="tab"
+         {% if period == 'week' %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+        This Week
+      </a>
+      <a href="?period=month"
+         class="lb-tab {% if period == 'month' %}is-active{% endif %}"
+         role="tab"
+         {% if period == 'month' %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+        This Month
+      </a>
+    </nav>
+
+    {# ── Your standing ── #}
+    {% if my_standing %}
+      <section class="lb-me" aria-label="Your standing">
+        {% if my_standing.rank %}
+          <div class="lb-me-main">
+            <span class="lb-me-label">Your rank</span>
+            <strong class="lb-me-rank">#{{ my_standing.rank }}</strong>
+          </div>
+          <div class="lb-me-stats">
+            <span><strong>{{ my_standing.solved }}</strong> solved</span>
+            <span><strong>{{ my_standing.points }}</strong> pts</span>
+          </div>
+          <a class="page-link-btn" href="?page={{ my_standing.page }}{% if period %}&period={{ period }}{% endif %}#lb-me">Go to my position</a>
+        {% else %}
+          <div class="lb-me-main">
+            <span class="lb-me-label">Your rank</span>
+            <strong class="lb-me-rank">Unranked</strong>
+          </div>
+          <div class="lb-me-stats">
+            <span>Solve a problem to earn your first points.</span>
+          </div>
+          <a class="page-link-btn" href="/problems/">Explore problems</a>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    {# ── Podium — marathon stairs, page 1 only ── #}
+    {% if rows and page_obj.number == 1 %}
+      <section class="lb-podium" aria-label="Top ranked developers">
+        {% for row in rows|slice:":3" %}
+          <article class="lb-podium-card lb-podium-{{ row.rank }}{% if row.is_me %} is-me{% endif %}">
+            <span class="lb-medal lb-medal-{{ row.rank }}" aria-label="Rank {{ row.rank }}">{{ row.rank }}</span>
+
+            {% if row.avatar_url %}
+              <img src="{{ row.avatar_url }}" alt="" class="lb-podium-avatar" loading="lazy">
+            {% else %}
+              <span class="lb-podium-avatar lb-avatar-fallback" aria-hidden="true">{{ row.username|slice:":1"|upper }}</span>
+            {% endif %}
+
+            <h3 class="lb-podium-name">
+              {% if request.user.is_authenticated %}
+                <a href="{% url 'users:profile' row.username %}">{{ row.username }}</a>
+              {% else %}
+                <span>{{ row.username }}</span>
+              {% endif %}
+              {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
+            </h3>
+
+            <div class="lb-podium-points">
+              <strong>{{ row.points }}</strong><span>pts</span>
+            </div>
+            <div class="lb-podium-solved">{{ row.solved }} solved</div>
+
+            <div class="lb-podium-breakdown">
+              <span class="lb-mini-stat lb-mini-easy">{{ row.easy_solved }}<em>Easy</em></span>
+              <span class="lb-mini-stat lb-mini-medium">{{ row.medium_solved }}<em>Medium</em></span>
+              <span class="lb-mini-stat lb-mini-hard">{{ row.hard_solved }}<em>Hard</em></span>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    {# ── Table (top 3 omitted on page 1) ── #}
+    <div class="history-card lb-card">
+      <div class="history-header">
+        <h2 class="history-title">
+          {% if period == 'week' %}This week's rankings
+          {% elif period == 'month' %}This month's rankings
+          {% else %}All-time rankings{% endif %}
+        </h2>
+        <span class="history-total-pill">{{ paginator.count }} ranked</span>
+      </div>
+
+      {% if rows %}
+        <div class="table-responsive">
+          <table class="history-table lb-table">
+            <caption class="visually-hidden">Leaderboard, ranked by total points</caption>
+            <thead>
+              <tr>
+                <th scope="col" class="lb-col-rank">Rank</th>
+                <th scope="col">Developer</th>
+                <th scope="col" class="lb-num">Solved</th>
+                <th scope="col" class="lb-num d-none d-md-table-cell">Easy</th>
+                <th scope="col" class="lb-num d-none d-md-table-cell">Medium</th>
+                <th scope="col" class="lb-num d-none d-md-table-cell">Hard</th>
+                <th scope="col" class="lb-num">Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                {% if page_obj.number != 1 or row.rank > 3 %}
+                  <tr{% if row.is_me %} id="lb-me" class="lb-row-me" aria-current="true"{% endif %}>
+                    <td class="lb-col-rank">
+                      <span class="lb-rank">{{ row.rank }}</span>
+                    </td>
+                    <td class="lb-cell-user">
+                      <div class="lb-user">
+                        {% if row.avatar_url %}
+                          <img src="{{ row.avatar_url }}" alt="" class="lb-avatar" loading="lazy">
+                        {% else %}
+                          <span class="lb-avatar lb-avatar-fallback" aria-hidden="true">{{ row.username|slice:":1"|upper }}</span>
+                        {% endif %}
+                        <div class="lb-user-text">
+                          <div class="lb-name-line">
+                            {% if request.user.is_authenticated %}
+                              <a href="{% url 'users:profile' row.username %}" class="problem-link lb-name">{{ row.username }}</a>
+                            {% else %}
+                              <span class="lb-name lb-name-plain">{{ row.username }}</span>
+                            {% endif %}
+                            {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
+                          </div>
+                          <div class="lb-mini d-md-none">
+                            <span class="text-easy">{{ row.easy_solved }}<span class="visually-hidden"> easy</span></span>
+                            <span class="text-medium">{{ row.medium_solved }}<span class="visually-hidden"> medium</span></span>
+                            <span class="text-hard">{{ row.hard_solved }}<span class="visually-hidden"> hard</span></span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="lb-num">{{ row.solved }}</td>
+                    <td class="lb-num d-none d-md-table-cell text-easy">{{ row.easy_solved }}</td>
+                    <td class="lb-num d-none d-md-table-cell text-medium">{{ row.medium_solved }}</td>
+                    <td class="lb-num d-none d-md-table-cell text-hard">{{ row.hard_solved }}</td>
+                    <td class="lb-num lb-points">{{ row.points }}</td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if paginator.num_pages > 1 %}
+          <nav class="pagination-footer" aria-label="Leaderboard pages">
+            <div class="profile-pagination">
+              {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if period %}&period={{ period }}{% endif %}" class="page-link-btn" rel="prev" aria-label="Previous page">
+                  <i class="bi bi-chevron-left me-1" aria-hidden="true"></i><span>Previous</span>
+                </a>
+              {% else %}
+                <span class="page-link-btn disabled" aria-disabled="true">
+                  <i class="bi bi-chevron-left me-1" aria-hidden="true"></i><span>Previous</span>
+                </span>
+              {% endif %}
+
+              <div class="page-numbers-wrap">
+                {% for num in elided_page_range %}
+                  {% if num == page_obj.number %}
+                    <span class="page-num active" aria-current="page">{{ num }}</span>
+                  {% elif num == paginator.ELLIPSIS %}
+                    <span class="page-num-ellipsis" aria-hidden="true">…</span>
+                  {% else %}
+                    <a href="?page={{ num }}{% if period %}&period={{ period }}{% endif %}" class="page-num" aria-label="Page {{ num }}">{{ num }}</a>
+                  {% endif %}
+                {% endfor %}
+              </div>
+
+              {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if period %}&period={{ period }}{% endif %}" class="page-link-btn" rel="next" aria-label="Next page">
+                  <span>Next</span><i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+                </a>
+              {% else %}
+                <span class="page-link-btn disabled" aria-disabled="true">
+                  <span>Next</span><i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+                </span>
+              {% endif %}
+            </div>
+          </nav>
+        {% endif %}
+
+      {% else %}
+        <div class="history-empty-box">
+          <div class="empty-icon-circle">
+            <i class="bi bi-trophy" aria-hidden="true"></i>
+          </div>
+          <h3 class="empty-heading">No one is ranked yet</h3>
+          <p class="empty-subtext">
+            {% if period == 'week' %}No solved problems in the last 7 days.
+            {% elif period == 'month' %}No solved problems in the last 30 days.
+            {% else %}Solve a problem to be the first on the leaderboard.{% endif %}
+          </p>
+          <a href="/problems/" class="btn-explore-problems mt-2">
+            <i class="bi bi-play-circle me-1" aria-hidden="true"></i> Explore Problems
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
