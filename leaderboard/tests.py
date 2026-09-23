@@ -199,3 +199,38 @@ class ViewTests(LeaderboardTestBase):
         self._make_many(PAGE_SIZE * 3, start=PAGE_SIZE)
         with self.assertNumQueries(2):          # unchanged with 4x the users
             self.client.get(self.url)
+
+    def test_username_search_is_case_insensitive_and_supports_clear(self):
+        user = self.make_user('SearchUser')
+        self.submit(user, self.make_problem('easy'))
+        found = self.client.get(self.url, {'q': 's'})
+        self.assertContains(found, 'SearchUser')
+        missing = self.client.get(self.url, {'q': 'unknown'})
+        self.assertContains(missing, 'User not found')
+        restored = self.client.get(self.url)
+        self.assertContains(restored, 'SearchUser')
+
+    def test_period_tabs_filter_recent_rankings(self):
+        now = timezone.now()
+        old_user = self.make_user('old_user')
+        recent_user = self.make_user('recent_user')
+        self.submit(old_user, self.make_problem('easy'))
+        self.submit(recent_user, self.make_problem('easy'))
+
+        old_submission = Submission.objects.get(user=old_user)
+        recent_submission = Submission.objects.get(user=recent_user)
+        old_submission.submitted_at = now - timedelta(days=40)
+        recent_submission.submitted_at = now - timedelta(days=2)
+        old_submission.save(update_fields=['submitted_at'])
+        recent_submission.save(update_fields=['submitted_at'])
+
+        all_time = self.client.get(self.url)
+        week_view = self.client.get(self.url, {'period': 'week'})
+        month_view = self.client.get(self.url, {'period': 'month'})
+
+        self.assertContains(all_time, 'old_user')
+        self.assertContains(all_time, 'recent_user')
+        self.assertContains(week_view, 'recent_user')
+        self.assertNotContains(week_view, 'old_user')
+        self.assertContains(month_view, 'recent_user')
+        self.assertNotContains(month_view, 'old_user')

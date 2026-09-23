@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from .models import Problem, TestCase
 from submissions.models import Submission, SubmissionStatusChoices
+from submissions.judge import normalize_case_text
 
 
 
@@ -71,7 +72,15 @@ def problem_detail(request, problemname):
     tags = problem.tags.all()
 
     # Get sample test cases (is_sample=True)
-    sample_cases = problem.test_cases.filter(is_sample=True).order_by('order_num')
+    sample_cases = [
+        {
+            'order_num': case.order_num,
+            'input_data': normalize_case_text(case.input_data),
+            'expected_output': normalize_case_text(case.expected_output),
+            'explanation': case.explanation,
+        }
+        for case in problem.test_cases.filter(is_sample=True).order_by('order_num')
+    ]
 
     # Previous / Next by order_num
     prev_problem = None

@@ -83,7 +83,7 @@
     {% if rows and page_obj.number == 1 %}
       <section class="lb-podium" aria-label="Top ranked developers">
         {% for row in rows|slice:":3" %}
-          <article class="lb-podium-card lb-podium-{{ row.rank }}{% if row.is_me %} is-me{% endif %}">
+          <article{% if row.is_me %} id="lb-me"{% endif %} class="lb-podium-card lb-podium-{{ row.rank }}{% if row.is_me %} is-me lb-row-me{% endif %}">
             <span class="lb-medal lb-medal-{{ row.rank }}" aria-label="Rank {{ row.rank }}">{{ row.rank }}</span>
 
             {% if row.avatar_url %}
@@ -94,7 +94,7 @@
 
             <h3 class="lb-podium-name">
               {% if request.user.is_authenticated %}
-                <a href="{% url 'users:profile' row.username %}">{{ row.username }}</a>
+                <a href="{% url 'users:profile_legacy' row.username %}">{{ row.username }}</a>
               {% else %}
                 <span>{{ row.username }}</span>
               {% endif %}
@@ -159,7 +159,7 @@
                         <div class="lb-user-text">
                           <div class="lb-name-line">
                             {% if request.user.is_authenticated %}
-                              <a href="{% url 'users:profile' row.username %}" class="problem-link lb-name">{{ row.username }}</a>
+                              <a href="{% url 'users:profile_legacy' row.username %}" class="problem-link lb-name">{{ row.username }}</a>
                             {% else %}
                               <span class="lb-name lb-name-plain">{{ row.username }}</span>
                             {% endif %}
@@ -228,9 +228,10 @@
           <div class="empty-icon-circle">
             <i class="bi bi-trophy" aria-hidden="true"></i>
           </div>
-          <h3 class="empty-heading">No one is ranked yet</h3>
+          <h3 class="empty-heading">{% if query %}User not found{% else %}No one is ranked yet{% endif %}</h3>
           <p class="empty-subtext">
-            {% if period == 'week' %}No solved problems in the last 7 days.
+            {% if query %}No users match "{{ query }}".
+            {% elif period == 'week' %}No solved problems in the last 7 days.
             {% elif period == 'month' %}No solved problems in the last 30 days.
             {% else %}Solve a problem to be the first on the leaderboard.{% endif %}
           </p>

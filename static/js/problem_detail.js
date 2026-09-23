@@ -52,6 +52,14 @@
     return String(text || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  function normalizeCaseText(text) {
+    return String(text || '')
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+  }
+
   function titleize(str) {
     return String(str || '').replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   }
@@ -531,7 +539,7 @@
         customInput.value = curCase.input_data || '';
 
         if (expectedOutputEl) {
-          expectedOutputEl.textContent = curCase.expected_output || '';
+          expectedOutputEl.textContent = normalizeCaseText(curCase.expected_output);
         }
         if (expectedCard) {
           expectedCard.style.display = curCase.expected_output ? 'block' : 'none';
@@ -733,11 +741,17 @@
 
     // Case pills (for multi-case run)
     var pillsHTML = '';
+    var selectedCase = response.selected_case ? parseInt(response.selected_case, 10) : null;
+    var activeResultIndex = results.findIndex(function (result) {
+      return selectedCase !== null && result.tc_num === selectedCase;
+    });
+    if (activeResultIndex < 0) activeResultIndex = 0;
+
     if (results.length > 1) {
       pillsHTML = '<div class="result-case-pills">';
       for (var p = 0; p < results.length; p++) {
         var passed = results[p].status === 'success' || results[p].status === 'accepted';
-        pillsHTML += casePillHTML(results[p].tc_num, passed, p === 0);
+        pillsHTML += casePillHTML(results[p].tc_num, passed, p === activeResultIndex);
       }
       pillsHTML += '</div>';
     }
@@ -745,7 +759,7 @@
     container.innerHTML = header + pillsHTML + '<div id="case-detail-panel"></div>';
 
     // Render first case detail
-    if (results.length > 0) renderCaseDetail(results[0]);
+    if (results.length > 0) renderCaseDetail(results[activeResultIndex]);
 
     // Wire up pill clicks
     container.querySelectorAll('.result-case-pill').forEach(function (pill) {
@@ -829,9 +843,9 @@
     // If IO data is available (sample / run mode), show full cards
     if (tc.input !== undefined) {
       panel.innerHTML =
-        ioCard('Input', tc.input) +
-        ioCard('Output', tc.actual) +
-        ioCard('Expected', tc.expected);
+        ioCard('Input', normalizeCaseText(tc.input)) +
+        ioCard('Output', normalizeCaseText(tc.actual)) +
+        ioCard('Expected', normalizeCaseText(tc.expected));
       panel.querySelectorAll('.copy-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var text = btn.dataset.copy;
@@ -1013,6 +1027,7 @@
             code: getEditorCode(),
             language: getSelectedLanguage(),
             custom_input: (document.getElementById('custom-input') || {}).value || '',
+            selected_case: (document.querySelector('.case-pill.active') || {}).textContent.replace(/\D/g, '') || null,
           }),
         });
 

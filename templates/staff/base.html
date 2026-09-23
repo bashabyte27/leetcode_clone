@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/staff.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/staff_search.js' %}" defer></script>{% endblock %}
 {% block primary_nav %}
 <ul class="navbar-nav me-auto gap-1 align-items-lg-center">
   <li class="nav-item"><a class="nav-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}" href="{% url 'staff:dashboard' %}">Staff desk</a></li>

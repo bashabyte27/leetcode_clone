@@ -16,7 +16,10 @@ Tie-breaks (all from existing data):
     points DESC -> problems solved DESC -> older account first -> user id
 """
 
+from datetime import timedelta
+
 from django.db.models import Count, F, Q
+from django.utils import timezone
 
 from problems.models import DifficultyChoices
 from submissions.models import Submission, SubmissionStatusChoices
@@ -34,7 +37,16 @@ def _unique_solved(difficulty):
     return Count('problem_id', filter=Q(problem__difficulty=difficulty), distinct=True)
 
 
-def solver_stats():
+def _period_cutoff(period='all'):
+    period = (period or 'all').lower()
+    if period == 'week':
+        return timezone.now() - timedelta(days=7)
+    if period == 'month':
+        return timezone.now() - timedelta(days=30)
+    return None
+
+
+def solver_stats(period='all'):
     """
     One row per active user with at least one accepted submission on an
     active problem, carrying easy_solved / medium_solved / hard_solved,
@@ -43,13 +55,16 @@ def solver_stats():
     easy, medium, hard = (
         DifficultyChoices.EASY, DifficultyChoices.MEDIUM, DifficultyChoices.HARD,
     )
+    queryset = Submission.objects.filter(
+        status=SubmissionStatusChoices.ACCEPTED,
+        problem__is_active=True,
+        user__is_active=True,
+    )
+    cutoff = _period_cutoff(period)
+    if cutoff is not None:
+        queryset = queryset.filter(submitted_at__gte=cutoff)
     return (
-        Submission.objects
-        .filter(
-            status=SubmissionStatusChoices.ACCEPTED,
-            problem__is_active=True,
-            user__is_active=True,
-        )
+        queryset
         .order_by()  # drop Submission.Meta.ordering so it can't leak into GROUP BY
         .values('user_id', 'user__user_name', 'user__avatar_url', 'user__created_at')
         .annotate(
@@ -68,12 +83,15 @@ def solver_stats():
     )
 
 
-def leaderboard_queryset():
+def leaderboard_queryset(query='', period='all'):
     """Ranked users only (points > 0), best first."""
-    return solver_stats().filter(points__gt=0).order_by(*RANK_ORDERING)
+    queryset = solver_stats(period=period).filter(points__gt=0)
+    if query:
+        queryset = queryset.filter(user__user_name__istartswith=query)
+    return queryset.order_by(*RANK_ORDERING)
 
 
-def get_user_standing(user_id):
+def get_user_standing(user_id, period='all'):
     """
     Rank and stats for one user, using two small queries and no full scan
     in Python.  rank is None when the user has no points yet.
@@ -82,13 +100,13 @@ def get_user_standing(user_id):
         'rank': None, 'points': 0, 'solved': 0,
         'easy_solved': 0, 'medium_solved': 0, 'hard_solved': 0,
     }
-    found = list(solver_stats().filter(user_id=user_id)[:1])
+    found = list(solver_stats(period=period).filter(user_id=user_id)[:1])
     if not found or found[0]['points'] <= 0:
         return empty
 
     me = found[0]
     # Users strictly ahead of me under RANK_ORDERING.
-    ahead = solver_stats().filter(
+    ahead = solver_stats(period=period).filter(
         Q(points__gt=me['points'])
         | Q(points=me['points'], solved__gt=me['solved'])
         | Q(points=me['points'], solved=me['solved'],

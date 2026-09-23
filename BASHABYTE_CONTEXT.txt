@@ -870,3 +870,51 @@ The current Django apps in this project are:
 - leetcode_project (project config)
 
 All major apps are represented above in the architecture documentation.
+
+==================================================
+20. CURRENT LEADERBOARD AND STAFF OPERATIONS
+==================================================
+Leaderboard behavior:
+- /leaderboard/ renders active users with accepted submissions on active problems, ranked by points, solved count, account age, and user id.
+- Points remain defined in leaderboard/services.py: Easy 10, Medium 25, Hard 50; each problem counts once per user.
+- The leaderboard query remains grouped and database-driven with stable pagination.
+
+User search behavior:
+- The leaderboard has a username search input using the existing /leaderboard/ route and q query parameter.
+- Search is case-insensitive and uses username starts-with matching, so one character filters immediately and additional characters narrow the result.
+- The static behavior in templates/leaderboard/leaderboard.html debounces input, fetches the server-rendered page, replaces the leaderboard content, preserves the URL, and removes q when cleared so the original list returns without a refresh.
+- A no-result query displays User not found; an empty query restores the complete ranked list.
+
+Blocked-user login:
+- users/forms.py resolves the submitted username or email before authentication and checks Users.is_active.
+- Inactive users are rejected without a session and see: Your account has been blocked. Please contact the higher authority.
+- The existing login template form alert displays the acknowledgement without exposing staff details.
+
+Staff user management and details:
+- Staff routes are under /staff/ and require an authenticated user with is_staff=True.
+- /staff/users/ supports username filtering while typing, profile navigation, blocking/unblocking through POST, and a POST-only delete action at /staff/users/<uuid:user_id>/delete/.
+- Delete buttons use browser confirmation before submitting; deleting a Users row follows existing Django CASCADE relationships and redirects to the staff user list.
+- /staff/users/<uuid:user_id>/ shows profile data, stats, solved problems from UserSolvedProblem, and paginated Submission history.
+- Each staff submission row fetches the existing /submissions/detail/<int:submission_id>/ JSON endpoint. Staff access is allowed for inspection, while normal users remain restricted to their own submissions. The same runtime, memory, status, language, timestamps, percentile, code, and per-test result data are reused.
+
+Staff problem management:
+- /staff/problems/ lists problems and links each row to /staff/problems/<int:problem_id>/.
+- The problem detail form edits the existing Problem fields and the existing TestCase records; the public slug is preserved when a title changes to avoid breaking slug-based URLs.
+- Test cases can be bulk edited, added as new rows, or removed. JSON updates preserve existing case ids where supplied, renumber cases in list order, and delete omitted cases. The dedicated add/delete actions are /staff/problems/<int:problem_id>/test-cases/add/ and /staff/problems/<int:problem_id>/test-cases/<int:test_case_id>/delete/.
+- Problem deletion is POST-only at /staff/problems/<int:problem_id>/delete/ and requires confirmation in the staff UI. Existing Problem foreign-key behavior is retained; Django cascades dependent problem content and submissions according to the current model definitions.
+- Staff problem creation continues to use the existing JSON test-case format and validation helper.
+
+Important implementation files:
+- leaderboard/views.py and leaderboard/services.py: ranking, filtering, and pagination.
+- templates/leaderboard/leaderboard.html: search UI, empty state, and fetch/replace behavior.
+- users/forms.py and users/views.py: login validation and session creation.
+- staff/views.py and staff/urls.py: staff dashboard, user operations, problem operations, and test-case operations.
+- templates/staff/user_list.html, user_detail.html, problem_list.html, and problem_form.html: staff workflows and confirmation controls.
+- submissions/views.py and submissions/urls.py: canonical submission history/detail JSON contract.
+- users.Users, problems.Problem, problems.TestCase, submissions.Submission, submissions.SubmissionResult, and submissions.UserSolvedProblem remain the source-of-truth relationships.
+
+Limitations and decisions:
+- Search is server-authoritative and debounced rather than loading every user into the browser.
+- Browser confirmation is used because the existing staff UI has no modal component.
+- static/js/staff_search.js debounces staff user/problem search input, fetches the existing list route, replaces only the result panel, updates the URL, and restores the full list when the field is cleared.
+- Problem deletion intentionally follows the existing CASCADE model behavior; production deployments should consider archival or protected deletion if submission retention becomes mandatory.

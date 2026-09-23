@@ -10,6 +10,8 @@ from submissions.judge import (
     judge_submission,
     is_code_safe,
     _code_reads_input,
+    normalize_case_text,
+    comparable_case_text,
     run_code as execute_code,
 )
 from django.shortcuts import get_object_or_404, render
@@ -83,9 +85,9 @@ def submit_code(request, problem_slug):
                 test_case_results.append({
                     'tc_num': r.test_case.order_num,
                     'status': r.status,
-                    'input': r.test_case.input_data.replace('\\n', '\n') if r.test_case.input_data else '',
-                    'expected': r.expected_output.replace('\\n', '\n') if r.expected_output else '',
-                    'actual': r.actual_output.replace('\\n', '\n') if r.actual_output else '',
+                    'input': normalize_case_text(r.test_case.input_data),
+                    'expected': normalize_case_text(r.expected_output),
+                    'actual': normalize_case_text(r.actual_output),
                     'runtime_ms': str(r.runtime_ms),
                 })
             else:
@@ -198,8 +200,8 @@ def run_code(request, problem_slug):
         test_case_results = []
 
         for tc in test_cases:
-            input_data = tc.input_data.replace('\\n', '\n') if tc.input_data else ''
-            expected_output = tc.expected_output.replace('\\n', '\n').strip() if tc.expected_output else ''
+            input_data = normalize_case_text(tc.input_data)
+            expected_output = comparable_case_text(tc.expected_output)
 
             actual_output, runtime_ms, error, status = execute_code(code, language, input_data)
 
@@ -213,7 +215,7 @@ def run_code(request, problem_slug):
                 status = "Runtime Error"
                 actual_output = error
             elif status == 'accepted':
-                if (actual_output or '').replace('\r\n', '\n').strip() == expected_output.replace('\r\n', '\n').strip():
+                if comparable_case_text(actual_output) == expected_output:
                     status = "success"
                 else:
                     status = "Wrong Answer"
@@ -223,7 +225,7 @@ def run_code(request, problem_slug):
             test_case_results.append({
                 'tc_num': tc.order_num,
                 'status': status,
-                'input': tc.input_data.replace('\\n', '\n') if tc.input_data else '',
+                'input': normalize_case_text(tc.input_data),
                 'expected': expected_output,
                 'actual': actual_output or '',
                 'runtime_ms': str(runtime_ms),
@@ -231,6 +233,7 @@ def run_code(request, problem_slug):
 
         return JsonResponse({
             'test_case_results': test_case_results,
+            'selected_case': body.get('selected_case'),
         })
 
     except json.JSONDecodeError:
@@ -261,11 +264,10 @@ def submission_list(request, problem_slug):
 
 @login_required
 def submission_detail(request, submission_id):
-    submission = get_object_or_404(
-        Submission.objects.select_related('problem', 'language'),
-        id=submission_id,
-        user=request.user,
-    )
+    submissions = Submission.objects.select_related('problem', 'language')
+    if not (request.user.is_staff and request.headers.get('X-Staff-Inspection') == '1'):
+        submissions = submissions.filter(user=request.user)
+    submission = get_object_or_404(submissions, id=submission_id)
 
     results = submission.results.select_related('test_case').order_by('test_case__order_num')
     accepted_submissions = Submission.objects.filter(
@@ -285,6 +287,7 @@ def submission_detail(request, submission_id):
 
     return JsonResponse({
         'submission_id': submission.id,
+        'problem': submission.problem.title,
         'code': submission.code,
         'status': submission.status,
         'language': submission.language.name if submission.language else None,

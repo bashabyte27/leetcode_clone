@@ -13,10 +13,15 @@ PAGE_SIZE = 25
 def leaderboard(request):
     """
     GET /leaderboard/
-    All-time ranking by points from unique accepted problems.
+    Ranking by points from unique accepted problems, optionally filtered by period.
     Public: shows only username, avatar and solve counts.
     """
-    paginator = Paginator(services.leaderboard_queryset(), PAGE_SIZE)
+    query = request.GET.get('q', '').strip()
+    period = request.GET.get('period', 'all').strip().lower()
+    if period not in {'all', 'week', 'month'}:
+        period = 'all'
+
+    paginator = Paginator(services.leaderboard_queryset(query, period=period), PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get('page'))
     elided_page_range = paginator.get_elided_page_range(
         number=page_obj.number, on_each_side=2, on_ends=1
@@ -42,7 +47,7 @@ def leaderboard(request):
     # Signed-in user who isn't on this page gets their own standing.
     my_standing = None
     if me_id is not None and not any(r['is_me'] for r in rows):
-        my_standing = services.get_user_standing(me_id)
+        my_standing = services.get_user_standing(me_id, period=period)
         if my_standing['rank']:
             my_standing['page'] = ceil(my_standing['rank'] / PAGE_SIZE)
 
@@ -58,4 +63,6 @@ def leaderboard(request):
         'elided_page_range': elided_page_range,
         'my_standing': my_standing,
         'scoring': scoring,
+        'query': query,
+        'period': period,
     })

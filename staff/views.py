@@ -13,6 +13,7 @@ from leaderboard.services import get_user_standing
 from problems.models import DifficultyChoices, Problem, TestCase
 from submissions.models import Submission, SubmissionStatusChoices, UserSolvedProblem
 from users.models import UserProfile, Users
+from users.views import profile_context
 
 from .services import import_problems, import_users, pdf_response, user_snapshot, xlsx_response
 
@@ -44,7 +45,7 @@ def user_list(request):
     query = request.GET.get('q', '').strip()
     users = Users.objects.filter(is_staff=False).select_related('profile', 'stats').order_by('-created_at')
     if query:
-        users = users.filter(Q(user_name__icontains=query) | Q(email__icontains=query))
+        users = users.filter(user_name__icontains=query)
     paginator, page_obj = _page(request, users)
     return render(request, 'staff/user_list.html', {'page_obj': page_obj, 'paginator': paginator, 'query': query})
 
@@ -86,15 +87,40 @@ def user_import(request):
 @staff_required
 def user_detail(request, user_id):
     user = get_object_or_404(Users.objects.select_related('profile', 'stats'), id=user_id)
-    profile, _ = UserProfile.objects.get_or_create(user=user)
-    snapshot = user_snapshot(user)
-    solved_paginator, solved_page = _page(request, snapshot['solved'], 20)
-    history_paginator, history_page = _page(request, snapshot['submissions'], 20)
-    return render(request, 'staff/user_detail.html', {
-        'target_user': user, 'profile': profile, 'snapshot': snapshot,
-        'standing': snapshot['standing'], 'solved_page': solved_page, 'solved_paginator': solved_paginator,
-        'history_page': history_page, 'history_paginator': history_paginator,
+    context = profile_context(request, user, editable=False)
+    context.update({
+        'staff_view': True,
+        'target_user': user,
+        'account_update_url': 'staff:user_update',
+        'show_account_form': request.GET.get('edit') == '1',
     })
+    return render(request, 'users/profile.html', context)
+
+
+@staff_required
+def user_update(request, user_id):
+    user = get_object_or_404(Users, id=user_id, is_staff=False)
+    if request.method == 'POST':
+        username = request.POST.get('user_name', '').strip()
+        password = request.POST.get('password', '')
+        password_confirmation = request.POST.get('password_confirmation', '')
+        try:
+            if not username:
+                raise ValueError('Username is required.')
+            if Users.objects.filter(user_name__iexact=username).exclude(id=user.id).exists():
+                raise ValueError('Username already exists.')
+            if password or password_confirmation:
+                if not password or password != password_confirmation:
+                    raise ValueError('Password and confirmation must match.')
+                validate_password(password, user)
+                user.set_password(password)
+            user.user_name = username
+            user.full_clean()
+            user.save()
+            messages.success(request, f'Updated {user.user_name}.')
+        except Exception as exc:
+            messages.error(request, str(exc))
+    return redirect('staff:user_detail', user_id=user.id)
 
 
 @staff_required
@@ -107,6 +133,16 @@ def user_toggle_active(request, user_id):
             user.is_active = not user.is_active; user.save(update_fields=['is_active', 'updated_at'])
             messages.success(request, f'{user.user_name} is now {"active" if user.is_active else "blocked"}.')
     return redirect('staff:user_detail', user_id=user_id)
+
+
+@staff_required
+def user_delete(request, user_id):
+    if request.method == 'POST':
+        user = get_object_or_404(Users, id=user_id, is_staff=False)
+        user_name = user.user_name
+        user.delete()
+        messages.success(request, f'{user_name} was deleted.')
+    return redirect('staff:user_list')
 
 
 @staff_required
@@ -126,9 +162,113 @@ def problem_list(request):
     query = request.GET.get('q', '').strip()
     problems = Problem.objects.select_related('created_by').order_by('order_num', 'title')
     if query:
-        problems = problems.filter(Q(title__icontains=query) | Q(slug__icontains=query))
+        problems = problems.filter(title__icontains=query)
     paginator, page_obj = _page(request, problems)
     return render(request, 'staff/problem_list.html', {'page_obj': page_obj, 'paginator': paginator, 'query': query})
+
+
+def _test_cases_from_json(raw_cases):
+    if not raw_cases.strip():
+        return []
+    cases = json.loads(raw_cases)
+    if not isinstance(cases, list):
+        raise ValueError('Test cases must be a JSON list.')
+    for number, case in enumerate(cases, 1):
+        if not isinstance(case, dict) or not case.get('input_data') or not case.get('expected_output'):
+            raise ValueError(f'Test case {number} needs input_data and expected_output.')
+    return cases
+
+
+def _save_test_cases(problem, cases):
+    retained_ids = []
+    for number, case in enumerate(cases, 1):
+        case_id = case.get('id')
+        test_case = TestCase.objects.filter(problem=problem, id=case_id).first() if case_id else None
+        if test_case is None:
+            test_case = TestCase(problem=problem)
+        test_case.order_num = number
+        test_case.input_data = str(case['input_data'])
+        test_case.expected_output = str(case['expected_output'])
+        test_case.is_sample = bool(case.get('is_sample', False))
+        test_case.explanation = case.get('explanation') or None
+        test_case.save()
+        retained_ids.append(test_case.id)
+    problem.test_cases.exclude(id__in=retained_ids).delete()
+
+
+@staff_required
+def problem_detail(request, problem_id):
+    problem = get_object_or_404(Problem, id=problem_id)
+    if request.method == 'POST':
+        try:
+            title = request.POST.get('title', '').strip()
+            description = request.POST.get('description', '').strip()
+            difficulty = request.POST.get('difficulty', '').strip()
+            if not title or not description or difficulty not in DifficultyChoices.values:
+                raise ValueError('Title, description, and a valid difficulty are required.')
+            problem.title = title
+            problem.description = description
+            problem.difficulty = difficulty
+            order_num = request.POST.get('order_num', '').strip()
+            problem.order_num = int(order_num) if order_num else None
+            problem.is_premium = request.POST.get('is_premium') == 'on'
+            problem.full_clean()
+            with transaction.atomic():
+                problem.save()
+                _save_test_cases(problem, _test_cases_from_json(request.POST.get('test_cases', '[]')))
+            messages.success(request, f'Updated problem {problem.title}.')
+            return redirect('staff:problem_detail', problem_id=problem.id)
+        except Exception as exc:
+            messages.error(request, str(exc))
+    cases = list(problem.test_cases.order_by('order_num').values(
+        'id', 'input_data', 'expected_output', 'is_sample', 'explanation',
+    ))
+    return render(request, 'staff/problem_form.html', {
+        'problem': problem,
+        'test_cases_json': json.dumps(cases),
+        'difficulties': DifficultyChoices.choices,
+    })
+
+
+@staff_required
+def problem_delete(request, problem_id):
+    if request.method == 'POST':
+        problem = get_object_or_404(Problem, id=problem_id)
+        title = problem.title
+        problem.delete()
+        messages.success(request, f'{title} was deleted.')
+    return redirect('staff:problem_list')
+
+
+@staff_required
+def test_case_delete(request, problem_id, test_case_id):
+    if request.method == 'POST':
+        test_case = get_object_or_404(TestCase, id=test_case_id, problem_id=problem_id)
+        test_case.delete()
+        messages.success(request, 'Test case deleted.')
+    return redirect('staff:problem_detail', problem_id=problem_id)
+
+
+@staff_required
+def test_case_create(request, problem_id):
+    if request.method == 'POST':
+        problem = get_object_or_404(Problem, id=problem_id)
+        input_data = request.POST.get('input_data', '').strip()
+        expected_output = request.POST.get('expected_output', '').strip()
+        if input_data and expected_output:
+            next_order = (problem.test_cases.order_by('-order_num').values_list('order_num', flat=True).first() or 0) + 1
+            TestCase.objects.create(
+                problem=problem,
+                order_num=next_order,
+                input_data=input_data,
+                expected_output=expected_output,
+                is_sample=request.POST.get('is_sample') == 'on',
+                explanation=request.POST.get('explanation', '').strip() or None,
+            )
+            messages.success(request, 'Test case added.')
+        else:
+            messages.error(request, 'Input and expected output are required.')
+    return redirect('staff:problem_detail', problem_id=problem_id)
 
 
 @staff_required
@@ -148,13 +288,7 @@ def problem_create(request):
                     cases = json.loads(raw_cases)
                 except json.JSONDecodeError as exc:
                     raise ValueError(f'Test cases must be valid JSON: {exc.msg}.') from exc
-                if not isinstance(cases, list):
-                    raise ValueError('Test cases must be a JSON list.')
-                for number, case in enumerate(cases, 1):
-                    if not isinstance(case, dict) or not case.get('input_data') or not case.get('expected_output'):
-                        raise ValueError(
-                            f'Test case {number} needs input_data and expected_output.'
-                        )
+                cases = _test_cases_from_json(raw_cases)
 
             problem = Problem(
                 title=title,

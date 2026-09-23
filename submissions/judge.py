@@ -19,6 +19,18 @@ from submissions.models import (
 logger = logging.getLogger(__name__)
 
 
+def normalize_case_text(value):
+    """Preserve multiline testcase content while normalizing stored escapes and line endings."""
+    if value is None:
+        return ''
+    return str(value).replace('\\r\\n', '\n').replace('\\n', '\n').replace('\r\n', '\n').replace('\r', '\n')
+
+
+def comparable_case_text(value):
+    """Normalize output for comparison without flattening internal line breaks."""
+    return normalize_case_text(value).strip()
+
+
 # ── Judge0 status_id → BashaByte status mapping ──
 
 JUDGE0_STATUS_MAP = {
@@ -176,7 +188,7 @@ def judge_submission(submission_id):
                 test_case=tc,
                 status=SubmissionStatusChoices.RUNTIME_ERROR,
                 actual_output=reason,
-                expected_output=tc.expected_output.strip() if tc.expected_output else '',
+                expected_output=comparable_case_text(tc.expected_output),
                 runtime_ms=Decimal('0.00'),
             ) for tc in test_cases
         ])
@@ -204,7 +216,7 @@ def judge_submission(submission_id):
                 test_case=tc,
                 status=SubmissionStatusChoices.RUNTIME_ERROR,
                 actual_output="You forgot to read the input! Use input(), Scanner, scanf, cin, readline, fmt.Scan, etc. to take the input.",
-                expected_output=tc.expected_output.strip() if tc.expected_output else '',
+                expected_output=comparable_case_text(tc.expected_output),
                 runtime_ms=Decimal('0.00'),
             ) for tc in test_cases
         ])
@@ -220,7 +232,7 @@ def judge_submission(submission_id):
     # ── Step 6: Build batch submissions ──
     batch_items = []
     for tc in test_cases:
-        input_data = tc.input_data.replace('\\n', '\n') if tc.input_data else ''
+        input_data = normalize_case_text(tc.input_data)
         batch_items.append({
             'language_id': judge_id,
             'source_code': submission.code,
@@ -259,11 +271,11 @@ def judge_submission(submission_id):
             stdout = (j0.get('stdout') or '').strip()
             stderr = (j0.get('stderr') or '').strip()
             compile_output = (j0.get('compile_output') or '').strip()
-            expected_output = tc.expected_output.replace('\\n', '\n').strip() if tc.expected_output else ''
+            expected_output = comparable_case_text(tc.expected_output)
 
             if tc_status == SubmissionStatusChoices.ACCEPTED:
                 actual_output = stdout
-                if stdout.replace('\r\n', '\n').strip() != expected_output:
+                if comparable_case_text(stdout) != expected_output:
                     tc_status = SubmissionStatusChoices.WRONG_ANSWER
                     final_status = SubmissionStatusChoices.WRONG_ANSWER
             elif tc_status == SubmissionStatusChoices.WRONG_ANSWER:
@@ -288,7 +300,7 @@ def judge_submission(submission_id):
         if memory_kb and memory_kb > max_memory:
             max_memory = memory_kb
 
-        expected_output = tc.expected_output.replace('\\n', '\n').strip() if tc.expected_output else ''
+        expected_output = comparable_case_text(tc.expected_output)
 
         SubmissionResult.objects.create(
             submission=submission,

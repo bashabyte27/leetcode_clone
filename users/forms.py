@@ -118,8 +118,16 @@ class LoginForm(forms.Form):
                     raise forms.ValidationError('No account found with this email.')
             else:
                 # It is username — check if exists
-                if not Users.objects.filter(user_name=username_or_email).exists():
+                try:
+                    user_obj = Users.objects.get(user_name__iexact=username_or_email)
+                    username_or_email = user_obj.email
+                except Users.DoesNotExist:
                     raise forms.ValidationError('No account found with this username.')
+
+            if not user_obj.is_active:
+                raise forms.ValidationError(
+                    'Your account has been blocked. Please contact the higher authority.'
+                )
 
             # Now authenticate using username
             self.user_cache = authenticate(

@@ -11,6 +11,39 @@
 <div class="profile-page">
   <div class="container-xl px-3 px-md-4">
 
+    {% if staff_view %}
+      <div class="profile-card" style="margin-bottom: 1.5rem;">
+        <div class="profile-identity-info" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <div>
+            <h2 class="profile-username">Staff account management</h2>
+            <p>Update the username or set a new password. Existing passwords are never displayed.</p>
+          </div>
+          {% if not show_account_form %}
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+              <a href="?edit=1" class="btn-edit-profile"><i class="bi bi-pencil-square"></i>Edit User</a>
+              <form method="post" action="{% url 'staff:user_delete' to_user.id %}" onsubmit="return confirm('Are you sure you want to delete this user?');" style="display:inline; margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn-edit-profile" style="background: #dc3545; border-color: #dc3545; color: white;"><i class="bi bi-trash"></i>Delete User</button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if show_account_form %}
+          <form method="post" action="{% url account_update_url to_user.id %}">
+            {% csrf_token %}
+            <label>Username<input name="user_name" value="{{ to_user.user_name }}" required></label>
+            <label>New password<input name="password" type="password" autocomplete="new-password"></label>
+            <label>Confirm new password<input name="password_confirmation" type="password" autocomplete="new-password"></label>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.75rem;">
+              <button type="submit" class="btn-edit-profile"><i class="bi bi-check2"></i>Save account changes</button>
+              <a href="{% url 'staff:user_detail' to_user.id %}" class="btn-edit-profile" style="background: transparent; color: var(--text-color);">Cancel</a>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
+
     <!-- ═══════════════ TOP SECTION ═══════════════ -->
     <div class="profile-top-layout">
 
@@ -232,9 +265,9 @@
             </thead>
             <tbody>
               {% for sub in page_obj %}
-                <tr>
+                <tr {% if staff_view %}class="profile-submission-row"{% endif %}>
                   <td class="td-problem">
-                    <a href="{% url 'problems:problem' sub.problem.slug %}" class="problem-link">
+                    <a href="{% url 'problems:problem' sub.problem.slug %}{% if staff_view %}?submission={{ sub.id }}{% endif %}" class="problem-link">
                       {{ sub.problem.title }}
                     </a>
                   </td>

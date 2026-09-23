@@ -212,10 +212,9 @@ def reset_password(request):
 
     return render(request, 'users/forgot_password.html', {'form': form})
 
-@login_required
-def profile_view(request, username):
-    to_user = get_object_or_404(Users, user_name=username)
-    editable = request.user.is_authenticated and (request.user.id == to_user.id or request.user.user_name == to_user.user_name)
+def profile_context(request, to_user, editable=None):
+    if editable is None:
+        editable = request.user.is_authenticated and request.user.id == to_user.id
 
     profile, _ = UserProfile.objects.get_or_create(user=to_user)
 
@@ -272,7 +271,7 @@ def profile_view(request, username):
         number=page_obj.number, on_each_side=2, on_ends=1
     )
 
-    context = {
+    return {
         'to_user': to_user,
         'profile': profile,
         'editable': editable,
@@ -295,5 +294,10 @@ def profile_view(request, username):
         'paginator': paginator,
         'elided_page_range': elided_page_range,
     }
-    return render(request, 'users/profile.html', context)
+
+
+@login_required
+def profile_view(request, username):
+    to_user = get_object_or_404(Users, user_name=username)
+    return render(request, 'users/profile.html', profile_context(request, to_user))
 
