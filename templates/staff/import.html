@@ -1,3 +1,36 @@
 {% extends "staff/base.html" %}
 {% block title %}Import {{ kind }} | Staff | BashaByte{% endblock %}
-{% block staff_content %}<div class="staff-page-head"><div><div class="staff-eyebrow">{{ kind|title }} / import</div><h2>Bring in a batch</h2><p>{% if kind == 'users' %}CSV/XLSX columns: email, user_name, password.{% else %}Use the existing Problems and TestCases workbook sheets; CSV accepts the Problems columns.{% endif %}</p></div></div><section class="staff-panel staff-form-panel"><form method="post" enctype="multipart/form-data">{% csrf_token %}<label class="upload-box"><i class="bi bi-file-earmark-spreadsheet"></i><span>Choose CSV or XLSX</span><input type="file" name="file" accept=".csv,.xlsx" required></label><button class="staff-button"><i class="bi bi-cloud-arrow-up"></i>Validate and import</button></form>{% if result %}<div class="import-result"><strong>{{ result.created }} created{% if result.updated is not None %}, {{ result.updated }} updated{% endif %}</strong>{% if result.errors %}<ul>{% for error in result.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% else %}<p>Every row passed validation.</p>{% endif %}</div>{% endif %}</section>{% endblock %}
+{% block staff_content %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">{{ kind|title }} / import</div>
+    <h2>Bring in a batch</h2>
+    <p>{% if kind == 'users' %}CSV/XLSX columns: email, user_name, password.{% else %}Use the existing Problems and TestCases workbook sheets; CSV accepts the Problems columns.{% endif %}</p>
+  </div>
+</div>
+
+<section class="staff-panel staff-form-panel">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label class="upload-box">
+      <i class="bi bi-file-earmark-spreadsheet"></i>
+      <span>Choose CSV or XLSX</span>
+      <input type="file" name="file" accept=".csv,.xlsx" required>
+    </label>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="staff-button"><i class="bi bi-cloud-arrow-up"></i>Validate and import</button>
+    </div>
+  </form>
+
+  {% if result %}
+    <div class="import-result">
+      <strong>{{ result.created }} created{% if result.updated is not None %}, {{ result.updated }} updated{% endif %}</strong>
+      {% if result.errors %}
+        <ul>{% for error in result.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% else %}
+        <p>Every row passed validation.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

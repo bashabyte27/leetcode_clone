@@ -11,18 +11,39 @@
 {% endblock %}
 {% block content %}
 <main class="staff-shell">
-  <aside class="staff-rail">
-    <div class="staff-kicker">BashaByte / staff</div>
-    <h1 class="staff-rail-title">Operations desk</h1>
-    <p class="staff-rail-copy">Keep the public practice experience healthy, useful, and moving.</p>
-    <nav class="staff-side-nav" aria-label="Staff navigation">
-      <a href="{% url 'staff:dashboard' %}"><i class="bi bi-grid-1x2"></i>Overview</a>
-      <a href="{% url 'staff:user_list' %}"><i class="bi bi-people"></i>Users</a>
-      <a href="{% url 'staff:problem_list' %}"><i class="bi bi-code-square"></i>Problems</a>
+  <aside class="staff-rail" aria-label="Staff navigation">
+    <div class="staff-brand">
+      <div class="staff-kicker">BashaByte / Staff</div>
+      <h1 class="staff-brand-title">Operations</h1>
+      <p class="staff-brand-sub">Platform controls &amp; content</p>
+    </div>
+
+    <nav class="staff-side-nav">
+      <div class="staff-nav-label">Workspace</div>
+      <a href="{% url 'staff:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">
+        <i class="bi bi-grid-1x2"></i><span>Overview</span>
+      </a>
+      <a href="{% url 'staff:user_list' %}" class="{% if 'user' in request.resolver_match.url_name %}is-active{% endif %}">
+        <i class="bi bi-people"></i><span>Users</span>
+      </a>
+      <a href="{% url 'staff:problem_list' %}" class="{% if 'problem' in request.resolver_match.url_name %}is-active{% endif %}">
+        <i class="bi bi-code-square"></i><span>Problems</span>
+      </a>
     </nav>
+
+    <div class="staff-rail-foot">
+      <div class="staff-rail-note">Signed in as staff</div>
+    </div>
   </aside>
+
   <section class="staff-content">
-    {% if messages %}{% for message in messages %}<div class="staff-message {{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+    {% if messages %}
+      <div class="staff-messages">
+        {% for message in messages %}
+          <div class="staff-message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block staff_content %}{% endblock %}
   </section>
 </main>

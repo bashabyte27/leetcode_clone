@@ -1,3 +1,26 @@
 {% extends "staff/base.html" %}
 {% block title %}Create user | Staff | BashaByte{% endblock %}
-{% block staff_content %}<div class="staff-page-head"><div><div class="staff-eyebrow">People / new</div><h2>Create a user</h2><p>The password is hashed by Django before it is stored.</p></div></div><section class="staff-panel staff-form-panel"><form method="post">{% csrf_token %}<div class="staff-form-grid"><label>Email<input name="email" type="email" required value="{{ request.POST.email }}"></label><label>Username<input name="user_name" required value="{{ request.POST.user_name }}"></label><label>Password<input name="password" type="password" required></label></div><button class="staff-button">Create user</button></form></section>{% endblock %}
+{% block staff_content %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">People / new</div>
+    <h2>Create a user</h2>
+    <p>The password is hashed by Django before it is stored.</p>
+  </div>
+</div>
+
+<section class="staff-panel staff-form-panel">
+  <form method="post">
+    {% csrf_token %}
+    <div class="staff-form-grid">
+      <label>Email<input name="email" type="email" required value="{{ request.POST.email }}"></label>
+      <label>Username<input name="user_name" required value="{{ request.POST.user_name }}"></label>
+      <label>Password<input name="password" type="password" required></label>
+    </div>
+    <div class="form-footer">
+      <span class="form-note"><i class="bi bi-info-circle"></i>User will be created as an active account.</span>
+      <button class="staff-button" type="submit"><i class="bi bi-person-plus"></i>Create user</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

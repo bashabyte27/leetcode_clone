@@ -88,13 +88,39 @@ def user_import(request):
 def user_detail(request, user_id):
     user = get_object_or_404(Users.objects.select_related('profile', 'stats'), id=user_id)
     context = profile_context(request, user, editable=False)
+
+    standing = {
+        'rank': context.get('rank'),
+        'solved': context.get('total_solved', 0),
+        'easy_solved': context.get('easy_solved', 0),
+        'easy_total': context.get('total_easy', 0),
+        'medium_solved': context.get('medium_solved', 0),
+        'medium_total': context.get('total_medium', 0),
+        'hard_solved': context.get('hard_solved', 0),
+        'hard_total': context.get('total_hard', 0),
+        'total_problems': context.get('total_problems', 0),
+    }
+    snapshot = {
+        'acceptance_rate': context.get('submission_rate', 0),
+        'accepted': context.get('accepted_submissions', 0),
+        'total': context.get('total_submissions', 0),
+    }
+
+    solved_page = UserSolvedProblem.objects.filter(user=user).select_related('problem').order_by('-last_solved_at')
+    history_page = Submission.objects.filter(user=user).select_related('problem', 'language').order_by('-submitted_at')
+
     context.update({
         'staff_view': True,
         'target_user': user,
         'account_update_url': 'staff:user_update',
         'show_account_form': request.GET.get('edit') == '1',
+        'edit_mode': request.GET.get('edit') == '1',
+        'standing': standing,
+        'snapshot': snapshot,
+        'solved_page': solved_page,
+        'history_page': history_page,
     })
-    return render(request, 'users/profile.html', context)
+    return render(request, 'staff/user_detail.html', context)
 
 
 @staff_required

@@ -1,6 +1,106 @@
 {% extends "staff/base.html" %}
 {% block title %}{% if problem %}Edit problem{% else %}Create problem{% endif %} | Staff | BashaByte{% endblock %}
 {% block staff_content %}
-<div class="staff-page-head"><div><div class="staff-eyebrow">Content / {% if problem %}edit{% else %}new{% endif %}</div><h2>{% if problem %}{{ problem.title }}{% else %}Create a problem{% endif %}</h2><p>The fields use the same problem and test-case records as the public judge.</p></div>{% if problem %}<form method="post" action="{% url 'staff:problem_delete' problem.id %}" onsubmit="return confirm('Are you sure you want to delete this problem?');">{% csrf_token %}<button class="staff-button danger" type="submit"><i class="bi bi-trash"></i>Delete problem</button></form>{% endif %}</div>
-<section class="staff-panel staff-form-panel"><form method="post">{% csrf_token %}<div class="form-section-heading"><span class="form-section-number">01</span><div><h3>Problem details</h3><p>These fields appear on the public problem page.</p></div></div><div class="staff-form-grid"><label>Title<input name="title" required value="{% if problem %}{{ problem.title }}{% else %}{{ request.POST.title }}{% endif %}"></label><label>Problem number <span class="hint">Optional</span><input name="order_num" type="number" min="1" value="{% if problem %}{{ problem.order_num|default:'' }}{% else %}{{ request.POST.order_num }}{% endif %}"></label><label>Difficulty<select name="difficulty" required>{% for value,label in difficulties %}<option value="{{ value }}" {% if problem and problem.difficulty == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><label class="check-label"><input type="checkbox" name="is_premium" {% if problem.is_premium %}checked{% endif %}> Premium problem</label></div><label>Description<textarea name="description" rows="9" required>{% if problem %}{{ problem.description }}{% else %}{{ request.POST.description }}{% endif %}</textarea></label><div class="form-section-heading testcase-heading"><span class="form-section-number">02</span><div><h3>Test cases</h3><p>Edit the JSON list to update, remove, or add cases. Omitted cases are deleted.</p></div></div><div class="testcase-help"><p>Each object needs <code>input_data</code> and <code>expected_output</code>. Include an existing <code>id</code> to update it.</p><pre>[{"input_data":"[2,7]","expected_output":"9","is_sample":true}]</pre></div><label>Test cases JSON<textarea name="test_cases" rows="10" placeholder='[{"input_data":"[2,7]","expected_output":"9","is_sample":true}]'>{% if problem %}{{ test_cases_json }}{% else %}{{ request.POST.test_cases }}{% endif %}</textarea></label><div class="form-footer"><span class="form-note"><i class="bi bi-info-circle"></i> Test case numbers are generated in list order.</span><button class="staff-button" type="submit"><i class="bi bi-check2"></i>{% if problem %}Save changes{% else %}Create problem{% endif %}</button></div></form>{% if problem %}<div class="form-section-heading testcase-heading"><span class="form-section-number">03</span><div><h3>Test-case actions</h3><p>Use the JSON editor above for bulk changes, or add/delete one case here.</p></div></div><div class="staff-table-wrap"><table class="staff-table"><thead><tr><th>#</th><th>Input</th><th>Expected</th><th></th></tr></thead><tbody>{% for case in problem.test_cases.all %}<tr><td>{{ case.order_num }}</td><td>{{ case.input_data|truncatechars:50 }}</td><td>{{ case.expected_output|truncatechars:50 }}</td><td><form method="post" action="{% url 'staff:test_case_delete' problem.id case.id %}" onsubmit="return confirm('Delete this test case?');">{% csrf_token %}<button class="icon-link" type="submit" title="Delete test case"><i class="bi bi-trash"></i></button></form></td></tr>{% empty %}<tr><td colspan="4" class="staff-empty">No test cases yet.</td></tr>{% endfor %}</tbody></table></div><form method="post" action="{% url 'staff:test_case_create' problem.id %}" class="staff-form-grid" style="margin-top:20px">{% csrf_token %}<label>Input<input name="input_data" required></label><label>Expected output<textarea name="expected_output" rows="6" required></textarea></label><label>Explanation<input name="explanation"></label><label class="check-label"><input type="checkbox" name="is_sample"> Sample case</label><button class="staff-button" type="submit"><i class="bi bi-plus-lg"></i>Add test case</button></form>{% endif %}</section>
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">Content / {% if problem %}edit{% else %}new{% endif %}</div>
+    <h2>{% if problem %}{{ problem.title }}{% else %}Create a problem{% endif %}</h2>
+    <p>The fields use the same problem and test-case records as the public judge.</p>
+  </div>
+  {% if problem %}
+    <div class="staff-actions">
+      <form method="post" action="{% url 'staff:problem_delete' problem.id %}" onsubmit="return confirm('Are you sure you want to delete this problem?');">
+        {% csrf_token %}
+        <button class="staff-button danger" type="submit"><i class="bi bi-trash"></i>Delete problem</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+
+<section class="staff-panel staff-form-panel">
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-section-heading">
+      <span class="form-section-number">01</span>
+      <div>
+        <h3>Problem details</h3>
+        <p>These fields appear on the public problem page.</p>
+      </div>
+    </div>
+
+    <div class="staff-form-grid">
+      <label>Title<input name="title" required value="{% if problem %}{{ problem.title }}{% else %}{{ request.POST.title }}{% endif %}"></label>
+      <label>Problem number <span class="hint">Optional</span><input name="order_num" type="number" min="1" value="{% if problem %}{{ problem.order_num|default:'' }}{% else %}{{ request.POST.order_num }}{% endif %}"></label>
+      <label>Difficulty<select name="difficulty" required>{% for value,label in difficulties %}<option value="{{ value }}" {% if problem and problem.difficulty == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="check-label"><input type="checkbox" name="is_premium" {% if problem.is_premium %}checked{% endif %}> Premium problem</label>
+    </div>
+
+    <label>Description<textarea name="description" rows="9" required>{% if problem %}{{ problem.description }}{% else %}{{ request.POST.description }}{% endif %}</textarea></label>
+
+    <div class="form-section-heading testcase-heading">
+      <span class="form-section-number">02</span>
+      <div>
+        <h3>Test cases</h3>
+        <p>Edit the JSON list to update, remove, or add cases. Omitted cases are deleted.</p>
+      </div>
+    </div>
+
+    <div class="testcase-help">
+      <p>Each object needs <code>input_data</code> and <code>expected_output</code>. Include an existing <code>id</code> to update it.</p>
+      <pre>[{"input_data":"[2,7]","expected_output":"9","is_sample":true}]</pre>
+    </div>
+
+    <label>Test cases JSON<textarea name="test_cases" rows="12" placeholder='[{"input_data":"[2,7]","expected_output":"9","is_sample":true}]'>{% if problem %}{{ test_cases_json }}{% else %}{{ request.POST.test_cases }}{% endif %}</textarea></label>
+
+    <div class="form-footer">
+      <span class="form-note"><i class="bi bi-info-circle"></i> Test case numbers are generated in list order.</span>
+      <button class="staff-button" type="submit"><i class="bi bi-check2"></i>{% if problem %}Save changes{% else %}Create problem{% endif %}</button>
+    </div>
+  </form>
+
+  {% if problem %}
+    <div class="form-section-heading testcase-heading" style="margin-top:32px">
+      <span class="form-section-number">03</span>
+      <div>
+        <h3>Test-case actions</h3>
+        <p>Use the JSON editor above for bulk changes, or add/delete one case here.</p>
+      </div>
+    </div>
+
+    <div class="staff-table-wrap" style="border:1px solid var(--s-border);border-radius:var(--s-radius);margin-bottom:24px">
+      <table class="staff-table">
+        <thead><tr><th style="width:1%">#</th><th>Input</th><th>Expected</th><th style="width:1%"></th></tr></thead>
+        <tbody>
+          {% for case in problem.test_cases.all %}
+            <tr>
+              <td><span style="font-family:'JetBrains Mono',monospace;color:var(--s-ink-3);font-size:12px">{{ case.order_num }}</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:12px">{{ case.input_data|truncatechars:50 }}</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:12px">{{ case.expected_output|truncatechars:50 }}</span></td>
+              <td>
+                <form method="post" action="{% url 'staff:test_case_delete' problem.id case.id %}" onsubmit="return confirm('Delete this test case?');" style="display:inline">
+                  {% csrf_token %}
+                  <button class="icon-link danger" type="submit" title="Delete test case"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="staff-empty">No test cases yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <form method="post" action="{% url 'staff:test_case_create' problem.id %}" class="staff-form-grid" style="margin-top:20px">
+      {% csrf_token %}
+      <label>Input<input name="input_data" required></label>
+      <label>Expected output<textarea name="expected_output" rows="6" required></textarea></label>
+      <label>Explanation<input name="explanation"></label>
+      <label class="check-label"><input type="checkbox" name="is_sample"> Sample case</label>
+      <div style="grid-column:1 / -1;display:flex;justify-content:flex-end">
+        <button class="staff-button" type="submit"><i class="bi bi-plus-lg"></i>Add test case</button>
+      </div>
+    </form>
+  {% endif %}
+</section>
 {% endblock %}
