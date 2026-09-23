@@ -65,9 +65,8 @@ INSTALLED_APPS = [
     'discussions',
     'premium',
     'study_plans',
-    'courses',
-    'leaderboard',
-    'staff',
+    'courses', 
+    'colleges',
 ]
 
 MIDDLEWARE = [
