@@ -11,4 +11,8 @@ python manage.py collectstatic --no-input
 # Apply database migrations
 python manage.py migrate
 
+# Create admin user
+python manage.py create_admin
+
+# Import problems
 python manage.py import_problems
