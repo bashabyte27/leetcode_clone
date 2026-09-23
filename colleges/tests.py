@@ -1,3 +1,5 @@
+import io
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -6,7 +8,13 @@ from django.db.models import ProtectedError
 from django.test import TestCase
 from datetime import date, timedelta
 from django.utils import timezone
+from .bulk_import import import_bulk_records, validate_bulk_import
 from .models import AcademicSession,StudentAcademicAssignment
+from .services import (
+    create_faculty,
+    create_hod,
+    create_student,
+)
 
 from .models import (
     MAX_YEAR_NUMBER,
@@ -1155,6 +1163,182 @@ class BulkOperationLimitationTests(TestCase):
             good.full_clean()
  
  
+class Phase4AOnboardingTests(TestCase):
+    def test_create_hod_creates_user_and_membership(self):
+        college = make_college("ABC")
+        department = make_dept(college, code="CSE", name="Computer Science")
+
+        membership = create_hod(
+            email="hod@abc.edu",
+            user_name="hod_abc",
+            password="StrongPass123!",
+            college=college,
+            department=department,
+            member_number="HOD-001",
+        )
+
+        self.assertEqual(membership.role, CollegeMembership.Role.HOD)
+        self.assertEqual(membership.college, college)
+        self.assertEqual(membership.home_department, department)
+        self.assertTrue(User.objects.filter(email="hod@abc.edu").exists())
+        self.assertEqual(CollegeMembership.objects.filter(user__email="hod@abc.edu").count(), 1)
+
+    def test_create_faculty_creates_membership_only(self):
+        college = make_college("ABC")
+        department = make_dept(college, code="ECE", name="Electronics")
+
+        membership = create_faculty(
+            email="faculty@abc.edu",
+            user_name="faculty_abc",
+            password="StrongPass123!",
+            college=college,
+            department=department,
+        )
+
+        self.assertEqual(membership.role, CollegeMembership.Role.FACULTY)
+        self.assertEqual(membership.home_department, department)
+        self.assertEqual(membership.status, CollegeMembership.Status.ACTIVE)
+
+    def test_create_student_creates_membership_and_assignment(self):
+        college = make_college("ABC")
+        department = make_dept(college, code="CSE", name="Computer Science")
+        year = make_year(department, year_number=2)
+        section = make_section(year, name="A")
+        session = AcademicSession.objects.create(
+            college=college,
+            name="2025-26",
+            start_date=date(2025, 6, 1),
+            end_date=date(2026, 3, 31),
+            status=AcademicSession.Status.ACTIVE,
+        )
+
+        membership = create_student(
+            email="student@abc.edu",
+            user_name="student_abc",
+            password="StrongPass123!",
+            college=college,
+            department=department,
+            member_number="24CSE001",
+            academic_session=session,
+            section=section,
+        )
+
+        self.assertEqual(membership.role, CollegeMembership.Role.STUDENT)
+        self.assertEqual(membership.home_department, department)
+        assignment = StudentAcademicAssignment.objects.get(student_membership=membership)
+        self.assertEqual(assignment.academic_session, session)
+        self.assertEqual(assignment.section, section)
+        self.assertEqual(assignment.status, StudentAcademicAssignment.Status.ACTIVE)
+
+    def test_onboarding_is_transactional(self):
+        college = make_college("ABC")
+        department = make_dept(college, code="CSE", name="Computer Science")
+        year = make_year(department, year_number=2)
+        section = make_section(year, name="A")
+        session = AcademicSession.objects.create(
+            college=college,
+            name="2025-26",
+            start_date=date(2025, 6, 1),
+            end_date=date(2026, 3, 31),
+            status=AcademicSession.Status.ACTIVE,
+        )
+
+        with self.assertRaises(ValidationError):
+            create_student(
+                email="student2@abc.edu",
+                user_name="student_2",
+                password="StrongPass123!",
+                college=college,
+                department=department,
+                member_number="24CSE001",
+                academic_session=session,
+                section=section,
+                home_department=make_dept(make_college("XYZ"), code="ME", name="Mechanical"),
+            )
+
+        self.assertEqual(User.objects.filter(email="student2@abc.edu").count(), 0)
+        self.assertEqual(CollegeMembership.objects.filter(member_number="24CSE001").count(), 0)
+
+
+class BulkImportTests(TestCase):
+    def setUp(self):
+        self.college = make_college("ABC")
+        self.cse = make_dept(self.college, code="CSE", name="Computer Science")
+        self.year_2 = make_year(self.cse, year_number=2)
+        self.section_b = make_section(self.year_2, name="B")
+        self.session_2026 = AcademicSession.objects.create(
+            college=self.college,
+            name="2026-27",
+            start_date=date(2026, 6, 1),
+            end_date=date(2027, 3, 31),
+            status=AcademicSession.Status.ACTIVE,
+        )
+
+    def test_valid_student_csv_passes_preview(self):
+        csv = io.StringIO(
+            "Name,Email,Roll Number,Department,Academic Year,Section,Academic Session\n"
+            "Ahmed,ahmed@example.com,24CSE001,CSE,2,B,2026-27\n"
+        )
+
+        preview = validate_bulk_import(csv, import_type="STUDENT", college=self.college)
+
+        self.assertTrue(preview.is_valid)
+        self.assertEqual(preview.total_rows, 1)
+        self.assertEqual(preview.valid_rows_count, 1)
+        self.assertEqual(preview.invalid_rows_count, 0)
+
+    def test_missing_headers_fail(self):
+        csv = io.StringIO(
+            "Name,Email,Department\n"
+            "Ahmed,ahmed@example.com,CSE\n"
+        )
+
+        preview = validate_bulk_import(csv, import_type="STUDENT", college=self.college)
+
+        self.assertFalse(preview.is_valid)
+        self.assertGreater(preview.errors_count, 0)
+
+    def test_duplicate_emails_inside_file_are_detected(self):
+        csv = io.StringIO(
+            "Name,Email,Roll Number,Department,Academic Year,Section,Academic Session\n"
+            "Ahmed,ahmed@example.com,24CSE001,CSE,2,B,2026-27\n"
+            "Ahmed 2,ahmed@example.com,24CSE002,CSE,2,B,2026-27\n"
+        )
+
+        preview = validate_bulk_import(csv, import_type="STUDENT", college=self.college)
+
+        self.assertFalse(preview.is_valid)
+        self.assertIn("Duplicate email appears in rows", str(preview.row_errors[3]))
+
+    def test_invalid_section_blocks_entire_import(self):
+        csv = io.StringIO(
+            "Name,Email,Roll Number,Department,Academic Year,Section,Academic Session\n"
+            "Ahmed,ahmed@example.com,24CSE001,CSE,2,Z,2026-27\n"
+        )
+
+        preview = validate_bulk_import(csv, import_type="STUDENT", college=self.college)
+
+        self.assertFalse(preview.is_valid)
+
+        result = import_bulk_records(preview)
+        self.assertFalse(result['success'])
+        self.assertEqual(CollegeMembership.objects.count(), 0)
+
+    def test_valid_student_bulk_import_creates_membership_and_assignment(self):
+        csv = io.StringIO(
+            "Name,Email,Roll Number,Department,Academic Year,Section,Academic Session\n"
+            "Ahmed,ahmed@example.com,24CSE001,CSE,2,B,2026-27\n"
+        )
+
+        preview = validate_bulk_import(csv, import_type="STUDENT", college=self.college)
+        result = import_bulk_records(preview)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(User.objects.filter(email='ahmed@example.com').count(), 1)
+        self.assertEqual(CollegeMembership.objects.filter(user__email='ahmed@example.com', college=self.college).count(), 1)
+        self.assertEqual(StudentAcademicAssignment.objects.filter(student_membership__user__email='ahmed@example.com').count(), 1)
+
+
 class Phase3ExistingBehaviourTests(TestCase):
     # 20. Existing College, Department, AcademicYear, Section and User are unaffected
     def test_existing_models_have_no_fields_pointing_to_new_models(self):
