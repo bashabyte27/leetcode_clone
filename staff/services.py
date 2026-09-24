@@ -23,6 +23,14 @@ def _clean(value):
     return str(value).strip()
 
 
+def _as_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value == 1
+    return _clean(value).lower() in {'true', '1', '1.0', 'yes'}
+
+
 def _read_table(source, sheet_name=None):
     name = getattr(source, 'name', str(source)).lower()
     if name.endswith('.csv') and sheet_name is None:
@@ -96,7 +104,7 @@ def import_problems(source, actor=None):
                         defaults={
                             'input_data': _clean(row['input_data']).replace('\\n', '\n'),
                             'expected_output': _clean(row['expected_output']).replace('\\n', '\n'),
-                            'is_sample': _clean(row['is_sample']).lower() in {'true', '1', 'yes'},
+                            'is_sample': _as_bool(row['is_sample']),
                             'explanation': _clean(row.get('explanation')) or None,
                         },
                     )
