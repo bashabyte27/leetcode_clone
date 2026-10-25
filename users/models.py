@@ -107,6 +107,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
     is_premium = models.BooleanField(default=False, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
     is_staff = models.BooleanField(default=False)
+    is_faculty = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     groups = models.ManyToManyField(
