@@ -1,0 +1,14 @@
+<div class="assessment-form-row" data-formset-row>
+  {% for hidden in case_form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% for field in case_form.visible_fields %}
+    <div class="assessment-field{% if field.name == 'input_data' or field.name == 'expected_output' or field.name == 'explanation' %} assessment-field-full{% endif %}">
+      {% if field.field.widget.input_type == "checkbox" %}
+        <div class="assessment-checkbox">{{ field }}{{ field.label_tag }}</div>
+      {% else %}
+        {{ field.label_tag }}{{ field }}
+      {% endif %}
+      {% for error in field.errors %}<div class="assessment-errors">{{ error }}</div>{% endfor %}
+    </div>
+  {% endfor %}
+  {% for error in case_form.non_field_errors %}<div class="assessment-form-errors assessment-field-full">{{ error }}</div>{% endfor %}
+</div>

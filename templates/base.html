@@ -62,6 +62,13 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#">Discuss</a>
                 </li>
+                {% if request.user.is_authenticated %}
+                    {% if request.user.is_faculty or request.user.is_staff or request.user.moderated_assessments.exists %}
+                    <li class="nav-item">
+                        <a class="nav-link{% if request.resolver_match.app_name == 'assessment' %} active{% endif %}" href="{% url 'assessment:dashboard' %}">Assessments</a>
+                    </li>
+                    {% endif %}
+                {% endif %}
             </ul>
             {% endblock %}
 

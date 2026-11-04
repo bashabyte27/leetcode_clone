@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if mode == "create" %}Create assessment{% else %}Edit assessment{% endif %} | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:dashboard' %}">Assessments</a> / {% if mode == "create" %}new{% else %}edit{% endif %}</div>
+      <h1>{% if mode == "create" %}Create assessment{% else %}Edit {{ assessment.name }}{% endif %}</h1>
+      <p>Set the assessment schedule, duration, and result release policy.</p>
+    </div>
+    {% if mode == "edit" %}<a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}">Back to assessment</a>{% endif %}
+  </header>
+  <section class="assessment-panel">
+    <form method="post" class="assessment-form-grid">
+      {% csrf_token %}
+      {% include "assessment/_form_fields.html" %}
+      <div class="assessment-field-full assessment-inline-actions">
+        <button class="assessment-button" type="submit">{% if mode == "create" %}Create draft{% else %}Save changes{% endif %}</button>
+        <a class="assessment-button-secondary" href="{% if assessment %}{% url 'assessment:assessment_detail' assessment.pk %}{% else %}{% url 'assessment:dashboard' %}{% endif %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}

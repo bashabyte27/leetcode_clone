@@ -83,6 +83,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'leetcode_project.urls'
+LOGIN_URL = 'users:login'
 
 TEMPLATES = [
     {

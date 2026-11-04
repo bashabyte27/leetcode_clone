@@ -34,4 +34,5 @@ urlpatterns = [
     path('study-plans/', include('study_plans.urls')),
     path('leaderboard/', include('leaderboard.urls')),
     path('staff/', include('staff.urls')),
+    path('assessments/', include('assessment.urls')),
 ] + static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

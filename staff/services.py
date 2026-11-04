@@ -31,6 +31,7 @@ def _read_table(source, sheet_name=None):
 
 
 def _ensure_languages():
+    from assessment.models import ProgrammingLanguage
     from problems.models import Language
 
     languages = [
@@ -40,9 +41,20 @@ def _ensure_languages():
         ('Rust', 'rust', '1.65.0', '73'),
     ]
     for name, slug, version, judge_id in languages:
-        Language.objects.get_or_create(slug=slug, defaults={
+        language, _ = Language.objects.get_or_create(slug=slug, defaults={
             'name': name, 'version': version, 'judge_id': judge_id, 'is_active': True,
         })
+        runtime_id = int(language.judge_id) if language.judge_id else None
+        ProgrammingLanguage.objects.update_or_create(
+            slug=language.slug,
+            defaults={
+                'name': language.name,
+                'is_active': language.is_active,
+                'is_judge0_executable': runtime_id is not None,
+                'judge0_language_id': runtime_id,
+                'problems_language': language,
+            },
+        )
 
 
 def import_problems(source, actor=None):

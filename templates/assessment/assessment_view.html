@@ -1,0 +1,194 @@
+{% load static %}
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{{ assessment.name }} | Assessment</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/assessment_view.css' %}">
+</head>
+<body class="assessment-view-page"
+      data-assessment-state="{{ assessment_state }}"
+      data-start-time="{% if start_time %}{{ start_time|date:'c' }}{% endif %}"
+      data-end-time="{% if end_time %}{{ end_time|date:'c' }}{% endif %}"
+      data-server-time="{{ server_time }}"
+      data-start-url="{% url 'assessment:start_attempt' assessment.slug %}"
+      data-status-url="{% url 'assessment:get_attempt_status' assessment.slug %}">
+  <main class="container assessment-landing py-4 py-lg-5">
+    <div id="page-alert" class="alert d-none" role="status" aria-live="polite"></div>
+
+    <section id="instructions-panel" class="assessment-transition">
+      <header class="assessment-heading mb-4">
+        <p class="assessment-kicker mb-2">Online assessment</p>
+        <h1 class="display-6 fw-bold mb-2">{{ version.name|default:assessment.name }}</h1>
+        <p class="text-secondary mb-0">{{ instruction_text|default:"Review the assessment details and system checks before you begin." }}</p>
+      </header>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><article class="card assessment-card h-100"><div class="card-body"><span class="assessment-label">Total marks</span><strong class="assessment-value">{{ total_marks }}</strong></div></article></div>
+        <div class="col-6 col-lg-3"><article class="card assessment-card h-100"><div class="card-body"><span class="assessment-label">Duration</span><strong class="assessment-value">{% if version %}{{ version.duration_minutes }} min{% else %}{{ assessment.duration_minutes }} min{% endif %}</strong></div></article></div>
+        <div class="col-6 col-lg-3"><article class="card assessment-card h-100"><div class="card-body"><span class="assessment-label">Sections</span><strong class="assessment-value">{{ sections|length }}</strong></div></article></div>
+        <div class="col-6 col-lg-3"><article class="card assessment-card h-100"><div class="card-body"><span class="assessment-label">Passing marks</span><strong class="assessment-value">{{ passing_marks }}</strong></div></article></div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <section class="card assessment-card mb-4" aria-labelledby="section-overview-title">
+            <div class="card-body">
+              <h2 class="h5 mb-3" id="section-overview-title">Section overview</h2>
+              <div class="table-responsive">
+                <table class="table assessment-table align-middle mb-0">
+                  <thead><tr><th scope="col">Section</th><th scope="col">Type</th><th scope="col">Questions</th><th scope="col">Marks</th><th scope="col">Section time</th></tr></thead>
+                  <tbody>
+                    {% for section in sections %}
+                      <tr>
+                        <th scope="row">{{ section.title }}</th>
+                        <td>{{ section.question_type }}</td>
+                        <td>{{ section.question_count }}</td>
+                        <td>{{ section.marks }}</td>
+                        <td>{% if section.time_limit_minutes %}{{ section.time_limit_minutes }} min{% else %}Assessment timer{% endif %}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="5" class="text-secondary py-4 text-center">Section details will be available when this assessment is published.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="assessment-marking mt-3">
+                <span><strong>Marking:</strong> + marks shown per question{% if total_negative_marks %}; negative marks up to {{ total_negative_marks }} in total{% else %}; no negative marking{% endif %}.</span>
+                <span><strong>Passing marks:</strong> {{ passing_marks }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card assessment-card mb-4" aria-labelledby="instructions-title">
+            <div class="card-body">
+              <h2 class="h5 mb-3" id="instructions-title">Instructions</h2>
+              <ol class="assessment-instructions">
+                <li>Read every question carefully and manage your time across all sections.</li>
+                <li>Your attempt is timed by the server and will expire at the displayed deadline.</li>
+                <li>Do not refresh, navigate away, or close this tab while the assessment is in progress.</li>
+                <li>Your responses and assessment activity may be recorded for review.</li>
+                <li>Contact your invigilator if you experience a technical issue.</li>
+              </ol>
+              <h3 class="h6 mt-4">Proctoring rules</h3>
+              <ul class="assessment-rules mb-0">
+                <li>Keep this assessment in full-screen mode and do not switch tabs or windows.</li>
+                <li>Copy, cut, paste, printing, and context-menu actions are disabled in the exam area.</li>
+                <li>Proctoring checks are browser-based deterrents and cannot prevent every form of cheating.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="card assessment-card" aria-labelledby="system-check-title">
+            <div class="card-body">
+              <h2 class="h5 mb-3" id="system-check-title">System check</h2>
+              <ul class="assessment-checks list-unstyled mb-3">
+                <li data-check="fullscreen"><span class="check-indicator" aria-hidden="true"></span><span>Browser supports full-screen mode</span><span class="check-state">Checking…</span></li>
+                <li data-check="screen"><span class="check-indicator" aria-hidden="true"></span><span>Screen size is suitable (at least 1024 × 600)</span><span class="check-state">Checking…</span></li>
+                <li data-check="online"><span class="check-indicator" aria-hidden="true"></span><span>Internet connection is online</span><span class="check-state">Checking…</span></li>
+              </ul>
+              <p class="assessment-browser-note mb-0">Use a fresh Incognito window and disable all browser extensions.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-lg-4">
+          <aside class="card assessment-card assessment-start-card" aria-labelledby="candidate-title">
+            <div class="card-body">
+              <h2 class="h5 mb-3" id="candidate-title">Candidate</h2>
+              <dl class="assessment-candidate mb-4">
+                <div><dt>Name</dt><dd>{{ request.user.get_full_name|default:request.user.user_name }}</dd></div>
+                <div><dt>Roll number</dt><dd>{{ roll_number }}</dd></div>
+                <div><dt>Attempt status</dt><dd id="attempt-status-label">{% if assessment_state == "in_progress" %}In progress{% elif assessment_state == "submitted" %}Submitted{% elif assessment_state == "expired" %}Expired{% else %}Not started{% endif %}</dd></div>
+              </dl>
+
+              {% if assessment_state == "upcoming" %}
+                <div class="assessment-state-message" role="status">
+                  <strong>Assessment is not live yet</strong>
+                  <span>Starts in <span id="start-countdown" data-deadline="{{ start_time|date:'c' }}">--:--:--</span></span>
+                </div>
+              {% elif assessment_state == "expired" %}
+                <div class="assessment-state-message" role="status"><strong>Assessment expired</strong><span>This assessment is no longer accepting attempts.</span></div>
+              {% elif assessment_state == "submitted" %}
+                <div class="assessment-state-message" role="status"><strong>Attempt submitted</strong><span>Your assessment attempt has already been submitted.</span></div>
+              {% elif assessment_state == "attempt_limit" %}
+                <div class="assessment-state-message" role="status"><strong>Attempt limit reached</strong><span>No further attempts are available.</span></div>
+              {% elif assessment_state == "not_live" %}
+                <div class="assessment-state-message" role="status">
+                  <strong>Assessment is not live yet</strong>
+                  {% if start_countdown_visible %}
+                    <span>Scheduled to start in <span id="start-countdown" data-deadline="{{ start_time|date:'c' }}">--:--:--</span></span>
+                  {% else %}
+                    <span>Please contact the assessment organizer for access.</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              <div id="agree-area" class="form-check assessment-agreement mt-3">
+                <input class="form-check-input" type="checkbox" id="agree-instructions" {% if assessment_state != "ready" and assessment_state != "in_progress" and assessment_state != "upcoming" %}disabled{% endif %}>
+                <label class="form-check-label" for="agree-instructions">I have read and agree to the instructions.</label>
+              </div>
+              {% if assessment_state == "ready" or assessment_state == "in_progress" or assessment_state == "upcoming" %}
+                <button id="start-exam" class="btn btn-primary w-100 mt-3" type="button" disabled>
+                  {% if assessment_state == "in_progress" %}Resume exam{% else %}Start exam{% endif %}
+                </button>
+                <p class="small text-secondary mt-2 mb-0">The button is enabled when all system checks pass and you agree.</p>
+              {% endif %}
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="exam-shell" class="assessment-transition d-none" aria-label="Assessment in progress">
+      <header class="exam-header">
+        <div class="exam-header-title">
+          <strong>{{ version.name|default:assessment.name }}</strong>
+          <span>{{ request.user.get_full_name|default:request.user.user_name }}</span>
+        </div>
+        <div class="exam-header-status">
+          <span id="online-indicator" class="online-indicator" role="status"><span aria-hidden="true"></span> Online</span>
+          <span id="warning-counter" class="warning-counter">Warnings remaining: {{ proctor_config.warningsRemaining }}</span>
+          <time id="exam-timer" class="exam-timer" aria-label="Time remaining">--:--:--</time>
+        </div>
+      </header>
+      <div class="exam-section-heading">
+        <span class="text-secondary">Current section</span>
+        <strong id="current-section-name">Ready to begin</strong>
+      </div>
+      <div id="section-container" class="section-container" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <div id="fullscreen-overlay" class="fullscreen-overlay d-none" role="alertdialog" aria-modal="true" aria-labelledby="fullscreen-title">
+    <div class="fullscreen-dialog">
+      <h2 class="h4" id="fullscreen-title">Return to full screen to continue</h2>
+      <p>Your assessment is paused until full-screen mode is restored.</p>
+      <button id="return-fullscreen" class="btn btn-primary" type="button">Return to full screen</button>
+    </div>
+  </div>
+
+  <div id="exit-dialog" class="exit-dialog d-none" role="dialog" aria-modal="true" aria-labelledby="exit-title">
+    <div class="exit-dialog-card">
+      <h2 class="h5" id="exit-title">Exit assessment?</h2>
+      <p>Submit your attempt before exiting, or ask your invigilator to authorize exit.</p>
+      <label id="invigilator-pin-field" class="form-label d-none" for="invigilator-pin">Invigilator PIN</label>
+      <input id="invigilator-pin" class="form-control d-none" type="password" inputmode="numeric" autocomplete="one-time-code">
+      <p id="exit-error" class="text-danger small mt-2" role="alert"></p>
+      <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+        <button id="cancel-exit" class="btn btn-outline-secondary" type="button">Continue exam</button>
+        <button id="pin-exit" class="btn btn-outline-primary d-none" type="button">Use invigilator PIN</button>
+        <button id="submit-exit" class="btn btn-danger" type="button">Submit and Exit</button>
+      </div>
+    </div>
+  </div>
+
+  {{ proctor_config|json_script:"proctor-config" }}
+  {% if attempt_payload %}{{ attempt_payload|json_script:"attempt-state" }}{% endif %}
+  <script src="{% static 'js/proctor.js' %}" defer></script>
+  <script src="{% static 'js/assessment_view.js' %}" defer></script>
+</body>
+</html>

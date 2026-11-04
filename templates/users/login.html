@@ -49,6 +49,7 @@
 
         <form method="post" action="{% url 'users:login' %}" novalidate>
           {% csrf_token %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
           <div class="bb-field">
             <label for="id_username_or_email" class="bb-label">

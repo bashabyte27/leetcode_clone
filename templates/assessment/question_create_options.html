@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Create question | {{ assessment.name }} | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">{{ assessment.name }}</a> / Questions</div>
+      <h1>Create question</h1>
+      <p>Choose the question type you want to add.</p>
+    </div>
+  </header>
+  <section class="assessment-panel assessment-create-question-options">
+    <div class="assessment-inline-actions">
+      <a class="assessment-button-secondary" href="{% url 'assessment:mcq_question_create' %}?assessment={{ assessment.pk }}&amp;next={{ question_return_url|urlencode }}">Create MCQ</a>
+      <a class="assessment-button-secondary" href="{% url 'assessment:question_import' 'mcq' %}?assessment={{ assessment.pk }}">Import MCQs in bulk</a>
+      <a class="assessment-button" href="{% url 'assessment:coding_question_create' %}?assessment={{ assessment.pk }}&amp;next={{ question_return_url|urlencode }}">Create coding question</a>
+      <a class="assessment-button-secondary" href="{% url 'assessment:question_import' 'coding' %}?assessment={{ assessment.pk }}">Import coding questions in bulk</a>
+      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">Cancel</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

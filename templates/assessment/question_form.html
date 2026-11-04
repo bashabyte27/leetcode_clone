@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if mode == "create" %}Create{% else %}Edit{% endif %} {{ kind }} question | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:question_bank' %}">Question bank</a> / {{ kind }}</div>
+      <h1>{% if mode == "create" %}Create {{ kind }} question{% else %}Edit {{ question.title }}{% endif %}</h1>
+      <p>Only the question owner and staff can access these authoring fields.</p>
+    </div>
+  </header>
+  <section class="assessment-panel">
+    <form method="post">
+      {% csrf_token %}
+      {% if assessment %}<input type="hidden" name="assessment" value="{{ assessment.pk }}">{% endif %}
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+      <div class="assessment-form-grid">{% include "assessment/_form_fields.html" %}</div>
+
+      {% if kind == "mcq" %}
+        <div class="assessment-subsection">
+          <h2>Answer options</h2>
+          <p class="assessment-muted">Enter at least two options and mark the correct answer.</p>
+          {{ option_formset.management_form }}
+          {% for error in option_formset.non_form_errors %}<div class="assessment-form-errors">{{ error }}</div>{% endfor %}
+          <div id="option-forms" data-formset="mcq-options">
+            {% for option_form in option_formset %}
+              <div class="assessment-form-row" data-formset-row>
+                {% for hidden in option_form.hidden_fields %}{{ hidden }}{% endfor %}
+                {% for field in option_form.visible_fields %}
+                  <div class="assessment-field{% if field.name == 'text' %} assessment-field-full{% endif %}">
+                    {% if field.field.widget.input_type == "checkbox" %}
+                      <div class="assessment-checkbox">{{ field }}{{ field.label_tag }}</div>
+                    {% else %}
+                      {{ field.label_tag }}{{ field }}
+                    {% endif %}
+                    {% for error in field.errors %}<div class="assessment-errors">{{ error }}</div>{% endfor %}
+                  </div>
+                {% endfor %}
+                {% for error in option_form.non_field_errors %}<div class="assessment-form-errors assessment-field-full">{{ error }}</div>{% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+          <template id="option-form-template">
+            <div class="assessment-form-row" data-formset-row>
+              {% for hidden in option_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+              {% for field in option_formset.empty_form.visible_fields %}
+                <div class="assessment-field{% if field.name == 'text' %} assessment-field-full{% endif %}">
+                  {% if field.field.widget.input_type == "checkbox" %}
+                    <div class="assessment-checkbox">{{ field }}{{ field.label_tag }}</div>
+                  {% else %}
+                    {{ field.label_tag }}{{ field }}
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </template>
+          <div class="assessment-inline-actions" style="margin-top:12px">
+            <button class="assessment-button-secondary" type="button" data-add-form="mcq-options">Add option</button>
+          </div>
+        </div>
+      {% else %}
+        <div class="assessment-subsection">
+          <h2>Supported languages</h2>
+          <p class="assessment-muted">Write-from-scratch questions start with every active Judge0-compatible language. For other modes, add each supported language and its code snippet.</p>
+          {{ language_formset.management_form }}
+          {% for error in language_formset.non_form_errors %}<div class="assessment-form-errors">{{ error }}</div>{% endfor %}
+          <div id="language-forms" data-formset="languages">
+            {% for language_form in language_formset %}
+              {% include "assessment/_coding_language_form.html" with language_form=language_form %}
+            {% endfor %}
+          </div>
+          <template id="language-form-template">
+            {% include "assessment/_coding_language_form.html" with language_form=language_formset.empty_form %}
+          </template>
+          <div class="assessment-inline-actions" style="margin-top:12px">
+            <button class="assessment-button-secondary" type="button" data-add-form="languages">Add other language</button>
+          </div>
+        </div>
+        <div class="assessment-subsection">
+          <h2>Test cases</h2>
+          <p class="assessment-muted">Expected outputs and explanations are available only in this authorized editor.</p>
+          {{ test_case_formset.management_form }}
+          {% for error in test_case_formset.non_form_errors %}<div class="assessment-form-errors">{{ error }}</div>{% endfor %}
+          <div id="test-case-forms" data-formset="test-cases">
+            {% for case_form in test_case_formset %}
+              {% include "assessment/_coding_test_case_form.html" with case_form=case_form %}
+            {% endfor %}
+          </div>
+          <template id="test-case-form-template">
+            {% include "assessment/_coding_test_case_form.html" with case_form=test_case_formset.empty_form %}
+          </template>
+          <div class="assessment-inline-actions" style="margin-top:12px">
+            <button class="assessment-button-secondary" type="button" data-add-form="test-cases">Add test case</button>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="assessment-inline-actions" style="margin-top:20px">
+        <button class="assessment-button" type="submit">Save question</button>
+        <a class="assessment-button-secondary" href="{% url 'assessment:question_bank' %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/assessment_question_form.js' %}" defer></script>{% endblock %}

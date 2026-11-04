@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ assessment.name }} | Assessments | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header assessment-detail-heading">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:dashboard' %}">Assessments</a> / Manage</div>
+      <h1>{{ assessment.name }}</h1>
+    </div>
+    <div class="assessment-inline-actions">
+      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_edit' assessment.pk %}">Full settings</a>
+      <form method="post" action="{% url 'assessment:assessment_delete' assessment.pk %}" onsubmit="return confirm('Delete this assessment and its sections?');">
+        {% csrf_token %}<button class="assessment-button-danger" type="submit">Delete assessment</button>
+      </form>
+    </div>
+  </header>
+
+  <nav class="assessment-detail-tabs" aria-label="Assessment management tabs">
+    <a class="{% if active_tab == 'details' %}active{% endif %}" href="?tab=details">Details</a>
+    <a class="{% if active_tab == 'questions' %}active{% endif %}" href="?tab=questions">Questions</a>
+    <a class="{% if active_tab == 'moderators' %}active{% endif %}" href="?tab=moderators">Moderators</a>
+    <a class="{% if active_tab == 'leaderboard' %}active{% endif %}" href="?tab=leaderboard">Leaderboard</a>
+    <a class="{% if active_tab == 'submissions' %}active{% endif %}" href="?tab=submissions">Submissions</a>
+    <a class="{% if active_tab == 'reports' %}active{% endif %}" href="?tab=reports">Reports</a>
+  </nav>
+
+  {% if active_tab == "details" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head">
+        <div>
+          <h2>Assessment Details</h2>
+          <p class="assessment-muted">Update the assessment name, URL, schedule, and duration.</p>
+        </div>
+        <span class="assessment-pill">{{ assessment.get_status_display }}</span>
+      </div>
+      <form method="post" class="assessment-form-grid assessment-details-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_details">
+        {% for field in details_form %}
+          <div class="assessment-field">
+            <label for="{{ field.id_for_label }}">{% if field.name == "slug" %}Assessment URL{% else %}{{ field.label }}{% endif %}</label>
+            {% if field.name == "slug" %}
+              <div class="assessment-url-input"><span>/assessments/</span>{{ field }}<span>/</span></div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}<small class="assessment-muted">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<div class="assessment-errors">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        {% for error in details_form.non_field_errors %}<div class="assessment-form-errors assessment-field-full">{{ error }}</div>{% endfor %}
+        <div class="assessment-field-full assessment-inline-actions">
+          <button class="assessment-button" type="submit">Save changes</button>
+        </div>
+      </form>
+    </section>
+
+  {% elif active_tab == "questions" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head assessment-question-toolbar">
+        <div>
+          <h2>Questions</h2>
+          <p class="assessment-muted">Questions are organized into sections.</p>
+        </div>
+        <div class="assessment-inline-actions">
+          <a class="assessment-button" href="{% url 'assessment:question_create_options' assessment.pk %}">Create question</a>
+        </div>
+      </div>
+
+      <div class="assessment-subsection">
+        <div class="assessment-card-head">
+          <div><h3>Sections</h3><p class="assessment-muted">Questions are organized into sections.</p></div>
+          <a class="assessment-button-secondary" href="{% url 'assessment:section_create' assessment.pk %}">Add section</a>
+        </div>
+        {% for section in sections %}
+          <article class="assessment-section-card" id="section-{{ section.pk }}">
+            <div class="assessment-section-heading">
+              <details class="assessment-section-collapse">
+                <summary>
+                  <span><strong>{{ section.title }}</strong><span class="assessment-question-count">{{ section.questions.all|length }}</span></span>
+                  <span class="assessment-question-chevron" aria-hidden="true"></span>
+                </summary>
+                {% if section.instructions %}<p class="assessment-muted assessment-section-instructions">{{ section.instructions }}</p>{% endif %}
+                <div class="assessment-section-question-list">
+                  {% for assignment in section.questions.all %}
+                    <article class="assessment-assigned-question">
+                      <div class="assessment-assigned-question-heading">
+                        <div>
+                          <strong>{% if assignment.mcq_question %}{{ assignment.mcq_question.title }}{% else %}{{ assignment.coding_question.title }}{% endif %}</strong>
+                          <span class="assessment-muted">
+                            {% if assignment.mcq_question %}
+                              {% if assignment.mcq_question.question_type == "programming" or assignment.mcq_question.category == "programming" %}Programming MCQ{% else %}{{ assignment.mcq_question.get_category_display }}{% endif %}
+                            {% else %}Coding{% endif %}
+                            · {{ assignment.max_score }} point{{ assignment.max_score|pluralize }}
+                          </span>
+                        </div>
+                        <div class="assessment-inline-actions">
+                          <details class="assessment-question-preview">
+                            <summary class="assessment-button-secondary">Preview</summary>
+                            <div class="assessment-question-preview-content">
+                              {% if assignment.mcq_question %}
+                                <p>{{ assignment.mcq_question.statement|linebreaksbr }}</p>
+                                <ol>
+                                  {% for option in assignment.mcq_question.options.all %}<li>{{ option.text|linebreaksbr }}</li>{% endfor %}
+                                </ol>
+                                {% if assignment.mcq_question.explanation %}<p><strong>Explanation:</strong> {{ assignment.mcq_question.explanation|linebreaksbr }}</p>{% endif %}
+                              {% else %}
+                                <p>{{ assignment.coding_question.statement|linebreaksbr }}</p>
+                                {% if assignment.coding_question.input_format %}<p><strong>Input:</strong> {{ assignment.coding_question.input_format|linebreaksbr }}</p>{% endif %}
+                                {% if assignment.coding_question.output_format %}<p><strong>Output:</strong> {{ assignment.coding_question.output_format|linebreaksbr }}</p>{% endif %}
+                              {% endif %}
+                            </div>
+                          </details>
+                          <form method="post" action="{% url 'assessment:section_question_remove' assessment.pk section.pk assignment.pk %}" onsubmit="return confirm('Remove this question from the section? It will remain in your question bank.');">
+                            {% csrf_token %}<button class="assessment-button-danger" type="submit">Remove</button>
+                          </form>
+                        </div>
+                      </div>
+                    </article>
+                  {% empty %}
+                    <p class="assessment-muted">No questions in this section yet.</p>
+                  {% endfor %}
+                </div>
+              </details>
+              <div class="assessment-inline-actions">
+                <a class="assessment-button-secondary" href="{% url 'assessment:question_import_options' %}?assessment={{ assessment.pk }}&amp;section={{ section.pk }}">Import questions</a>
+                <a class="assessment-button" href="{% url 'assessment:section_question_add' assessment.pk section.pk %}">Add question</a>
+                <a class="assessment-button-secondary" href="{% url 'assessment:section_edit' assessment.pk section.pk %}">Edit section</a>
+                <form method="post" action="{% url 'assessment:section_delete' assessment.pk section.pk %}" onsubmit="return confirm('Delete this section and its questions?');">
+                  {% csrf_token %}<button class="assessment-button-danger" type="submit">Delete section</button>
+                </form>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <p class="assessment-empty">No sections yet. Create a section to add questions.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+  {% elif active_tab == "leaderboard" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head">
+        <div>
+          <h2>Leaderboard</h2>
+          <p class="assessment-muted">Ranked by best finalized score, then fastest completion time. Only submitted, finalized attempts are included.</p>
+        </div>
+      </div>
+      <div class="assessment-table-wrap">
+        <table class="assessment-table">
+          <thead>
+            <tr><th>Rank</th><th>Name</th><th>Solved questions</th><th>Time taken</th><th>Marks</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for row in leaderboard %}
+              <tr>
+                <td>{{ row.rank }}</td>
+                <td><a href="{{ row.profile_url }}">{{ row.user.user_name }}</a></td>
+                <td>{{ row.result.correct_count }}</td>
+                <td>{{ row.time_taken }}</td>
+                <td>{{ row.result.total_score }} / {{ row.result.max_score }}</td>
+                <td><a class="assessment-button-secondary" href="{{ row.details_url }}">Assessment details</a></td>
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="6">No finalized assessment results are available yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% if selected_participant %}
+      <section class="assessment-panel assessment-participant-details" id="participant-details">
+        <div class="assessment-card-head">
+          <div>
+            <h2><a href="{{ selected_participant.profile_url }}">{{ selected_participant.user.user_name }}</a></h2>
+            <p class="assessment-muted">Results for {{ assessment.name }} only</p>
+          </div>
+        </div>
+        <dl class="assessment-participant-summary">
+          <div><dt>Rank</dt><dd>{{ selected_participant.rank }}</dd></div>
+          <div><dt>Marks</dt><dd>{{ selected_participant.result.total_score }} / {{ selected_participant.result.max_score }}</dd></div>
+          <div><dt>Solved questions</dt><dd>{{ selected_participant.result.correct_count }}</dd></div>
+          <div><dt>Time taken</dt><dd>{{ selected_participant.time_taken }}</dd></div>
+        </dl>
+        <nav class="assessment-participant-tabs" aria-label="Participant assessment details">
+          <a class="{% if participant_tab == 'summary' %}active{% endif %}" href="?tab=leaderboard&amp;user={{ selected_participant.user.pk }}#participant-details">Summary</a>
+          <a class="{% if participant_tab == 'submissions' %}active{% endif %}" href="?tab=leaderboard&amp;user={{ selected_participant.user.pk }}&amp;participant_tab=submissions#participant-details">Submissions</a>
+        </nav>
+        {% if participant_tab == "submissions" %}
+          <div class="assessment-table-wrap">
+            <table class="assessment-table">
+              <thead><tr><th>Question</th><th>Language</th><th>Status</th><th>Marks</th><th>Submitted</th></tr></thead>
+              <tbody>
+                {% for submission in participant_submissions %}
+                  <tr>
+                    <td>{% if submission.assessment_question_snapshot.coding_snapshot %}{{ submission.assessment_question_snapshot.coding_snapshot.title }}{% else %}Coding question{% endif %}</td>
+                    <td>{{ submission.language.name }}</td>
+                    <td>{{ submission.get_status_display }}</td>
+                    <td>{{ submission.score }}</td>
+                    <td>{{ submission.submitted_at|date:"M j, Y H:i" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="assessment-empty" colspan="5">No coding submissions for this attempt.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="assessment-muted">This summary includes only this participant’s best finalized attempt for this assessment.</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+  {% elif active_tab == "moderators" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head">
+        <div><h2>Moderators</h2><p class="assessment-muted">Moderators can edit this assessment.</p></div>
+      </div>
+      {% if can_manage_moderators %}
+        <form class="assessment-moderator-form" method="post" action="{% url 'assessment:moderator_add' assessment.pk %}" data-search-url="{% url 'assessment:moderator_search' assessment.pk %}">
+          {% csrf_token %}
+          <label class="assessment-field">
+            <span>Search username</span>
+            <input type="search" data-moderator-search placeholder="Type a username" autocomplete="off">
+          </label>
+          <label class="assessment-field">
+            <span>Select user</span>
+            <select name="user_id" data-moderator-results required>
+              <option value="">Search for a username first</option>
+            </select>
+          </label>
+          <button class="assessment-button" type="submit">Add moderator</button>
+          <p class="assessment-muted assessment-field-full" data-moderator-status aria-live="polite"></p>
+        </form>
+      {% endif %}
+      <div class="assessment-table-wrap">
+        <table class="assessment-table">
+          <thead><tr><th>Username</th><th>Added</th>{% if can_manage_moderators %}<th></th>{% endif %}</tr></thead>
+          <tbody>
+            {% for moderator in moderators %}
+              <tr>
+                <td>{{ moderator.user.user_name }}</td>
+                <td>{{ moderator.assigned_at|date:"M j, Y" }}</td>
+                {% if can_manage_moderators %}
+                  <td><form method="post" action="{% url 'assessment:moderator_remove' assessment.pk moderator.user_id %}" onsubmit="return confirm('Remove this moderator?');">{% csrf_token %}<button class="assessment-button-danger" type="submit">Remove</button></form></td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="{% if can_manage_moderators %}3{% else %}2{% endif %}">No moderators have been added.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  {% elif active_tab == "submissions" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head">
+        <div>
+          <h2>Submissions</h2>
+          <p class="assessment-muted">Review coding submissions and MCQ answers from assessment participants.</p>
+        </div>
+      </div>
+      <div class="assessment-table-wrap">
+        <table class="assessment-table assessment-submissions-table">
+          <thead>
+            <tr><th>SI No.</th><th>Name</th><th>Type</th><th>Question</th><th>Status</th><th>Timestamp</th></tr>
+          </thead>
+          <tbody>
+            {% for row in submission_rows %}
+              <tr class="{% if selected_submission.key == row.key %}assessment-submission-selected{% endif %}">
+                <td>
+                  <a class="assessment-submission-row-link" href="?tab=submissions&amp;submission={{ row.key }}" aria-label="View {{ row.username }}'s submission for {{ row.question_title }}">
+                    {{ forloop.counter }}
+                  </a>
+                </td>
+                <td>{{ row.username }}</td>
+                <td>{{ row.submission_type }}</td>
+                <td>{{ row.question_title }}</td>
+                <td><span class="assessment-pill">{{ row.status }}</span></td>
+                <td>{{ row.submitted_at|date:"M j, Y H:i" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="6">There are no submissions for this assessment yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if selected_submission %}
+        <section class="assessment-submission-detail" aria-labelledby="submission-detail-title">
+          <div class="assessment-card-head">
+            <div>
+              <p class="assessment-eyebrow">Submission report</p>
+              <h3 id="submission-detail-title">{{ selected_submission.question_title }}</h3>
+              <p class="assessment-muted">Submitted by {{ selected_submission.username }}</p>
+            </div>
+            <span class="assessment-pill">{{ selected_submission.status }}</span>
+          </div>
+
+          {% if selected_submission.kind == "coding" %}
+            <p class="assessment-muted">Language: {{ selected_submission.item.language.name }}</p>
+            <h4>Submitted code</h4>
+            <pre class="assessment-code-block">{{ selected_submission.item.source_code }}</pre>
+          {% else %}
+            {% if selected_submission.item.selected_options.exists %}
+              <h4>Selected answer{{ selected_submission.item.selected_options.count|pluralize }}</h4>
+              <ul class="assessment-submission-answer-list">
+                {% for selected_option in selected_submission.item.selected_options.all %}
+                  <li>{{ selected_option.option.text }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            {% if selected_submission.item.text_answer %}
+              <h4>Written answer</h4>
+              <pre class="assessment-code-block">{{ selected_submission.item.text_answer }}</pre>
+            {% endif %}
+            {% if selected_submission.item.code_answer %}
+              <p class="assessment-muted">Language: {{ selected_submission.item.coding_language.name|default:"Not specified" }}</p>
+              <h4>Submitted code</h4>
+              <pre class="assessment-code-block">{{ selected_submission.item.code_answer }}</pre>
+            {% endif %}
+          {% endif %}
+
+          <h4>All submissions for this question by {{ selected_submission.username }}</h4>
+          <div class="assessment-table-wrap">
+            <table class="assessment-table">
+              <thead><tr><th>SI No.</th><th>Type</th><th>Status</th><th>Timestamp</th></tr></thead>
+              <tbody>
+                {% for history in submission_history %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ history.submission_type }}</td>
+                    <td><span class="assessment-pill">{{ history.status }}</span></td>
+                    <td>{{ history.submitted_at|date:"M j, Y H:i" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="assessment-empty" colspan="4">No submission history is available.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endif %}
+    </section>
+
+  {% elif active_tab == "reports" %}
+    <section class="assessment-panel assessment-placeholder-panel">
+      <h2>{{ active_tab|title }}</h2>
+      <p class="assessment-muted">This tab will be available in a future update.</p>
+    </section>
+  {% endif %}
+  <footer class="assessment-hosted-link">
+    Hosted link:
+    <a href="{% url 'assessment:assessment_view' assessment.slug %}">
+      {{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}
+    </a>
+  </footer>
+</main>
+{% endblock %}
+{% block extra_js %}
+  {% if active_tab == "moderators" and can_manage_moderators %}
+    <script src="{% static 'js/assessment_moderators.js' %}" defer></script>
+  {% endif %}
+{% endblock %}

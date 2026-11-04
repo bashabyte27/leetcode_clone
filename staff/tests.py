@@ -6,11 +6,12 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
+from assessment.models import ProgrammingLanguage
 from problems.models import Problem, TestCase as ProblemTestCase
 from submissions.models import Submission, SubmissionStatusChoices, UserSolvedProblem
 from users.models import Users
 
-from .services import import_users
+from .services import _ensure_languages, import_users
 
 
 class StaffAccessTests(TestCase):
@@ -44,6 +45,19 @@ class StaffAccessTests(TestCase):
         response = self.client.get(reverse('staff:problem_list'), {'q': 'Binary Search'})
         self.assertContains(response, target.title)
         self.assertNotContains(response, slug_match.title)
+
+    def test_language_import_syncs_assessment_runtime_catalog(self):
+        _ensure_languages()
+
+        self.assertEqual(ProgrammingLanguage.objects.count(), 7)
+        python = ProgrammingLanguage.objects.get(slug='python')
+        self.assertTrue(python.is_active)
+        self.assertTrue(python.is_judge0_executable)
+        self.assertEqual(python.judge0_language_id, 71)
+        self.assertEqual(python.problems_language.slug, 'python')
+
+        _ensure_languages()
+        self.assertEqual(ProgrammingLanguage.objects.count(), 7)
 
     def test_block_action_requires_post(self):
         self.client.force_login(self.staff)

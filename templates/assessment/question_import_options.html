@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Import questions | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow">
+        {% if section %}
+          <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}
+        {% elif assessment %}
+          <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">{{ assessment.name }}</a> / Questions
+        {% else %}
+          <a class="assessment-link" href="{% url 'assessment:dashboard' %}?tab=questions">Manage Questions</a>
+        {% endif %}
+        / Import questions
+      </div>
+      <h1>Import questions in bulk</h1>
+      <p>Choose the question type. You can upload an XLSX workbook template or a text-based PDF using the labelled format.</p>
+    </div>
+  </header>
+  <section class="assessment-panel assessment-create-question-options">
+    <div class="assessment-inline-actions">
+      <a class="assessment-button" href="{% url 'assessment:question_import' 'mcq' %}{% if assessment %}?assessment={{ assessment.pk }}{% if section %}&amp;section={{ section.pk }}{% endif %}{% endif %}">Import MCQs in bulk</a>
+      <a class="assessment-button-secondary" href="{% url 'assessment:question_import' 'coding' %}{% if assessment %}?assessment={{ assessment.pk }}{% if section %}&amp;section={{ section.pk }}{% endif %}{% endif %}">Import coding questions in bulk</a>
+      {% if section %}
+        <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">Cancel</a>
+      {% elif assessment %}
+        <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">Cancel</a>
+      {% else %}
+        <a class="assessment-button-secondary" href="{% url 'assessment:dashboard' %}?tab=questions">Cancel</a>
+      {% endif %}
+    </div>
+  </section>
+</main>
+{% endblock %}

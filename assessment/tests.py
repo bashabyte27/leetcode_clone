@@ -61,22 +61,19 @@ class AssessmentFormTests(TestCase):
             'sub_topic': 'Addition',
             'difficulty': McqQuestion.Difficulty.EASY,
             'statement': 'Solve the arithmetic problem.',
-            'code_snippet': '',
             'programming_language': self.lang.pk,
             'explanation': 'Because 2 + 2 equals 4.',
-            'allow_multiple': False,
-            'is_active': True,
         }
         payload.update(overrides)
         return payload
 
     def _mcq_options_data(self, *, correct_index=0, extra_rows=0):
         options = [
-            {'text': '2', 'is_correct': 'on' if i == correct_index else '', 'position': i + 1}
-            for i in range(4)
+            {'text': f'Option {i + 1}', 'is_correct': 'on' if i == correct_index else ''}
+            for i in range(2)
         ]
         form_data = {
-            'form-TOTAL_FORMS': str(4 + extra_rows),
+            'form-TOTAL_FORMS': str(2 + extra_rows),
             'form-INITIAL_FORMS': '0',
             'form-MIN_NUM_FORMS': '0',
             'form-MAX_NUM_FORMS': '1000',
@@ -84,20 +81,38 @@ class AssessmentFormTests(TestCase):
         for index, option in enumerate(options):
             form_data[f'form-{index}-text'] = option['text']
             form_data[f'form-{index}-is_correct'] = option['is_correct']
-            form_data[f'form-{index}-position'] = str(option['position'])
         for index in range(len(options), len(options) + extra_rows):
             form_data[f'form-{index}-text'] = ''
             form_data[f'form-{index}-is_correct'] = ''
-            form_data[f'form-{index}-position'] = ''
         return form_data
 
     def test_valid_mcq_form_and_slug_generation(self):
-        form = McqQuestionForm(data=self._mcq_payload())
+        form = McqQuestionForm(
+            data=self._mcq_payload(
+                slug='unrelated-input',
+                programming_language="",
+            )
+        )
         self.assertTrue(form.is_valid(), form.errors)
         instance = form.save(commit=False)
         instance.owner = self.user
         instance.save()
         self.assertEqual(instance.slug, 'what-is-2-2')
+        self.assertIsNone(instance.programming_language)
+
+    def test_programming_mcq_requires_a_programming_language(self):
+        form = McqQuestionForm(
+            data=self._mcq_payload(
+                question_type=McqQuestion.QuestionType.PROGRAMMING,
+                programming_language="",
+            )
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Choose a programming language for Programming MCQs.",
+            form.errors["programming_language"],
+        )
 
     def test_mcq_option_formset_requires_valid_counts(self):
         payload = self._mcq_payload()
@@ -126,27 +141,26 @@ class AssessmentFormTests(TestCase):
         self.assertFalse(invalid.is_valid())
         self.assertIn('Single-answer MCQs must have exactly one correct option.', str(invalid.non_form_errors()))
 
-    def test_mcq_options_duplicate_positions_and_deleted_rows_are_ignored(self):
+    def test_mcq_option_positions_are_assigned_in_form_order(self):
         form = McqQuestionForm(data=self._mcq_payload())
         self.assertTrue(form.is_valid(), form.errors)
         instance = form.save(commit=False)
         instance.owner = self.user
         instance.save()
 
-        bad_data = {
-            **self._mcq_options_data(correct_index=0),
-            'form-1-position': '1',
-            'form-2-text': '',
-            'form-2-position': '',
-            'form-2-is_correct': '',
-            'form-2-DELETE': 'on',
-        }
-        formset = McqOptionFormSet(data=bad_data, instance=instance)
-        self.assertFalse(formset.is_valid())
-        self.assertTrue(any('Duplicate positions are not allowed.' in str(error) for error in formset.errors))
+        formset = McqOptionFormSet(
+            data=self._mcq_options_data(correct_index=0),
+            instance=instance,
+        )
+        self.assertTrue(formset.is_valid(), formset.errors)
+        formset.save()
+        self.assertEqual(
+            list(instance.options.order_by('position').values_list('position', flat=True)),
+            [1, 2],
+        )
 
-    def test_multiple_answer_mcq_requires_at_least_one_correct_option(self):
-        form = McqQuestionForm(data=self._mcq_payload(allow_multiple=True))
+    def test_mcq_requires_exactly_one_correct_option(self):
+        form = McqQuestionForm(data=self._mcq_payload())
         self.assertTrue(form.is_valid(), form.errors)
         instance = form.save(commit=False)
         instance.owner = self.user
@@ -159,14 +173,12 @@ class AssessmentFormTests(TestCase):
             'form-MAX_NUM_FORMS': '1000',
             'form-0-text': 'A',
             'form-0-is_correct': '',
-            'form-0-position': '1',
             'form-1-text': 'B',
             'form-1-is_correct': '',
-            'form-1-position': '2',
         }
         formset = McqOptionFormSet(data=data, instance=instance)
         self.assertFalse(formset.is_valid())
-        self.assertIn('At least one correct option is required for multiple-answer MCQs.', str(formset.non_form_errors()))
+        self.assertIn('Single-answer MCQs must have exactly one correct option.', str(formset.non_form_errors()))
 
     def test_coding_question_and_limits_validation(self):
         payload = {
@@ -260,6 +272,7 @@ class AssessmentFormTests(TestCase):
                 'start_time': (now + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%S'),
                 'end_time': (now + timedelta(minutes=30)).strftime('%Y-%m-%dT%H:%M:%S'),
                 'duration_minutes': 60,
+                'passing_marks': 0,
                 'status': Assessment.Status.DRAFT,
                 'max_attempts': 2,
                 'result_release_policy': Assessment.ResultReleasePolicy.SCHEDULED,

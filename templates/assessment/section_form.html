@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if mode == "create" %}Add section{% else %}Edit section{% endif %} | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}">{{ assessment.name }}</a> / section</div>
+      <h1>{% if mode == "create" %}Add section{% else %}Edit {{ section.title }}{% endif %}</h1>
+      <p>Sections and their question assignments belong to this assessment.</p>
+    </div>
+  </header>
+  <section class="assessment-panel">
+    <form method="post" class="assessment-form-grid">
+      {% csrf_token %}
+      {% include "assessment/_form_fields.html" %}
+      <div class="assessment-field-full assessment-inline-actions">
+        <button class="assessment-button" type="submit">Save section</button>
+        <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}

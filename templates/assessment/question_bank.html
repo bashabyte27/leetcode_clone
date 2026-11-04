@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Question bank | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow">Assessment management</div>
+      <h1>Question bank</h1>
+      <p>Manage questions you own{% if request.user.is_staff %} and the shared staff catalog{% endif %}.</p>
+    </div>
+    <div class="assessment-inline-actions">
+      <a class="assessment-button-secondary" href="{% url 'assessment:mcq_question_create' %}">Create MCQ</a>
+      <a class="assessment-button" href="{% url 'assessment:coding_question_create' %}">Create coding question</a>
+    </div>
+  </header>
+  <form class="assessment-search" method="get">
+    <input type="search" name="q" value="{{ query }}" placeholder="Search title or topic" aria-label="Search question bank">
+    <button class="assessment-button" type="submit">Search</button>
+  </form>
+  <section class="assessment-panel">
+    <h2>MCQ questions</h2>
+    <div class="assessment-table-wrap">
+      <table class="assessment-table">
+        <thead><tr><th>Title</th><th>Topic</th><th>Type</th><th>Visibility</th><th></th></tr></thead>
+        <tbody>
+          {% for question in mcq_questions %}
+            <tr><td>{{ question.title }}</td><td>{{ question.topic }}</td><td>{{ question.get_question_type_display }}</td><td><span class="assessment-pill">{% if question.is_active %}Active{% else %}Inactive{% endif %}</span></td><td><a href="{% url 'assessment:mcq_question_edit' question.pk %}">Edit</a></td></tr>
+          {% empty %}<tr><td colspan="5" class="assessment-empty">No MCQ questions found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="assessment-panel">
+    <h2>Coding questions</h2>
+    <div class="assessment-table-wrap">
+      <table class="assessment-table">
+        <thead><tr><th>Title</th><th>Topic</th><th>Mode</th><th>Visibility</th><th></th></tr></thead>
+        <tbody>
+          {% for question in coding_questions %}
+            <tr><td>{{ question.title }}</td><td>{{ question.topic }}</td><td>{{ question.get_coding_mode_display }}</td><td><span class="assessment-pill">{% if question.is_active %}Active{% else %}Inactive{% endif %}</span></td><td><a href="{% url 'assessment:coding_question_edit' question.pk %}">Edit</a></td></tr>
+          {% empty %}<tr><td colspan="5" class="assessment-empty">No coding questions found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}

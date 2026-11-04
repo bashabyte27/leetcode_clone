@@ -959,7 +959,7 @@ For future changes:
 - Consider both local PostgreSQL behavior and Render deployment behavior.
 - Distinguish confirmed vulnerabilities from areas requiring audit.
 - Explain important changes before implementing them.
-- Validate after every substantive edit.
+- Validate aftwer every substantive edit.
 - Do not commit or push unless the user explicitly asks.
 
 18. IMPORTANT COMMANDS

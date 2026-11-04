@@ -8,7 +8,7 @@ Authoritative sources of truth:
 - Attempt.score:            cached aggregate for in-progress UI (NOT authoritative)
 
 Snapshots are created by a service at publication time (never inside save()).
-"""
+""" 
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
@@ -186,8 +186,8 @@ class McqOption(models.Model):
 class CodingQuestion(models.Model):
     class CodingMode(models.TextChoices):
         SCRATCH = "scratch", "Write From Scratch"
-        FIX = "fix", "Fix the Error"
-        COMPLETE = "complete", "Complete the Code"
+        FIX = "fix", "Fix the Bug"
+        COMPLETE = "complete", "Use Starter Code"
 
     class Difficulty(models.TextChoices):
         EASY = "easy", "Easy"
@@ -343,6 +343,7 @@ class Assessment(models.Model):
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     duration_minutes = models.PositiveIntegerField()
+    passing_marks = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
     status = models.CharField(
         max_length=20,
@@ -376,6 +377,10 @@ class Assessment(models.Model):
             models.CheckConstraint(
                 condition=Q(duration_minutes__gte=1),
                 name="assessment_duration_gte_1",
+            ),
+            models.CheckConstraint(
+                condition=Q(passing_marks__gte=0),
+                name="assessment_passing_marks_gte_0",
             ),
             models.CheckConstraint(
                 condition=Q(max_attempts__gte=1),
@@ -572,6 +577,7 @@ class AssessmentVersion(models.Model):
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     duration_minutes = models.PositiveIntegerField()
+    passing_marks = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     max_attempts = models.PositiveSmallIntegerField(default=1)
     result_release_policy = models.CharField(
         max_length=20,
@@ -608,6 +614,10 @@ class AssessmentVersion(models.Model):
             models.CheckConstraint(
                 condition=Q(duration_minutes__gte=1),
                 name="version_duration_gte_1",
+            ),
+            models.CheckConstraint(
+                condition=Q(passing_marks__gte=0),
+                name="version_passing_marks_gte_0",
             ),
             models.CheckConstraint(
                 condition=Q(max_attempts__gte=1),
@@ -1254,6 +1264,34 @@ class AssessmentSubmissionResult(models.Model):
 
     def __str__(self):
         return f"Submission {self.submission_id} - Test {self.test_case_snapshot_id}"
+
+
+class ViolationLog(models.Model):
+    attempt = models.ForeignKey(
+        Attempt,
+        on_delete=models.CASCADE,
+        related_name="violations",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="assessment_violations",
+    )
+    client_event_id = models.UUIDField(unique=True)
+    event_type = models.CharField(max_length=80)
+    occurred_at = models.DateTimeField(null=True, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["attempt", "created_at"]),
+            models.Index(fields=["user", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Attempt {self.attempt_id} - {self.event_type}"
 
 
 # ---------------------------------------------------------------------------

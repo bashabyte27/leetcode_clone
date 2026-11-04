@@ -44,59 +44,66 @@ class McqQuestionForm(forms.ModelForm):
             "sub_topic",
             "difficulty",
             "statement",
-            "code_snippet",
             "programming_language",
             "explanation",
             "allow_multiple",
-            "is_active",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-control"}),
-            "slug": forms.TextInput(attrs={"class": "form-control"}),
+            "slug": forms.HiddenInput(),
             "topic": forms.TextInput(attrs={"class": "form-control"}),
             "sub_topic": forms.TextInput(attrs={"class": "form-control"}),
             "difficulty": forms.Select(attrs={"class": "form-select"}),
             "question_type": forms.Select(attrs={"class": "form-select"}),
             "category": forms.Select(attrs={"class": "form-select"}),
             "statement": forms.Textarea(attrs={"class": "form-control", "rows": 5}),
-            "code_snippet": forms.Textarea(attrs={"class": "form-control", "rows": 5}),
             "explanation": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
             "programming_language": forms.Select(attrs={"class": "form-select"}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "allow_multiple": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["slug"].required = False
+        self.fields["sub_topic"].required = True
+        self.fields["difficulty"].initial = McqQuestion.Difficulty.EASY
+        self.fields["programming_language"].required = False
+        self.fields["programming_language"].help_text = (
+            "Required only for Programming MCQs."
+        )
         self.fields["programming_language"].queryset = (
             ProgrammingLanguage.objects.filter(is_active=True).order_by("name")
         )
 
     def clean_slug(self):
         slug_value = (self.cleaned_data.get("slug") or "").strip()
-        title = (self.cleaned_data.get("title") or "").strip()
-        if slug_value:
+        if self.instance.pk and slug_value:
             return slug_value
+        title = (self.cleaned_data.get("title") or "").strip()
         return _generate_unique_slug(McqQuestion, title, exclude_pk=self.instance.pk)
 
     def clean(self):
         cleaned_data = super().clean()
         question_type = cleaned_data.get("question_type")
         programming_language = cleaned_data.get("programming_language")
-        if question_type == McqQuestion.QuestionType.REGULAR and programming_language is not None:
-            cleaned_data["programming_language"] = programming_language
+        if (
+            question_type == McqQuestion.QuestionType.PROGRAMMING
+            and programming_language is None
+        ):
+            self.add_error(
+                "programming_language",
+                "Choose a programming language for Programming MCQs.",
+            )
         return cleaned_data
 
 
 class McqOptionForm(forms.ModelForm):
     class Meta:
         model = McqOption
-        fields = ["text", "is_correct", "position"]
+        fields = ["text", "is_correct"]
         widgets = {
             "text": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "is_correct": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "position": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
         }
 
     def clean_text(self):
@@ -107,14 +114,6 @@ class McqOptionForm(forms.ModelForm):
         if not value:
             raise forms.ValidationError("Option text is required.")
         return value
-
-    def clean_position(self):
-        position = self.cleaned_data.get("position")
-        if position is None:
-            raise forms.ValidationError("Position is required.")
-        if position < 1:
-            raise forms.ValidationError("Position must start at 1.")
-        return position
 
 
 class BaseMcqOptionFormSet(BaseInlineFormSet):
@@ -128,49 +127,39 @@ class BaseMcqOptionFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
         valid_forms = []
-        seen_positions = set()
-
         for form in self.forms:
-            if self._should_delete_form(form):
-                continue
-
-            raw_text = (self.data or {}).get(f"{form.prefix}-text", "")
-            raw_position = (self.data or {}).get(f"{form.prefix}-position", "")
-            if not raw_text.strip():
-                continue
-
-            valid_forms.append(form)
-            if raw_position == "":
-                continue
-            try:
-                position = int(raw_position)
-            except (TypeError, ValueError):
-                continue
-            if position in seen_positions:
-                form.add_error("position", "Duplicate positions are not allowed.")
-            else:
-                seen_positions.add(position)
+            if getattr(form, "cleaned_data", {}).get("text"):
+                valid_forms.append(form)
 
         if len(valid_forms) < 2:
             raise ValidationError("At least two non-empty options are required.")
 
-        question = getattr(self, "instance", None)
-        allow_multiple = bool(getattr(question, "allow_multiple", False))
-        if question is None and self.data:
-            allow_multiple = self.data.get("allow_multiple") in {"on", "True", "true", "1"}
-
         correct_count = sum(
             1 for form in valid_forms if (form.cleaned_data or {}).get("is_correct")
         )
-        if allow_multiple:
-            if correct_count < 1:
-                raise ValidationError(
-                    "At least one correct option is required for multiple-answer MCQs."
-                )
-        elif correct_count != 1:
+        question = getattr(self, "instance", None)
+        allow_multiple = bool(getattr(question, "allow_multiple", False))
+        if allow_multiple and correct_count < 1:
+            raise ValidationError(
+                "At least one correct option is required for multiple-answer MCQs."
+            )
+        if not allow_multiple and correct_count != 1:
             raise ValidationError(
                 "Single-answer MCQs must have exactly one correct option."
             )
+
+    def save(self, commit=True):
+        next_position = max(
+            (option.position for option in self.get_queryset()),
+            default=0,
+        ) + 1
+        for form in self.forms:
+            if not getattr(form, "cleaned_data", {}).get("text"):
+                continue
+            if form.instance.pk is None:
+                form.instance.position = next_position
+                next_position += 1
+        return super().save(commit=commit)
 
 
 McqOptionFormSet = inlineformset_factory(
@@ -178,9 +167,9 @@ McqOptionFormSet = inlineformset_factory(
     McqOption,
     form=McqOptionForm,
     formset=BaseMcqOptionFormSet,
-    extra=4,
-    can_delete=True,
-    fields=("text", "is_correct", "position"),
+    extra=2,
+    can_delete=False,
+    fields=("text", "is_correct"),
     fk_name="question",
 )
 
@@ -259,6 +248,8 @@ class CodingQuestionLanguageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["starter_code"].label = "Code snippet"
+        self.fields["buggy_code"].label = "Code snippet"
         self.fields["language"].queryset = (
             ProgrammingLanguage.objects.filter(is_active=True, is_judge0_executable=True).order_by("name")
         )
@@ -272,8 +263,11 @@ class CodingQuestionLanguageForm(forms.ModelForm):
 
 class BaseCodingQuestionLanguageFormSet(BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
+        extra = kwargs.pop("extra", None)
         kwargs.setdefault("prefix", "form")
         super().__init__(*args, **kwargs)
+        if extra is not None:
+            self.extra = extra
 
     def validate_unique(self):
         return None
@@ -308,8 +302,8 @@ CodingQuestionLanguageFormSet = inlineformset_factory(
     CodingQuestionLanguage,
     form=CodingQuestionLanguageForm,
     formset=BaseCodingQuestionLanguageFormSet,
-    extra=2,
-    can_delete=True,
+    extra=1,
+    can_delete=False,
     fields=("language", "starter_code", "buggy_code"),
     fk_name="question",
 )
@@ -394,8 +388,8 @@ CodingTestCaseFormSet = inlineformset_factory(
     CodingTestCase,
     form=CodingTestCaseForm,
     formset=BaseCodingTestCaseFormSet,
-    extra=3,
-    can_delete=True,
+    extra=1,
+    can_delete=False,
     fields=("input_data", "expected_output", "is_sample", "weight", "position", "explanation"),
     fk_name="question",
 )
@@ -413,6 +407,7 @@ class AssessmentForm(forms.ModelForm):
             "start_time",
             "end_time",
             "duration_minutes",
+            "passing_marks",
             "status",
             "max_attempts",
             "result_release_policy",
@@ -422,13 +417,25 @@ class AssessmentForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "slug": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-            "start_time": forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
-            "end_time": forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
+            "start_time": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"class": "form-control", "type": "datetime-local"},
+            ),
+            "end_time": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"class": "form-control", "type": "datetime-local"},
+            ),
             "duration_minutes": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "passing_marks": forms.NumberInput(
+                attrs={"class": "form-control", "min": 0, "step": "0.01"}
+            ),
             "status": forms.Select(attrs={"class": "form-select"}),
             "max_attempts": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
             "result_release_policy": forms.Select(attrs={"class": "form-select"}),
-            "results_release_at": forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
+            "results_release_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"class": "form-control", "type": "datetime-local"},
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -471,6 +478,11 @@ class AssessmentForm(forms.ModelForm):
         return cleaned_data
 
 
+class AssessmentDetailsForm(AssessmentForm):
+    class Meta(AssessmentForm.Meta):
+        fields = ["name", "slug", "start_time", "end_time", "duration_minutes"]
+
+
 class AssessmentSectionForm(forms.ModelForm):
     class Meta:
         model = AssessmentSection
@@ -492,6 +504,16 @@ class AssessmentSectionForm(forms.ModelForm):
             raise forms.ValidationError("Position is required.")
         if value < 1:
             raise forms.ValidationError("Position must be at least 1.")
+        if (
+            self.assessment is not None
+            and AssessmentSection.objects.filter(
+                assessment=self.assessment,
+                position=value,
+            ).exclude(pk=self.instance.pk).exists()
+        ):
+            raise forms.ValidationError(
+                "This section position is already used in the assessment."
+            )
         return value
 
     def clean_time_limit_minutes(self):
@@ -571,6 +593,21 @@ class AssessmentQuestionForm(forms.ModelForm):
                 raise forms.ValidationError(
                     "The selected section does not belong to this assessment."
                 )
+            position = cleaned_data.get("position")
+            if (
+                position is not None
+                and AssessmentQuestion.objects.filter(
+                    assessment=self.assessment,
+                    section=self.section,
+                    position=position,
+                )
+                .exclude(pk=self.instance.pk)
+                .exists()
+            ):
+                self.add_error(
+                    "position",
+                    "This position is already used in the section.",
+                )
 
         max_score = cleaned_data.get("max_score")
         if max_score is not None and max_score <= 0:
@@ -596,3 +633,75 @@ class AssessmentQuestionForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class AssessmentQuestionAddForm(forms.Form):
+    QUESTION_TYPES = (
+        ("mcq", "MCQ"),
+        ("coding", "Coding"),
+    )
+
+    question_type = forms.ChoiceField(choices=QUESTION_TYPES, widget=forms.HiddenInput)
+    question_id = forms.IntegerField(widget=forms.HiddenInput)
+    section = forms.ModelChoiceField(
+        queryset=AssessmentSection.objects.none(),
+        required=False,
+        empty_label="Select a section",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    max_score = forms.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        min_value=0.01,
+        initial=1,
+        widget=forms.NumberInput(
+            attrs={"class": "form-control", "min": "0.01", "step": "0.01"}
+        ),
+    )
+    negative_marks = forms.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(
+            attrs={"class": "form-control", "min": "0", "step": "0.01"}
+        ),
+    )
+
+    def __init__(self, *args, assessment, user, section=None, **kwargs):
+        self.assessment = assessment
+        self.user = user
+        self.section = section
+        super().__init__(*args, **kwargs)
+        self.fields["question_type"].initial = "coding"
+        if section is not None:
+            self.fields.pop("section")
+        else:
+            self.fields["section"].queryset = assessment.sections.order_by("position")
+        self.selected_question = None
+
+    def clean(self):
+        cleaned_data = super().clean()
+        section = self.section or cleaned_data.get("section")
+        if section and section.assessment_id != self.assessment.pk:
+            self.add_error("section", "Select a section from this assessment.")
+        elif section is None and self.section is None and self.assessment.sections.exists():
+            self.add_error("section", "Select a section for this question.")
+
+        question_type = cleaned_data.get("question_type")
+        question_id = cleaned_data.get("question_id")
+        if question_type and question_id is not None:
+            model = McqQuestion if question_type == "mcq" else CodingQuestion
+            queryset = model.objects.filter(is_active=True)
+            if not self.user.is_staff:
+                queryset = queryset.filter(owner=self.user)
+            queryset = queryset.exclude(
+                assessment_assignments__assessment=self.assessment
+            )
+            self.selected_question = queryset.filter(pk=question_id).first()
+            if self.selected_question is None:
+                self.add_error(
+                    "question_id",
+                    "This question is unavailable or already assigned to the assessment.",
+                )
+        return cleaned_data

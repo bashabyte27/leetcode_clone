@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Assessment management | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow">Administration</div>
+      <h1>{% if active_tab == "questions" %}Manage Questions{% else %}Manage Assessments{% endif %}</h1>
+    </div>
+    {% if active_tab == "assessments" %}
+      {% if request.user.is_faculty or request.user.is_staff %}
+        <a class="assessment-button" href="{% url 'assessment:assessment_create' %}">Create assessment</a>
+      {% endif %}
+    {% endif %}
+  </header>
+
+  <nav class="assessment-admin-tabs" aria-label="Assessment administration">
+    <a class="{% if active_tab == 'assessments' %}active{% endif %}" href="{% url 'assessment:dashboard' %}?tab=assessments">Manage Assessments</a>
+    <a class="{% if active_tab == 'questions' %}active{% endif %}" href="{% url 'assessment:dashboard' %}?tab=questions">Manage Questions</a>
+  </nav>
+
+  {% if active_tab == "questions" %}
+    <div class="assessment-question-manager-toolbar">
+      <div class="assessment-inline-actions">
+        <a class="assessment-button-secondary" href="{% url 'assessment:question_add' %}">Add question</a>
+        {% if can_create_questions %}
+          <a class="assessment-button" href="{% url 'assessment:question_create' %}">Create question</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <form
+      class="assessment-question-bank-filters"
+      method="get"
+      data-question-bank
+      data-search-url="{% url 'assessment:question_bank_search' %}"
+    >
+      <input type="hidden" name="tab" value="questions">
+      <label>
+        <span>Question category</span>
+        <select class="form-select" name="question_group" data-question-group>
+          {% for value, label in question_groups %}
+            <option value="{{ value }}" {% if question_group == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Search questions</span>
+        <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search by title or content..." data-question-search>
+      </label>
+      <label>
+        <span>Topic</span>
+        <input class="form-control" type="text" name="topic" value="{{ topic }}" list="question-bank-topics" placeholder="Select or type a topic" data-question-topic>
+        <datalist id="question-bank-topics">
+          {% for option in topic_options %}<option value="{{ option }}">{% endfor %}
+        </datalist>
+      </label>
+      <label>
+        <span>Subtopic</span>
+        <input class="form-control" type="text" name="subtopic" value="{{ subtopic }}" list="question-bank-subtopics" placeholder="Select or type a subtopic" data-question-subtopic>
+        <datalist id="question-bank-subtopics">
+          {% for option in subtopic_options %}<option value="{{ option }}">{% endfor %}
+        </datalist>
+      </label>
+      <label>
+        <span>Questions</span>
+        <select class="form-select" data-question-select>
+          <option value="">Select a question to edit</option>
+          {% for row in question_rows %}
+            <option value="{{ row.edit_url }}">{{ row.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="assessment-button-secondary" type="submit">Search</button>
+    </form>
+
+    <section class="assessment-panel">
+      <p class="assessment-muted" data-question-count>{{ question_count }} question{{ question_count|pluralize }}</p>
+      <div class="assessment-table-wrap">
+        <table class="assessment-table assessment-admin-table">
+          <thead><tr><th>Question</th><th>Category</th><th>Topic</th><th>Subtopic</th></tr></thead>
+          <tbody data-question-results>
+            {% for row in question_rows %}
+              <tr>
+                <td><a href="{{ row.edit_url }}">{{ row.title }}</a></td>
+                <td>{{ row.question_type }}</td>
+                <td>{{ row.topic }}</td>
+                <td>{{ row.subtopic|default:"—" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="4">No questions match these filters.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <script src="{% static 'js/assessment_question_bank.js' %}" defer></script>
+  {% else %}
+    <form class="assessment-admin-toolbar" method="get">
+      <input type="hidden" name="tab" value="assessments">
+      <label class="assessment-search assessment-admin-search">
+        <span class="visually-hidden">Search assessments</span>
+        <input type="search" name="q" value="{{ query }}" placeholder="Start typing..." aria-label="Search assessments">
+      </label>
+      <button class="assessment-button-secondary" type="submit">Search</button>
+    </form>
+    <p class="assessment-admin-intro">Assessments you can edit are below.</p>
+    <section class="assessment-panel">
+      <div class="assessment-table-wrap">
+        <table class="assessment-table assessment-admin-table">
+          <thead><tr><th>Assessment Name</th><th>Assessment URL</th><th>Owner</th><th>Start date</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for assessment in page_obj %}
+              <tr>
+                <td><a href="{% url 'assessment:assessment_detail' assessment.pk %}">{{ assessment.name }}</a></td>
+                <td><a href="{% url 'assessment:assessment_detail_by_slug' assessment.slug %}">{{ assessment.slug }}</a></td>
+                <td>{{ assessment.created_by.user_name }}</td>
+                <td>{% if assessment.start_time %}{{ assessment.start_time|date:"M j, Y" }}{% else %}—{% endif %}</td>
+                <td><span class="assessment-pill">{{ assessment.get_status_display }}</span></td>
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="5">No assessments yet. Create one to get started.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj.has_other_pages %}
+        <nav class="assessment-page-links" aria-label="Assessment pages">
+          {% if page_obj.has_previous %}<a class="assessment-button-secondary" href="?tab=assessments&q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+          <span class="assessment-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}<a class="assessment-button-secondary" href="?tab=assessments&q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+        </nav>
+      {% endif %}
+    </section>
+  {% endif %}
+</main>
+{% endblock %}

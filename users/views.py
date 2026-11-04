@@ -8,6 +8,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .forms import LoginForm, RegisterForm, ForgotPasswordForm
 from .models import Users, UserProfile, UserFollow
@@ -135,15 +136,23 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('problems:problem_list')
 
+    redirect_to = request.POST.get('next', request.GET.get('next', ''))
+    if not url_has_allowed_host_and_scheme(
+        redirect_to,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        redirect_to = ''
+
     form = LoginForm()
     if request.method == 'POST':
         form = LoginForm(request,data=request.POST)
         if form.is_valid():
             login(request, form.user_cache)
-            return redirect('problems:problem_list')  # fixed name
+            return redirect(redirect_to or 'problems:problem_list')
         else:
-            return render(request,'users/login.html',{'form':form})
-    return render(request, 'users/login.html', {'form': form})
+            return render(request, 'users/login.html', {'form': form, 'next': redirect_to})
+    return render(request, 'users/login.html', {'form': form, 'next': redirect_to})
 
 
 def logout_view(request):
@@ -300,4 +309,3 @@ def profile_context(request, to_user, editable=None):
 def profile_view(request, username):
     to_user = get_object_or_404(Users, user_name=username)
     return render(request, 'users/profile.html', profile_context(request, to_user))
-

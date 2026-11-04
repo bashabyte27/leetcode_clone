@@ -1,0 +1,132 @@
+from django.urls import path
+
+from . import views
+
+app_name = "assessment"
+
+urlpatterns = [
+    path("", views.dashboard, name="dashboard"),
+    path("create/", views.assessment_create, name="assessment_create"),
+    path(
+        "<slug:assessment_slug>/view/",
+        views.assessment_view,
+        name="assessment_view",
+    ),
+    path(
+        "<slug:assessment_slug>/api/start/",
+        views.start_attempt,
+        name="start_attempt",
+    ),
+    path(
+        "<slug:assessment_slug>/api/status/",
+        views.get_attempt_status,
+        name="get_attempt_status",
+    ),
+    path(
+        "<slug:assessment_slug>/api/violation/",
+        views.log_violation,
+        name="log_violation",
+    ),
+    path("<int:assessment_id>/", views.assessment_detail, name="assessment_detail"),
+    path(
+        "<int:assessment_id>/questions/create/",
+        views.question_create_options,
+        name="question_create_options",
+    ),
+    path(
+        "questions/import/options/",
+        views.question_import_options,
+        name="question_import_options",
+    ),
+    path(
+        "questions/import/template/<str:question_type>/",
+        views.question_import_template,
+        name="question_import_template",
+    ),
+    path(
+        "questions/import/<str:question_type>/",
+        views.question_import,
+        name="question_import",
+    ),
+    path(
+        "questions/search/",
+        views.question_bank_search,
+        name="question_bank_search",
+    ),
+    path("questions/add/", views.question_add, name="question_add"),
+    path("questions/create/", views.question_create, name="question_create"),
+    path(
+        "<int:assessment_id>/questions/add/",
+        views.assessment_question_add,
+        name="assessment_question_add",
+    ),
+    path(
+        "<int:assessment_id>/moderators/search/",
+        views.moderator_search,
+        name="moderator_search",
+    ),
+    path(
+        "<int:assessment_id>/moderators/add/",
+        views.moderator_add,
+        name="moderator_add",
+    ),
+    path(
+        "<int:assessment_id>/moderators/<uuid:moderator_id>/remove/",
+        views.moderator_remove,
+        name="moderator_remove",
+    ),
+    path("<int:assessment_id>/edit/", views.assessment_edit, name="assessment_edit"),
+    path("<int:assessment_id>/delete/", views.assessment_delete, name="assessment_delete"),
+    path(
+        "<int:assessment_id>/sections/create/",
+        views.section_create,
+        name="section_create",
+    ),
+    path(
+        "<int:assessment_id>/sections/<int:section_id>/edit/",
+        views.section_edit,
+        name="section_edit",
+    ),
+    path(
+        "<int:assessment_id>/sections/<int:section_id>/delete/",
+        views.section_delete,
+        name="section_delete",
+    ),
+    path(
+        "<int:assessment_id>/sections/<int:section_id>/questions/add/",
+        views.section_question_add,
+        name="section_question_add",
+    ),
+    path(
+        "<int:assessment_id>/sections/<int:section_id>/questions/search/",
+        views.section_question_search,
+        name="section_question_search",
+    ),
+    path(
+        "<int:assessment_id>/sections/<int:section_id>/questions/<int:assignment_id>/remove/",
+        views.section_question_remove,
+        name="section_question_remove",
+    ),
+    path("questions/", views.question_bank, name="question_bank"),
+    path("questions/mcq/create/", views.mcq_question_create, name="mcq_question_create"),
+    path(
+        "questions/mcq/<int:question_id>/edit/",
+        views.mcq_question_edit,
+        name="mcq_question_edit",
+    ),
+    path(
+        "questions/coding/create/",
+        views.coding_question_create,
+        name="coding_question_create",
+    ),
+    path(
+        "questions/coding/<int:question_id>/edit/",
+        views.coding_question_edit,
+        name="coding_question_edit",
+    ),
+    path(
+        "<slug:assessment_slug>/",
+        views.assessment_detail_by_slug,
+        name="assessment_detail_by_slug",
+    ),
+]

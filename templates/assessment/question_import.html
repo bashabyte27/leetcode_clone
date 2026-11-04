@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Import {{ question_type }} questions | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow">
+        {% if section %}
+          <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}
+        {% elif assessment %}
+          <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">{{ assessment.name }}</a> / Questions
+        {% else %}
+          <a class="assessment-link" href="{% url 'assessment:dashboard' %}?tab=questions">Manage Questions</a>
+        {% endif %}
+        / Import {{ question_type|upper }} questions
+      </div>
+      <h1>Import {{ question_type|upper }} questions</h1>
+      <p>Valid questions are saved to your question bank. Invalid rows are skipped and listed below.</p>
+    </div>
+  </header>
+
+  <section class="assessment-panel">
+    {% if errors %}
+      <div class="assessment-form-errors">
+        {% for error in errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    {% if request.method == "POST" %}
+      <div class="assessment-form-row">
+        <div class="assessment-field-full">
+          <strong>Import complete:</strong> {{ imported_count }} imported, {{ skipped|length }} skipped.
+        </div>
+      </div>
+      {% if skipped %}
+        <div class="assessment-subsection">
+          <h2>Skipped records</h2>
+          <ul class="assessment-errors">
+            {% for item in skipped %}<li><strong>{{ item.record }}</strong>: {{ item.errors|join:", " }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% if assessment %}<input type="hidden" name="assessment" value="{{ assessment.pk }}">{% endif %}
+      {% if section %}
+        <input type="hidden" name="section" value="{{ section.pk }}">
+        <p class="assessment-muted">Imported questions will be added to <strong>{{ section.title }}</strong>.</p>
+      {% elif assessment %}
+        <div class="assessment-field">
+          <label for="id_section_id">Add questions to section</label>
+          <select class="form-select" name="section_id" id="id_section_id">
+            {% for item in sections %}
+              <option value="{{ item.pk }}" {% if forloop.first %}selected{% endif %}>{{ item.title }}</option>
+            {% empty %}
+              <option value="">Create a default Questions section</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% else %}
+        <p class="assessment-muted">Imported questions will be added to your question bank. You can add them to assessments later.</p>
+      {% endif %}
+      <div class="assessment-field">
+        <label for="id_file">XLSX or PDF file</label>
+        <input class="form-control" type="file" name="file" id="id_file" accept=".xlsx,.pdf" required>
+        <small class="assessment-muted">Maximum file size: 10 MB. Scanned PDFs and OCR are not supported.</small>
+      </div>
+      <div class="assessment-inline-actions" style="margin-top:16px">
+        <button class="assessment-button" type="submit">Import questions</button>
+        <a class="assessment-button-secondary" href="{{ template_url }}">Download XLSX template</a>
+        {% if assessment %}
+          <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">Cancel</a>
+        {% else %}
+          <a class="assessment-button-secondary" href="{% url 'assessment:question_import_options' %}">Back</a>
+        {% endif %}
+      </div>
+    </form>
+
+    <div class="assessment-subsection">
+      <h2>Prepare your file</h2>
+      <p class="assessment-muted">The easiest option is the XLSX template above. Keep its sheet names and headers unchanged. Each file can contain up to 500 questions and must be 10 MB or smaller. Valid rows are imported; invalid rows are skipped with an explanation.</p>
+      {% if question_type == "mcq" %}
+        <p class="assessment-muted">Enter at least two options. For a single-answer question, mark one correct option. For a multi-answer question, enable Allow multiple answers and mark every correct option. Programming language is optional for aptitude, quantitative, reasoning, and verbal questions; it is required only for Programming MCQs.</p>
+        <details class="assessment-format-guide">
+        <summary><strong>PDF format and example</strong></summary>
+        <p class="assessment-muted">Use a text-based PDF (not a scan). Start each question with <code>=== MCQ ===</code> and use these exact field names. Omit programming_language for non-programming MCQs.</p>
+        <pre class="assessment-code-block">=== MCQ ===
+title: What is 2 + 2?
+question_type: regular
+category: quant
+topic: Arithmetic
+sub_topic: Addition
+difficulty: easy
+statement: Choose the correct answer.
+explanation: Add the two numbers.
+allow_multiple: false
+option_1: 3
+option_2: 4
+correct_options: 2</pre>
+        <p class="assessment-muted">Allowed values: question_type = regular or programming; category = aptitude, quant, reasoning, verbal, or programming; difficulty = easy, medium, or hard. Add option_3, option_4, etc. as needed. Set allow_multiple to true when several options are correct. correct_options is a comma-separated list such as <code>1,3</code>; when allow_multiple is false, provide exactly one number.</p>
+        </details>
+      {% else %}
+        <p class="assessment-muted">Use the same unique question_key to connect each coding problem to its language and test-case rows. Every problem needs at least one supported language and one test case.</p>
+        <details class="assessment-format-guide">
+        <summary><strong>PDF format and example</strong></summary>
+        <p class="assessment-muted">Use a text-based PDF (not a scan). Start each problem with <code>=== CODING ===</code>. Add one language block per language and one test-case block per case.</p>
+        <pre class="assessment-code-block">=== CODING ===
+question_key: sum-two
+title: Sum two numbers
+coding_mode: scratch
+topic: Algorithms
+subtopic: Basics
+difficulty: easy
+statement: Read two integers and return their sum.
+input_format: Two integers
+output_format: Their sum
+
+=== LANGUAGE ===
+question_key: sum-two
+programming_language: Python
+
+=== TEST CASE ===
+question_key: sum-two
+input_data: 2 3
+expected_output: 5
+is_sample: true
+weight: 1</pre>
+        <p class="assessment-muted">For complete/fix, add <code>code_snippet:</code> in each language block, then the code, ending with <code>END_CODE_SNIPPET</code> on its own line. Allowed modes: scratch, complete, fix. Difficulty: easy, medium, hard.</p>
+        </details>
+      {% endif %}
+      <p class="assessment-muted">Language names must match an active language in the question manager. Keep PDF field names and section markers exactly as shown.</p>
+
+      <details class="assessment-ai-prompt">
+        <summary><strong>Generate an import file with AI</strong></summary>
+        <p class="assessment-muted">Copy this prompt, then attach or paste your source questions into your AI tool.</p>
+        <textarea id="question-import-ai-prompt" class="assessment-prompt-input" rows="14" readonly>{% if question_type == "mcq" %}Create an XLSX workbook for importing MCQs into BashaByte. Use only the questions and answers in my source. Do not invent or guess missing information.
+
+Create one sheet named MCQ. Keep this exact header order:
+title, question_type, category, topic, sub_topic, difficulty, statement, programming_language, explanation, allow_multiple, option_1, option_1_correct, option_2, option_2_correct, ... through option_10, option_10_correct.
+
+Add one question per row. Each question needs a title, question_type, category, topic, sub_topic, difficulty, statement, and at least two options. Use these values:
+- question_type: regular or programming
+- category: aptitude, quant, reasoning, verbal, or programming
+- difficulty: easy, medium, or hard
+- Set allow_multiple to true only when the source explicitly permits multiple correct answers; otherwise set it to false.
+- Mark every correct option true and every other option false. If allow_multiple is false, exactly one option must be true. If allow_multiple is true, mark all correct options true (at least one).
+- Leave programming_language blank for regular MCQs. For programming MCQs, use an active language name from my source; if it is not given, leave it blank and report it as missing.
+- Leave explanation blank when the source does not provide one.
+
+Return the XLSX file and a short list of any questions with missing required information. Do not add extra questions.
+
+If creating a PDF instead, use selectable text. Start each question with === MCQ === and use these labels: title:, question_type:, category:, topic:, sub_topic:, difficulty:, statement:, programming_language: (omit for non-programming MCQs), explanation:, allow_multiple:, option_1:, option_2:, etc., correct_options:. Set allow_multiple to true for multi-answer questions; correct_options must list every correct option number separated by commas (for example 1,3). When allow_multiple is false, provide exactly one number. Do not add prose inside the records.{% else %}Create a valid, downloadable XLSX workbook for importing coding questions into BashaByte. Use the coding-question source or generation requirements I provide. If I ask you to generate questions from a topic, create the requested questions and their code/test data; do not omit required rows or return only a question list.
+
+The required worksheet names and exact first-row headers are:
+- Coding: question_key, title, coding_mode, topic, subtopic, difficulty, statement, input_format, output_format, constraints_text, explanation, time_limit_seconds, memory_limit_kb
+- Languages: question_key, programming_language, code_snippet
+- TestCases: question_key, input_data, expected_output, is_sample, weight, explanation
+
+Use the downloaded BashaByte template if available. Preserve these sheet names and headers exactly. The workbook may also contain the template's Instructions sheet. Do not rename or remove required sheets.
+
+Create one Coding row per requested question, one Languages row per supported language per question, and one TestCases row per test case. Use a unique question_key and repeat it exactly in all related rows.
+- Use only coding_mode values scratch, complete, or fix, and difficulty values easy, medium, or hard.
+- Use the programming language(s) explicitly requested. Do not leave a question without a language row. If no language is specified, ask me before making the workbook rather than guessing.
+- For scratch, leave code_snippet blank. For complete, put the incomplete starter program in code_snippet. For fix, put the intentionally buggy program in code_snippet. Do not put a solution in the snippet.
+- Every question needs at least one test case with non-empty expected_output, is_sample set to true or false, and a positive whole-number weight.
+- Do not add a position column: BashaByte assigns test-case positions from their row order within each question.
+- Use time_limit_seconds = 2 and memory_limit_kb = 262144 only when limits are not specified. Leave optional fields blank when unknown.
+- If I provide existing questions, do not add questions beyond them. If I explicitly request a number of newly generated questions, return exactly that number.
+
+Before returning the file, verify that it is a real XLSX, not a markdown table, CSV/TSV, or text file renamed with an .xlsx extension. Confirm it opens successfully, contains all three required sheets with the exact headers above, and has at least one matching language row and test-case row for every question. Confirm the question keys, code snippets, modes, difficulties, expected outputs, and weights are consistent. If required information is missing or a language is not supported, report it clearly and do not claim the workbook is import-ready.
+
+Return the actual XLSX workbook and a short summary of the number of questions, plus any missing or invalid information.{% endif %}</textarea>
+        <div class="assessment-inline-actions" style="margin-top:8px">
+          <button class="assessment-button-secondary" type="button" data-copy-import-prompt>Copy AI prompt</button>
+          <span class="assessment-muted" data-copy-prompt-status role="status" aria-live="polite"></span>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/assessment_question_import.js' %}" defer></script>{% endblock %}

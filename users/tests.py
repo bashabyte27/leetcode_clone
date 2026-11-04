@@ -1,11 +1,36 @@
 from django.test import TestCase
-
 from django.urls import reverse
 
 from .models import Users
 
 
 class LoginTests(TestCase):
+	def test_login_returns_to_safe_next_url(self):
+		user = Users.objects.create_user('student@example.com', 'student_user', 'Password123!')
+		response = self.client.post(reverse('users:login'), {
+			'username_or_email': user.user_name,
+			'password': 'Password123!',
+			'next': '/assessments/sample_assessment_1/view/',
+		})
+		self.assertRedirects(
+			response,
+			'/assessments/sample_assessment_1/view/',
+			fetch_redirect_response=False,
+		)
+
+	def test_login_rejects_external_next_url(self):
+		user = Users.objects.create_user('student@example.com', 'student_user', 'Password123!')
+		response = self.client.post(reverse('users:login'), {
+			'username_or_email': user.user_name,
+			'password': 'Password123!',
+			'next': 'https://example.com/attacker',
+		})
+		self.assertRedirects(
+			response,
+			reverse('problems:problem_list'),
+			fetch_redirect_response=False,
+		)
+
 	def test_blocked_user_sees_acknowledgement_and_stays_logged_out(self):
 		user = Users.objects.create_user('blocked@example.com', 'blocked_user', 'Password123!', is_active=False)
 		response = self.client.post(reverse('users:login'), {

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Add questions | {{ assessment.name }} | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}</div>
+      <h1>Add questions to {{ section.title }}</h1>
+      <p>Filter your question bank, select the questions to add, then add them all to this section.</p>
+    </div>
+  </header>
+  <section class="assessment-panel">
+    {% if form.errors %}
+      <div class="assessment-form-errors">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        {% for error in form.question_id.errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="assessment-section-question-layout">
+    <form method="get" class="assessment-section-question-filters">
+      <label>
+        <span>Question type</span>
+        <select class="form-select" name="question_type" data-section-question-type>
+          {% for value, label in question_types %}
+            <option value="{{ value }}" {% if question_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label data-section-question-category{% if question_type != "mcq" %} hidden{% endif %}>
+        <span>Question category</span>
+        <select class="form-select" name="category">
+          <option value="">All MCQ categories</option>
+          {% for value, label in question_categories %}
+            <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Search</span>
+        <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Question title or content">
+      </label>
+      <label>
+        <span>Topic</span>
+        <input class="form-control" type="text" name="topic" value="{{ topic }}" list="section-question-topics" placeholder="Select or type a topic">
+        <datalist id="section-question-topics">{% for value in topic_options %}<option value="{{ value }}">{% endfor %}</datalist>
+      </label>
+      <label>
+        <span>Subtopic</span>
+        <input class="form-control" type="text" name="subtopic" value="{{ subtopic }}" list="section-question-subtopics" placeholder="Select or type a subtopic">
+        <datalist id="section-question-subtopics">{% for value in subtopic_options %}<option value="{{ value }}">{% endfor %}</datalist>
+      </label>
+      <button class="assessment-button-secondary" type="submit">Apply filters</button>
+    </form>
+
+    <form method="post" class="assessment-section-question-results">
+      {% csrf_token %}
+      <input type="hidden" name="question_type" value="{{ question_type }}">
+      <input type="hidden" name="category" value="{{ category }}">
+      <input type="hidden" name="q" value="{{ query }}">
+      <input type="hidden" name="topic" value="{{ topic }}">
+      <input type="hidden" name="subtopic" value="{{ subtopic }}">
+      <div class="assessment-section-question-results-head">
+        <p class="assessment-muted">{{ question_rows|length }} available question{{ question_rows|length|pluralize }}</p>
+      </div>
+      {% for question in question_rows %}
+        <label class="assessment-section-question-option">
+          <input type="checkbox" name="selected_questions" value="{{ question.id }}" data-section-question-checkbox>
+          <span>
+            <strong>{{ question.title }}</strong>
+            <small>{{ question.category }} · {{ question.topic }}{% if question.subtopic %} · {{ question.subtopic }}{% endif %}</small>
+            <span class="assessment-muted">{{ question.statement|truncatewords:35 }}</span>
+          </span>
+        </label>
+      {% empty %}
+        <p class="assessment-empty">No available questions match these filters.</p>
+      {% endfor %}
+      <div class="assessment-section-question-save">
+        <button class="assessment-button" type="submit" name="bulk_add" value="1" data-bulk-add disabled>Save changes</button>
+      </div>
+    </form>
+    </div>
+    <div class="assessment-inline-actions" style="margin-top:16px">
+      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">Back to assessment</a>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'js/assessment_section_question_add.js' %}" defer></script>{% endblock %}

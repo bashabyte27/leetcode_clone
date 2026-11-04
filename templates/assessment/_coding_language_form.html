@@ -1,0 +1,10 @@
+<div class="assessment-form-row" data-formset-row data-language-row{% if language_form.instance.pk %} data-existing-language{% endif %}>
+  {% for hidden in language_form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% for field in language_form.visible_fields %}
+    <div class="assessment-field{% if field.name != 'language' %} assessment-field-full{% endif %}"{% if field.name == 'starter_code' %} data-code-field="complete"{% elif field.name == 'buggy_code' %} data-code-field="fix"{% endif %}>
+      {{ field.label_tag }}{{ field }}
+      {% for error in field.errors %}<div class="assessment-errors">{{ error }}</div>{% endfor %}
+    </div>
+  {% endfor %}
+  {% for error in language_form.non_field_errors %}<div class="assessment-form-errors assessment-field-full">{{ error }}</div>{% endfor %}
+</div>

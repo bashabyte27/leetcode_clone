@@ -1,0 +1,14 @@
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+{% for field in form.visible_fields %}
+  <div class="assessment-field{% if field.name == 'description' or field.name == 'statement' or field.name == 'instructions' or field.name == 'explanation' or field.name == 'input_format' or field.name == 'output_format' or field.name == 'constraints_text' or field.name == 'code_snippet' %} assessment-field-full{% endif %}"{% if kind == "mcq" and field.name == "programming_language" %} data-mcq-programming-language{% if form.question_type.value != "programming" %} hidden{% endif %}{% endif %}>
+    {% if field.field.widget.input_type == "checkbox" %}
+      <div class="assessment-checkbox">{{ field }}{{ field.label_tag }}</div>
+    {% else %}
+      {{ field.label_tag }}
+      {{ field }}
+    {% endif %}
+    {% for error in field.errors %}<div class="assessment-errors">{{ error }}</div>{% endfor %}
+    {% if field.help_text %}<small class="assessment-muted">{{ field.help_text }}</small>{% endif %}
+  </div>
+{% endfor %}
+{% for error in form.non_field_errors %}<div class="assessment-form-errors assessment-field-full">{{ error }}</div>{% endfor %}

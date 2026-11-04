@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Add question | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  {% include "assessment/_messages.html" %}
+  <header class="assessment-header">
+    <div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:dashboard' %}?tab=questions">Manage Questions</a> / Add question</div>
+      <h1>Add question to an assessment</h1>
+      <p>Choose an assessment, then find and add one of your existing questions.</p>
+    </div>
+  </header>
+  <section class="assessment-panel">
+    {% if has_assessments %}
+      <form method="post" class="assessment-form-grid">
+        {% csrf_token %}
+        <div class="assessment-field">
+          <label for="assessment-id">Assessment</label>
+          <select class="form-select" id="assessment-id" name="assessment_id" required>
+            <option value="">Select an assessment</option>
+            {% for assessment in assessments %}
+              <option value="{{ assessment.pk }}">{{ assessment.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="assessment-field-full assessment-inline-actions">
+          <button class="assessment-button" type="submit">Continue to questions</button>
+          <a class="assessment-button-secondary" href="{% url 'assessment:dashboard' %}?tab=questions">Cancel</a>
+        </div>
+      </form>
+    {% else %}
+      <p class="assessment-empty">You need an assessment you can manage before you can add a question.</p>
+      <div class="assessment-inline-actions">
+        {% if request.user.is_staff or request.user.is_faculty %}
+          <a class="assessment-button" href="{% url 'assessment:assessment_create' %}">Create assessment</a>
+        {% endif %}
+        <a class="assessment-button-secondary" href="{% url 'assessment:dashboard' %}?tab=questions">Back to questions</a>
+      </div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
