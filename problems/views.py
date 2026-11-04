@@ -8,6 +8,7 @@ from django.urls import reverse
 from .models import Problem, TestCase
 from submissions.models import Submission, SubmissionStatusChoices
 from submissions.judge import normalize_case_text
+from assessment.access import user_has_active_exam
 
 
 
@@ -106,6 +107,7 @@ def problem_detail(request, problemname):
         'sample_cases': sample_cases,
         'prev_problem': prev_problem,
         'next_problem': next_problem,
+        'coding_mode': 'practice',
     }
     return render(request, 'problems/problem_detail.html', context)
 
@@ -135,10 +137,20 @@ def problem_get_list(request):
 
 def discussion(request,problemname):
     #for every problem one discussion table
+    if user_has_active_exam(request.user):
+        return HttpResponse(
+            "Discussion content is unavailable during an assessment.",
+            status=403,
+        )
     return HttpResponse("Discussion tab is Under development")
 
 
 def editorial(request, problemname):
+    if user_has_active_exam(request.user):
+        return HttpResponse(
+            "Editorial content is unavailable during an assessment.",
+            status=403,
+        )
     problem = get_object_or_404(Problem, slug=problemname)
     editorial = getattr(problem, 'editorial', None)
     return render(request, 'problems/partials/editorial.html', {'editorial': editorial})

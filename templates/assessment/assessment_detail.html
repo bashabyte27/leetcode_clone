@@ -12,6 +12,11 @@
     </div>
     <div class="assessment-inline-actions">
       <a class="assessment-button-secondary" href="{% url 'assessment:assessment_edit' assessment.pk %}">Full settings</a>
+      {% if can_publish and assessment.status != "archived" %}
+        <form method="post" action="{% url 'assessment:assessment_publish' assessment.pk %}">
+          {% csrf_token %}<button class="assessment-button" type="submit">{% if assessment.status == "draft" %}Publish assessment{% else %}Publish changes{% endif %}</button>
+        </form>
+      {% endif %}
       <form method="post" action="{% url 'assessment:assessment_delete' assessment.pk %}" onsubmit="return confirm('Delete this assessment and its sections?');">
         {% csrf_token %}<button class="assessment-button-danger" type="submit">Delete assessment</button>
       </form>
@@ -22,6 +27,7 @@
     <a class="{% if active_tab == 'details' %}active{% endif %}" href="?tab=details">Details</a>
     <a class="{% if active_tab == 'questions' %}active{% endif %}" href="?tab=questions">Questions</a>
     <a class="{% if active_tab == 'moderators' %}active{% endif %}" href="?tab=moderators">Moderators</a>
+    <a class="{% if active_tab == 'participants' %}active{% endif %}" href="?tab=participants">Signups</a>
     <a class="{% if active_tab == 'leaderboard' %}active{% endif %}" href="?tab=leaderboard">Leaderboard</a>
     <a class="{% if active_tab == 'submissions' %}active{% endif %}" href="?tab=submissions">Submissions</a>
     <a class="{% if active_tab == 'reports' %}active{% endif %}" href="?tab=reports">Reports</a>
@@ -56,6 +62,12 @@
           <button class="assessment-button" type="submit">Save changes</button>
         </div>
       </form>
+      <footer class="assessment-hosted-link">
+        Hosted assessment:
+        <a href="{% url 'assessment:assessment_view' assessment.slug %}">
+          {{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}
+        </a>
+      </footer>
     </section>
 
   {% elif active_tab == "questions" %}
@@ -257,6 +269,88 @@
       </div>
     </section>
 
+  {% elif active_tab == "participants" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head">
+        <div>
+          <h2>Signups</h2>
+          <p class="assessment-muted">Users are enrolled when they open the hosted link. Review their attempts and manage access here.</p>
+        </div>
+      </div>
+      <form method="get" class="assessment-inline-actions" role="search">
+        <input type="hidden" name="tab" value="participants">
+        <label class="visually-hidden" for="signup-search">Search signups</label>
+        <input id="signup-search" name="q" value="{{ signup_search }}" placeholder="Search name or email">
+        <button class="assessment-button-secondary" type="submit">Search</button>
+      </form>
+      <div class="assessment-table-wrap">
+        <table class="assessment-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Signup status</th><th>Joined</th><th>Attempts</th><th>Latest attempt</th>{% if can_manage_participants %}<th>Actions</th>{% endif %}</tr></thead>
+          <tbody>
+            {% for participant in participants %}
+              <tr>
+                <td>{{ participant.user.user_name }}</td>
+                <td>{{ participant.user.email }}</td>
+                <td><span class="assessment-pill">{{ participant.get_status_display }}</span></td>
+                <td>{{ participant.registered_at|date:"M j, Y H:i" }}</td>
+                <td>{{ participant.attempt_count }} / {{ participant.allowed_attempts }}</td>
+                <td>
+                  {% with latest_attempt=participant.signup_attempts.0 %}
+                    {% if latest_attempt %}
+                      {{ latest_attempt.get_status_display }} · {{ latest_attempt.started_at|date:"M j, Y H:i" }}
+                    {% else %}
+                      Not started
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                {% if can_manage_participants %}
+                  <td>
+                    <div class="assessment-inline-actions">
+                      {% if participant.status == "disqualified" or participant.status == "removed" %}
+                        <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'restore' %}">
+                          {% csrf_token %}<button class="assessment-button-secondary" type="submit">Restore access</button>
+                        </form>
+                      {% else %}
+                        <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'block' %}" onsubmit="return confirm('Block this user from the assessment?');">
+                          {% csrf_token %}<button class="assessment-button-secondary" type="submit">Block</button>
+                        </form>
+                        <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'remove' %}" onsubmit="return confirm('Remove this user from the assessment?');">
+                          {% csrf_token %}<button class="assessment-button-danger" type="submit">Remove</button>
+                        </form>
+                      {% endif %}
+                      <details>
+                        <summary>Attempts</summary>
+                        <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'grant_attempts' %}">
+                          {% csrf_token %}
+                          <label>Extra attempts <input type="number" name="extra_attempts" min="1" max="10" value="1" required></label>
+                          <label>Reason <input type="text" name="reason" required></label>
+                          <button class="assessment-button-secondary" type="submit">Grant attempts</button>
+                        </form>
+                        <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'restart' %}" onsubmit="return confirm('Cancel any active attempt and allow this user to start again? Previous answers will be retained for audit.');">
+                          {% csrf_token %}
+                          <label>Reason <input type="text" name="reason" placeholder="Optional" maxlength="500"></label>
+                          <button class="assessment-button-secondary" type="submit">Restart assessment</button>
+                        </form>
+                        {% if participant.signup_attempts %}
+                          <ol>
+                            {% for attempt in participant.signup_attempts %}
+                              <li>Attempt {{ attempt.attempt_number }} — {{ attempt.get_status_display }} ({{ attempt.started_at|date:"M j, Y H:i" }})</li>
+                            {% endfor %}
+                          </ol>
+                        {% endif %}
+                      </details>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="{% if can_manage_participants %}7{% else %}6{% endif %}">No users have opened the hosted link yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   {% elif active_tab == "submissions" %}
     <section class="assessment-panel">
       <div class="assessment-card-head">
@@ -354,12 +448,6 @@
       <p class="assessment-muted">This tab will be available in a future update.</p>
     </section>
   {% endif %}
-  <footer class="assessment-hosted-link">
-    Hosted link:
-    <a href="{% url 'assessment:assessment_view' assessment.slug %}">
-      {{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}
-    </a>
-  </footer>
 </main>
 {% endblock %}
 {% block extra_js %}

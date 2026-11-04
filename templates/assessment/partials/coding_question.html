@@ -1,0 +1,72 @@
+<article class="exam-coding-question" data-question-id="{{ question.pk }}">
+  <div class="exam-question-heading">
+    <div>
+      <p class="assessment-kicker mb-1">Question · Coding</p>
+      <h2 class="h4 mb-0">{{ coding.title }}</h2>
+    </div>
+    <span class="exam-question-marks">{{ question.max_score }} marks{% if question.negative_marks %} · −{{ question.negative_marks }}{% endif %}</span>
+  </div>
+  <div class="exam-coding-workspace">
+    <section class="exam-coding-description">
+      <div class="exam-coding-tabs" role="tablist" aria-label="Coding question panels">
+        <button type="button" class="active" data-coding-tab="description" role="tab" aria-selected="true">Description</button>
+        <button type="button" data-coding-tab="submissions" role="tab" aria-selected="false">Submissions</button>
+      </div>
+      <div class="exam-coding-panel active" data-coding-panel="description" role="tabpanel">
+        <div class="exam-question-statement">{{ coding.statement|linebreaksbr }}</div>
+        {% if coding.input_format %}<h3>Input</h3><div>{{ coding.input_format|linebreaksbr }}</div>{% endif %}
+        {% if coding.output_format %}<h3>Output</h3><div>{{ coding.output_format|linebreaksbr }}</div>{% endif %}
+        {% if coding.constraints_text %}<h3>Constraints</h3><div>{{ coding.constraints_text|linebreaksbr }}</div>{% endif %}
+        {% for sample in samples %}
+          <section class="exam-sample-case">
+            <h3>Example {{ sample.position }}</h3>
+            <p><strong>Input</strong></p><pre>{{ sample.input_data }}</pre>
+            <p><strong>Output</strong></p><pre>{{ sample.expected_output }}</pre>
+            {% if sample.explanation %}<p>{{ sample.explanation|linebreaksbr }}</p>{% endif %}
+          </section>
+        {% endfor %}
+      </div>
+      <div class="exam-coding-panel" data-coding-panel="submissions" role="tabpanel" hidden>
+        <div class="exam-own-submissions">
+          {% for submission in submissions %}
+            <details class="exam-own-submission">
+              <summary>{{ submission.status }} · {{ submission.score }} marks · {{ submission.submitted_at|date:"M j, H:i:s" }}</summary>
+              <pre><code>{{ submission.source_code }}</code></pre>
+            </details>
+          {% empty %}
+            <p class="text-secondary">No submissions for this question in this attempt.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    <section class="exam-coding-editor">
+      <div class="exam-editor-toolbar">
+        <label class="visually-hidden" for="exam-language-{{ question.pk }}">Programming language</label>
+        <select id="exam-language-{{ question.pk }}" class="form-select form-select-sm" data-coding-language>
+          {% for language in languages %}
+            <option value="{{ language.language_id }}" data-slug="{{ language.language_slug }}"
+              data-starter="{{ language.starter_code|escape }}"
+              {% if forloop.first %}selected{% endif %}>{{ language.language_name }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn btn-success btn-sm" data-run-code>Run</button>
+        <button type="button" class="btn btn-primary btn-sm" data-submit-code>Submit</button>
+      </div>
+      {% include "problems/partials/monaco_container.html" with coding_mode="assessment" %}
+      <div class="exam-test-panel">
+        <div class="exam-test-tabs" role="tablist" aria-label="Test cases and results">
+          <button type="button" class="active" data-test-tab="testcase">Testcase</button>
+          <button type="button" data-test-tab="result">Test Result</button>
+        </div>
+        <div class="exam-test-content active" data-test-panel="testcase">
+          <label for="exam-custom-input-{{ question.pk }}">Sample input</label>
+          <textarea id="exam-custom-input-{{ question.pk }}" rows="3" readonly>{% if samples %}{{ samples.0.input_data }}{% endif %}</textarea>
+          <p class="text-secondary small mb-0">Run checks all published sample cases. Submit checks all cases.</p>
+        </div>
+        <div class="exam-test-content" data-test-panel="result" hidden data-test-results aria-live="polite">
+          <p class="text-secondary">Run or submit your code to see results.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</article>

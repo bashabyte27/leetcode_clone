@@ -1,22 +1,28 @@
-# Hosted assessment landing page
+# Hosted assessments
 
-## Files and integration points
+## Exam runner
 
-- `models.py`: uses the existing assessment, version, section snapshot, participant, and attempt records; adds passing marks and `ViolationLog`.
-- `views.py` and `urls.py`: hosted landing page plus start, status, and proctoring APIs.
-- `templates/assessment/assessment_view.html`: standalone Bootstrap landing and exam shell. It deliberately contains only an empty `#section-container` for future section UI.
-- `static/css/assessment_view.css`: responsive landing, exam-shell, and proctoring styles.
-- `static/js/assessment_view.js`: system checks, start/resume flow, API calls, and server-deadline display.
-- `static/js/proctor.js`: reusable full-screen, interaction, navigation, and violation handling module.
-- `test_assessment_view.py`: landing and API coverage.
+- `models.py` and migration `0006`: per-attempt question/section state, code drafts, session ownership, and the published paste policy. Migration `0007` adds the faculty restart audit event.
+- `views.py` and `urls.py`: server-authoritative state, answer/draft, code run/submit, navigation, and final-submit APIs. Responses are scoped to the signed-in participant and active session.
+- `templates/assessment/exam_shell.html`: persistent shell with section tabs, palette, timer, and final-submit dialog.
+- `templates/assessment/partials/`: question HTML partials. The coding partial renders only Description and this attempt's Submissions; hidden tests and MCQ correctness are not serialized.
+- `static/js/exam_shell.js`: navigation, offline response queue, server-clock sync, and finalization.
+- `static/js/mcq_question.js` and `static/js/coding_question.js`: question modules with `init()` and `destroy()` lifecycle methods.
+- `static/js/proctor.js`: shared full-screen, interaction, and violation handling.
+- `test_assessment_view.py`: hosted page, attempt, proctor, restore, ownership, deadline, and idempotent submission coverage.
 
-The hosted URL is `/assessments/<assessment-slug>/view/`. A logged-in user must have a `Participant` record for the assessment. Starting requires a published assessment and current published version.
+The hosted URL is `/assessments/<assessment-slug>/view/`. Any logged-in account can open a published assessment link; first access creates a participant record automatically. Assessment owners and staff/faculty can manage those records in the Signups tab: search by name or email, review attempt history and limits, grant up to 10 additional attempts per action, restart an active assessment, and block, remove, or restore access. A restart cancels an active attempt and preserves its answers and audit history.
 
-The existing assessment-management app does not yet provide a publish workflow. Until one publishes the assessment and creates its immutable version snapshots, the hosted page intentionally stays in the not-live state.
+The hosted URL is `/assessments/<assessment-slug>/view/`. First access by a signed-in user creates their participant record; blocked or removed users cannot re-enroll. Assessment content is read from the immutable published version.
 
-## Adding MCQ or coding sections later
+## Adding a question type later
 
-Render the new section UI inside the existing `<div id="section-container"></div>` after the start API returns successfully. Keep section navigation and answer requests asynchronous (for example, `fetch()` into this container) so the assessment shell does not reload or leave full-screen mode. Bind the section UI to `Proctor.attachTo(containerElement)` and use the shared `window.Proctor` API for automatic-submit and warning hooks. The start response includes the attempt ID, expiry timestamp, and server time; use the existing attempt-status API to restore state after reconnects.
+1. Add the immutable question data to the published snapshot and include its type and state in `get_exam_state`.
+2. Render it in `get_exam_question` using a new template partial. Never send answer keys or hidden test data.
+3. Implement a `window.Assessment<Type>` module in `static/js/` with `init({container, question, request, onAnswerChange})`, `save()`, `clear()`, and `destroy()`.
+4. Route its saves through a participant-, attempt-, session-, and deadline-checked API. Include the type in final score calculation.
+5. Dispatch the module from `static/js/exam_shell.js`; keep it inside `#section-container` so question changes never reload the shell.
+6. Add tests for persistence after switching/refresh, access isolation, late writes, and data that must not reach the browser.
 
 ## Proctoring configuration
 
@@ -50,6 +56,12 @@ With the default policy, the attempt is automatically submitted when the violati
 - [ ] Switch tabs and confirm a violation is recorded.
 - [ ] Refresh during an attempt and confirm the attempt resumes with the server deadline and a full-screen prompt.
 - [ ] Disconnect and reconnect the network; confirm the indicator and status recovery work.
+- [ ] Switch sections/questions and confirm MCQ answers, code drafts by language, and review marks persist.
+- [ ] Confirm sample Run responses contain sample cases only, while Submit scores all cases without returning hidden inputs or expected output.
+- [ ] Let a section timer expire and confirm its questions lock while other sections remain available.
+- [ ] Confirm the finish summary counts answered, unanswered, and review-marked questions; submit twice and verify a single final result.
+- [ ] Confirm another user's attempt/session and late writes are rejected, and editorial/discussion requests return 403 during an active attempt.
+- [ ] Open a practice problem and confirm its editor, editorial, discussion, and submissions tabs remain available.
 - [ ] Submit and exit; confirm a subsequent page load reports the submitted attempt and hides Start.
 - [ ] Exceed the configured warning count and confirm server-side automatic submission.
 - [ ] Test an upcoming, expired, unpublished, and attempt-limit-reached assessment.

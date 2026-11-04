@@ -1,3 +1,5 @@
+import json
+import uuid
 from datetime import timedelta
 
 from django.contrib.messages import get_messages
@@ -18,10 +20,14 @@ from assessment.models import (
     AssessmentVersion,
     Attempt,
     AttemptAnswer,
+    AttemptAuthorization,
+    AttemptEvent,
     CodingQuestion,
     CodingQuestionLanguage,
+    CodingQuestionLanguageSnapshot,
     CodingQuestionSnapshot,
     CodingTestCase,
+    CodingTestCaseSnapshot,
     McqOption,
     McqQuestion,
     McqQuestionSnapshot,
@@ -664,6 +670,148 @@ class AssessmentManagementViewTests(TestCase):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 404)
 
+    def test_owner_can_block_remove_and_restore_assessment_participants(self):
+        self._login()
+        participant = Participant.objects.create(
+            assessment=self.assessment,
+            user=self.student,
+        )
+        detail_response = self.client.get(
+            reverse("assessment:assessment_detail", args=[self.assessment.pk]),
+            {"tab": "participants"},
+        )
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Signups")
+        self.assertContains(detail_response, "student")
+
+        for action, expected_status in (
+            ("block", Participant.Status.DISQUALIFIED),
+            ("restore", Participant.Status.REGISTERED),
+            ("remove", Participant.Status.REMOVED),
+        ):
+            response = self.client.post(
+                reverse(
+                    "assessment:assessment_participant_action",
+                    args=[self.assessment.pk, participant.pk, action],
+                )
+            )
+            self.assertRedirects(
+                response,
+                f"{reverse('assessment:assessment_detail', args=[self.assessment.pk])}?tab=participants",
+            )
+            participant.refresh_from_db()
+            self.assertEqual(participant.status, expected_status)
+
+    def test_faculty_can_grant_attempts_and_student_can_use_them(self):
+        participant = Participant.objects.create(
+            assessment=self.assessment,
+            user=self.student,
+        )
+        self.assessment.status = Assessment.Status.PUBLISHED
+        self.assessment.save(update_fields=["status"])
+        version = AssessmentVersion.objects.create(
+            assessment=self.assessment,
+            version_number=1,
+            status=AssessmentVersion.Status.PUBLISHED,
+            is_current=True,
+            name=self.assessment.name,
+            duration_minutes=45,
+            max_attempts=1,
+            result_release_policy=AssessmentVersion.ResultReleasePolicy.IMMEDIATE,
+        )
+        self._login()
+        self.assertEqual(
+            self.client.post(
+                reverse(
+                    "assessment:assessment_participant_action",
+                    args=[self.assessment.pk, participant.pk, "grant_attempts"],
+                ),
+                {"extra_attempts": "1", "reason": "Approved by faculty"},
+            ).status_code,
+            302,
+        )
+        authorization = AttemptAuthorization.objects.get(participant=participant)
+        self.assertEqual(authorization.authorized_by, self.faculty)
+        self.assertEqual(authorization.extra_attempts, 1)
+        signup_response = self.client.get(
+            reverse("assessment:assessment_detail", args=[self.assessment.pk]),
+            {"tab": "participants", "q": "student"},
+        )
+        self.assertContains(signup_response, "student@example.com")
+        self.assertContains(signup_response, "0 / 2")
+
+        self.client.force_login(self.student)
+        start_url = reverse(
+            "assessment:start_attempt",
+            args=[self.assessment.slug],
+        )
+        first_session = uuid.uuid4()
+        response = self.client.post(
+            start_url,
+            data=json.dumps({"session_id": str(first_session)}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        first_attempt = Attempt.objects.get(participant=participant)
+        first_attempt.status = Attempt.Status.SUBMITTED
+        first_attempt.save(update_fields=["status"])
+
+        duplicate_response = self.client.post(
+            start_url,
+            data=json.dumps({"session_id": str(first_session)}),
+            content_type="application/json",
+        )
+        self.assertEqual(duplicate_response.status_code, 409)
+
+        second_response = self.client.post(
+            start_url,
+            data=json.dumps({"session_id": str(uuid.uuid4())}),
+            content_type="application/json",
+        )
+        self.assertEqual(second_response.status_code, 200)
+        self.assertEqual(
+            Attempt.objects.filter(participant=participant).count(),
+            2,
+        )
+        self.assertEqual(version.status, AssessmentVersion.Status.PUBLISHED)
+
+    def test_faculty_restart_preserves_and_cancels_active_attempt(self):
+        participant = Participant.objects.create(
+            assessment=self.assessment,
+            user=self.student,
+        )
+        attempt = Attempt.objects.create(
+            participant=participant,
+            attempt_number=1,
+            status=Attempt.Status.IN_PROGRESS,
+        )
+        previous_session_id = attempt.active_session_id
+        self._login()
+
+        response = self.client.post(
+            reverse(
+                "assessment:assessment_participant_action",
+                args=[self.assessment.pk, participant.pk, "restart"],
+            ),
+            {"reason": "Connectivity issue"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        attempt.refresh_from_db()
+        self.assertEqual(attempt.status, Attempt.Status.CANCELLED)
+        self.assertNotEqual(attempt.active_session_id, previous_session_id)
+        self.assertEqual(Attempt.objects.filter(participant=participant).count(), 1)
+        self.assertEqual(
+            AttemptAuthorization.objects.get(participant=participant).extra_attempts,
+            1,
+        )
+        self.assertTrue(
+            AttemptEvent.objects.filter(
+                attempt=attempt,
+                event_type=AttemptEvent.EventType.RESTARTED,
+            ).exists()
+        )
+
     def test_assessment_create_edit_and_invalid_form(self):
         self._login()
         create_response = self.client.post(
@@ -682,7 +830,8 @@ class AssessmentManagementViewTests(TestCase):
         detail_response = self.client.get(
             reverse("assessment:assessment_detail", args=[created.pk]),
         )
-        self.assertContains(detail_response, "Hosted link:")
+        self.assertContains(detail_response, "Hosted assessment:")
+        self.assertContains(detail_response, "Publish assessment")
         self.assertContains(detail_response, "/assessments/new-assessment/view/")
 
         invalid = self.client.post(
@@ -704,7 +853,7 @@ class AssessmentManagementViewTests(TestCase):
         created.refresh_from_db()
         self.assertEqual(created.name, "Updated name")
 
-    def test_assessment_cannot_be_published_without_publish_workflow(self):
+    def test_assessment_status_cannot_be_published_through_settings_form(self):
         self._login()
         response = self.client.post(
             reverse("assessment:assessment_edit", args=[self.assessment.pk]),
@@ -715,9 +864,100 @@ class AssessmentManagementViewTests(TestCase):
             ),
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Publishing is unavailable")
+        self.assertContains(response, "Use the Publish assessment action")
         self.assessment.refresh_from_db()
         self.assertEqual(self.assessment.status, Assessment.Status.DRAFT)
+
+    def test_publish_creates_current_immutable_assessment_version(self):
+        self._login()
+        McqOption.objects.create(
+            question=self.mcq,
+            text="Four",
+            is_correct=True,
+            position=1,
+        )
+        McqOption.objects.create(
+            question=self.mcq,
+            text="Five",
+            is_correct=False,
+            position=2,
+        )
+        AssessmentQuestion.objects.create(
+            assessment=self.assessment,
+            section=self.section,
+            mcq_question=self.mcq,
+            position=1,
+            max_score=10,
+        )
+        CodingQuestionLanguage.objects.create(
+            question=self.coding,
+            language=self.language,
+            starter_code="print('ready')",
+        )
+        CodingTestCase.objects.create(
+            question=self.coding,
+            input_data="",
+            expected_output="ready",
+            is_sample=True,
+            position=1,
+        )
+        AssessmentQuestion.objects.create(
+            assessment=self.assessment,
+            section=self.section,
+            coding_question=self.coding,
+            position=2,
+            max_score=5,
+        )
+
+        response = self.client.post(
+            reverse("assessment:assessment_publish", args=[self.assessment.pk]),
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("assessment:assessment_detail", args=[self.assessment.pk]),
+        )
+        version = AssessmentVersion.objects.get(assessment=self.assessment)
+        self.assertEqual(version.status, AssessmentVersion.Status.PUBLISHED)
+        self.assertTrue(version.is_current)
+        self.assertEqual(version.published_by, self.faculty)
+        self.assessment.refresh_from_db()
+        self.assertEqual(self.assessment.status, Assessment.Status.PUBLISHED)
+        section_snapshot = AssessmentSectionSnapshot.objects.get(version=version)
+        question_snapshot = AssessmentQuestionSnapshot.objects.get(
+            section=section_snapshot,
+            mcq_snapshot__isnull=False,
+        )
+        self.assertEqual(question_snapshot.mcq_snapshot.title, self.mcq.title)
+        self.assertEqual(question_snapshot.mcq_snapshot.options.count(), 2)
+        coding_snapshot = CodingQuestionSnapshot.objects.get(version=version)
+        language_snapshot = CodingQuestionLanguageSnapshot.objects.get(
+            question=coding_snapshot
+        )
+        test_case_snapshot = CodingTestCaseSnapshot.objects.get(
+            question=coding_snapshot
+        )
+        self.assertEqual(language_snapshot.language_slug, self.language.slug)
+        self.assertEqual(language_snapshot.starter_code, "print('ready')")
+        self.assertEqual(test_case_snapshot.expected_output, "ready")
+
+    def test_publish_requires_a_question_in_every_section(self):
+        self._login()
+        response = self.client.post(
+            reverse("assessment:assessment_publish", args=[self.assessment.pk]),
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("assessment:assessment_detail", args=[self.assessment.pk]),
+        )
+        self.assertEqual(
+            AssessmentVersion.objects.filter(assessment=self.assessment).count(),
+            0,
+        )
+        self.assessment.refresh_from_db()
+        self.assertEqual(self.assessment.status, Assessment.Status.DRAFT)
+        self.assertTrue(any(get_messages(response.wsgi_request)))
 
     def test_section_create_edit_delete_and_post_only_delete(self):
         self._login()

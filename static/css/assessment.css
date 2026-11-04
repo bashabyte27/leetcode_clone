@@ -147,6 +147,10 @@
     margin: 0;
 }
 
+.assessment-details-form > .assessment-inline-actions {
+    justify-content: flex-end;
+}
+
 .assessment-form-grid {
     display: grid;
     gap: 16px;
@@ -418,11 +422,11 @@
 }
 
 .assessment-hosted-link {
-    color: var(--text-secondary);
+    color: #777f91;
     font-size: 12px;
-    margin: 20px 2px 0;
+    margin: 18px 0 0;
     overflow-wrap: anywhere;
-    text-align: right;
+    text-align: left;
 }
 
 .assessment-hosted-link a {

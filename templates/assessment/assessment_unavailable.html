@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Assessment unavailable | BashaByte{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment_view.css' %}">{% endblock %}
+{% block content %}
+<main class="container assessment-landing py-5">
+  <section class="assessment-unavailable card">
+    <div class="card-body">
+      <p class="assessment-kicker mb-2">Assessment access</p>
+      <h1 class="h3 mb-3">{{ assessment.name }}</h1>
+      <p class="mb-4">{{ message }}</p>
+      <a class="btn btn-outline-light" href="{% url 'home' %}">Return home</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,66 @@
+<section id="exam-shell" class="assessment-transition d-none" aria-label="Assessment in progress">
+  <header class="exam-header">
+    <div class="exam-header-title">
+      <strong>{{ version.name|default:assessment.name }}</strong>
+      <span>{{ request.user.get_full_name|default:request.user.user_name }}</span>
+    </div>
+    <div class="exam-header-status">
+      <span id="online-indicator" class="online-indicator" role="status"><span aria-hidden="true"></span> Online</span>
+      <span id="warning-counter" class="warning-counter">Warnings remaining: {{ proctor_config.warningsRemaining }}</span>
+      <time id="exam-timer" class="exam-timer" aria-label="Time remaining">--:--:--</time>
+      <button id="assessment-theme-toggle" class="btn btn-outline-secondary btn-sm" type="button" aria-label="Toggle color theme">Light theme</button>
+      <button id="finish-exam" class="btn btn-danger btn-sm" type="button">Finish Exam</button>
+    </div>
+  </header>
+  <div id="exam-section-tabs" class="exam-section-tabs" role="tablist" aria-label="Assessment sections"></div>
+  <div class="exam-runner-layout">
+    <aside class="exam-question-navigation" aria-label="Question navigation">
+      <h2 class="h6">Questions</h2>
+      <p class="exam-palette-legend">
+        <span><i class="palette-dot not-visited"></i>Not visited</span>
+        <span><i class="palette-dot visited"></i>Visited</span>
+        <span><i class="palette-dot answered"></i>Answered</span>
+        <span><i class="palette-dot review"></i>Review</span>
+      </p>
+      <div id="question-palette" class="question-palette"></div>
+    </aside>
+    <main class="exam-question-main">
+      <div class="exam-section-heading">
+        <div><span class="text-secondary">Current section</span><strong id="current-section-name">Loading…</strong><small id="section-time-remaining" class="text-secondary"></small></div>
+        <span id="section-count-summary" class="text-secondary"></span>
+      </div>
+      <div id="section-container" class="section-container" aria-live="polite">
+        <div class="exam-loading-skeleton" aria-label="Loading question">
+          <div></div><div></div><div></div>
+        </div>
+      </div>
+      <nav class="exam-question-controls" aria-label="Question controls">
+        <button id="previous-question" class="btn btn-outline-secondary" type="button">Previous</button>
+        <div>
+          <button id="clear-response" class="btn btn-outline-secondary" type="button">Clear Response</button>
+          <button id="mark-review" class="btn btn-outline-warning" type="button">Mark for Review</button>
+          <button id="next-question" class="btn btn-outline-secondary" type="button">Next</button>
+          <button id="save-next" class="btn btn-primary" type="button">Save &amp; Next</button>
+        </div>
+      </nav>
+    </main>
+  </div>
+  <section id="exam-final-screen" class="exam-final-screen d-none" aria-live="polite">
+    <h2 id="exam-final-title">Assessment submitted</h2>
+    <p id="exam-final-message">Your responses have been submitted.</p>
+    <p id="exam-final-summary" class="text-secondary"></p>
+  </section>
+</section>
+
+<div id="finish-exam-dialog" class="exit-dialog d-none" role="dialog" aria-modal="true" aria-labelledby="finish-exam-title">
+  <div class="exit-dialog-card">
+    <h2 class="h5" id="finish-exam-title">Finish and submit exam?</h2>
+    <p id="finish-exam-summary"></p>
+    <p id="finish-exam-error" class="text-danger small" role="alert"></p>
+    <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+      <button id="cancel-finish-exam" class="btn btn-outline-secondary" type="button">Continue exam</button>
+      <button id="confirm-finish-exam" class="btn btn-danger" type="button">Submit exam</button>
+    </div>
+  </div>
+</div>
+<div id="exam-toast" class="exam-toast" role="status" aria-live="polite"></div>

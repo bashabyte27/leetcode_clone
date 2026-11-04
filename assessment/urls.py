@@ -23,11 +23,61 @@ urlpatterns = [
         name="get_attempt_status",
     ),
     path(
+        "<slug:assessment_slug>/api/exam/state/",
+        views.get_exam_state,
+        name="get_exam_state",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/question/",
+        views.get_exam_question,
+        name="get_exam_question",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/mcq-answer/",
+        views.save_mcq_answer,
+        name="save_mcq_answer",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/code-draft/",
+        views.save_code_draft,
+        name="save_code_draft",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/run-code/",
+        views.run_assessment_code,
+        name="run_assessment_code",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/submit-code/",
+        views.submit_assessment_code,
+        name="submit_assessment_code",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/question-state/",
+        views.update_exam_question_state,
+        name="update_exam_question_state",
+    ),
+    path(
+        "<slug:assessment_slug>/api/exam/submit/",
+        views.submit_exam,
+        name="submit_exam",
+    ),
+    path(
         "<slug:assessment_slug>/api/violation/",
         views.log_violation,
         name="log_violation",
     ),
     path("<int:assessment_id>/", views.assessment_detail, name="assessment_detail"),
+    path(
+        "<int:assessment_id>/publish/",
+        views.assessment_publish,
+        name="assessment_publish",
+    ),
+    path(
+        "<int:assessment_id>/participants/<int:participant_id>/<str:action>/",
+        views.assessment_participant_action,
+        name="assessment_participant_action",
+    ),
     path(
         "<int:assessment_id>/questions/create/",
         views.question_create_options,

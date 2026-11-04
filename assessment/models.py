@@ -9,6 +9,7 @@ Authoritative sources of truth:
 
 Snapshots are created by a service at publication time (never inside save()).
 """ 
+import uuid
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
@@ -351,6 +352,7 @@ class Assessment(models.Model):
         default=Status.DRAFT,
     )
     max_attempts = models.PositiveSmallIntegerField(default=1)
+    allow_paste_in_editor = models.BooleanField(default=False)
 
     result_release_policy = models.CharField(
         max_length=20,
@@ -579,6 +581,7 @@ class AssessmentVersion(models.Model):
     duration_minutes = models.PositiveIntegerField()
     passing_marks = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     max_attempts = models.PositiveSmallIntegerField(default=1)
+    allow_paste_in_editor = models.BooleanField(default=False)
     result_release_policy = models.CharField(
         max_length=20,
         choices=ResultReleasePolicy.choices,
@@ -948,6 +951,7 @@ class Participant(models.Model):
         STARTED = "started", "Started"
         COMPLETED = "completed", "Completed"
         DISQUALIFIED = "disqualified", "Disqualified"
+        REMOVED = "removed", "Removed"
 
     assessment = models.ForeignKey(
         Assessment,
@@ -1059,6 +1063,21 @@ class Attempt(models.Model):
     # Cached aggregate for the live UI.  Authoritative released score lives on
     # AssessmentResult.
     score = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    active_session_id = models.UUIDField(default=uuid.uuid4)
+    current_section = models.ForeignKey(
+        AssessmentSectionSnapshot,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="current_attempts",
+    )
+    current_question = models.ForeignKey(
+        AssessmentQuestionSnapshot,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="current_attempts",
+    )
 
     class Meta:
         ordering = ["attempt_number"]
@@ -1083,6 +1102,84 @@ class Attempt(models.Model):
             f"{self.participant.assessment.name} - "
             f"Attempt {self.attempt_number}"
         )
+
+
+class AttemptQuestionState(models.Model):
+    attempt = models.ForeignKey(
+        Attempt,
+        on_delete=models.CASCADE,
+        related_name="question_states",
+    )
+    question = models.ForeignKey(
+        AssessmentQuestionSnapshot,
+        on_delete=models.CASCADE,
+        related_name="attempt_states",
+    )
+    visited = models.BooleanField(default=False)
+    marked_for_review = models.BooleanField(default=False)
+    last_visited = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attempt", "question"],
+                name="uniq_attempt_question_state",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["attempt", "marked_for_review"]),
+        ]
+
+
+class AttemptSectionState(models.Model):
+    attempt = models.ForeignKey(
+        Attempt,
+        on_delete=models.CASCADE,
+        related_name="section_states",
+    )
+    section = models.ForeignKey(
+        AssessmentSectionSnapshot,
+        on_delete=models.CASCADE,
+        related_name="attempt_states",
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attempt", "section"],
+                name="uniq_attempt_section_state",
+            ),
+        ]
+
+
+class CodeDraft(models.Model):
+    attempt = models.ForeignKey(
+        Attempt,
+        on_delete=models.CASCADE,
+        related_name="code_drafts",
+    )
+    question = models.ForeignKey(
+        AssessmentQuestionSnapshot,
+        on_delete=models.CASCADE,
+        related_name="code_drafts",
+    )
+    language = models.ForeignKey(
+        ProgrammingLanguage,
+        on_delete=models.PROTECT,
+        related_name="assessment_code_drafts",
+    )
+    source_code = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attempt", "question", "language"],
+                name="uniq_code_draft_attempt_question_language",
+            ),
+        ]
 
 
 class AttemptAnswer(models.Model):
@@ -1155,6 +1252,7 @@ class AttemptEvent(models.Model):
         QUESTION_VISITED = "question_visited", "Question Visited"
         SUBMITTED = "submitted", "Submitted"
         TIMED_OUT = "timed_out", "Timed Out"
+        RESTARTED = "restarted", "Restarted"
         FULLSCREEN_EXIT = "fullscreen_exit", "Fullscreen Exit"
 
     attempt = models.ForeignKey(

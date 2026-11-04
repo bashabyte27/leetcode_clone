@@ -97,6 +97,7 @@
     if (!active || !config.attemptId || !config.logUrl) return null;
     const payload = {
       attempt_id: config.attemptId,
+      session_id: config.sessionId,
       event_id: eventId(),
       event_type: type,
       timestamp: new Date().toISOString(),
@@ -165,6 +166,13 @@
       return;
     }
     const key = event.key.toLowerCase();
+    const inEditor = event.target.closest?.(".monaco-editor, .CodeMirror");
+    if (
+      config.allowPasteInEditor
+      && inEditor
+      && (event.ctrlKey || event.metaKey)
+      && key === "v"
+    ) return;
     const blockedShortcut = (
       (event.ctrlKey && ["c", "v", "x", "a", "p", "s", "u"].includes(key))
       || (event.ctrlKey && event.shiftKey && ["i", "j", "c"].includes(key))
@@ -180,6 +188,11 @@
 
   const handleClipboard = (event) => {
     if (!isExamTarget(event.target)) return;
+    if (
+      event.type === "paste"
+      && config.allowPasteInEditor
+      && event.target.closest?.(".monaco-editor, .CodeMirror")
+    ) return;
     event.preventDefault();
     event.stopPropagation();
     void sendViolation(`${event.type}_blocked`);
@@ -263,6 +276,7 @@
     if (!config.attemptId || !config.logUrl) throw new Error("No active attempt is available.");
     const result = await postJson(config.logUrl, {
       attempt_id: config.attemptId,
+      session_id: config.sessionId,
       event_type: eventType,
       ...(pin ? { pin } : {}),
     });
@@ -379,6 +393,12 @@
     setAttempt(attempt) {
       if (!attempt || !attempt.id) throw new TypeError("A valid attempt payload is required.");
       config.attemptId = attempt.id;
+      if (attempt.session_id) config.sessionId = attempt.session_id;
+      return Proctor;
+    },
+
+    setExamPolicy(policy = {}) {
+      config.allowPasteInEditor = Boolean(policy.allowPasteInEditor);
       return Proctor;
     },
 
@@ -393,7 +413,10 @@
     async refreshStatus() {
       if (!config.statusUrl) return null;
       try {
-        const response = await retryFetch(config.statusUrl);
+        const statusUrl = new URL(config.statusUrl, window.location.origin);
+        if (config.sessionId) statusUrl.searchParams.set("session_id", config.sessionId);
+        if (config.attemptId) statusUrl.searchParams.set("attempt_id", config.attemptId);
+        const response = await retryFetch(statusUrl.toString());
         if (!response.ok) throw new Error("Could not refresh the assessment status.");
         const result = await response.json();
         statusHandler?.(result.attempt || null, result);

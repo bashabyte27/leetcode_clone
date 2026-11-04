@@ -1,0 +1,27 @@
+<article class="exam-mcq-question" data-question-id="{{ question.pk }}">
+  <div class="exam-question-heading">
+    <div>
+      <p class="assessment-kicker mb-1">Question · MCQ</p>
+      <h2 class="h4 mb-0">{{ mcq.title }}</h2>
+    </div>
+    <span class="exam-question-marks">{{ question.max_score }} marks{% if question.negative_marks %} · −{{ question.negative_marks }}{% endif %}</span>
+  </div>
+  <div class="exam-mcq-layout">
+    <section class="exam-question-description" aria-label="Question">
+      <div class="exam-question-statement">{{ mcq.statement|linebreaksbr }}</div>
+      {% if mcq.code_snippet %}<pre class="exam-code-snippet"><code>{{ mcq.code_snippet }}</code></pre>{% endif %}
+    </section>
+    <fieldset class="exam-mcq-options">
+      <legend>{% if mcq.allow_multiple %}Select all correct answers{% else %}Choose one answer{% endif %}</legend>
+      {% for option in mcq.options.all %}
+        <label class="exam-mcq-option">
+          <input type="{% if mcq.allow_multiple %}checkbox{% else %}radio{% endif %}"
+                 name="mcq-{{ question.pk }}" value="{{ option.pk }}"
+                 {% if option.pk in selected_option_ids %}checked{% endif %}>
+          <span>{{ option.text|linebreaksbr }}</span>
+        </label>
+      {% endfor %}
+      <p class="exam-save-state" aria-live="polite"></p>
+    </fieldset>
+  </div>
+</article>

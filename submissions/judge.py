@@ -68,12 +68,17 @@ def _parse_decimal(value):
 
 def _get_judge_id(language):
     """
-    Get Judge0 language_id from a Language model instance.
+    Get Judge0 language_id from either language catalog model.
     Returns int or None if not supported.
     """
-    if language and language.judge_id:
+    if not language:
+        return None
+    judge_id = getattr(language, "judge_id", None)
+    if judge_id is None:
+        judge_id = getattr(language, "judge0_language_id", None)
+    if judge_id:
         try:
-            return int(language.judge_id)
+            return int(judge_id)
         except (ValueError, TypeError):
             return None
     return None

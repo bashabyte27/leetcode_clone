@@ -408,6 +408,7 @@ class AssessmentForm(forms.ModelForm):
             "end_time",
             "duration_minutes",
             "passing_marks",
+            "allow_paste_in_editor",
             "status",
             "max_attempts",
             "result_release_policy",
@@ -428,6 +429,9 @@ class AssessmentForm(forms.ModelForm):
             "duration_minutes": forms.NumberInput(attrs={"class": "form-control", "min": 1}),
             "passing_marks": forms.NumberInput(
                 attrs={"class": "form-control", "min": 0, "step": "0.01"}
+            ),
+            "allow_paste_in_editor": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
             ),
             "status": forms.Select(attrs={"class": "form-select"}),
             "max_attempts": forms.NumberInput(attrs={"class": "form-control", "min": 1}),

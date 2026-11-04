@@ -16,6 +16,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
+from assessment.access import user_has_active_exam
 from problems.models import Problem
 from .forms import CommentForm
 from .models import (
@@ -105,6 +106,11 @@ def _render_tab_json(request, problem, discussion, status=200):
 
 def discussion_tab(request, problem_slug):
     """GET — renders the Discussion tab for the lazy-loaded AJAX panel."""
+    if user_has_active_exam(request.user):
+        return JsonResponse(
+            {"error": "Discussion content is unavailable during an assessment."},
+            status=403,
+        )
     problem = get_object_or_404(Problem, slug=problem_slug, is_active=True)
     discussion = _get_discussion(problem, request)
     return _render_tab_json(request, problem, discussion)
@@ -114,6 +120,11 @@ def discussion_tab(request, problem_slug):
 @require_POST
 def post_comment(request, problem_slug):
     """POST — creates a top-level comment or a reply (parent_id)."""
+    if user_has_active_exam(request.user):
+        return JsonResponse(
+            {"error": "Discussion content is unavailable during an assessment."},
+            status=403,
+        )
     problem = get_object_or_404(Problem, slug=problem_slug, is_active=True)
     discussion = _get_discussion(problem, request)
 
@@ -148,6 +159,11 @@ def post_comment(request, problem_slug):
 @login_required
 @require_POST
 def vote_comment(request, comment_id):
+    if user_has_active_exam(request.user):
+        return JsonResponse(
+            {"error": "Discussion content is unavailable during an assessment."},
+            status=403,
+        )
     """POST — toggles +1/-1 vote on a comment via the generic Vote model."""
     comment = get_object_or_404(Comment.objects.select_related('discussion'), id=comment_id)
 
