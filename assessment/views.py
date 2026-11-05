@@ -1809,6 +1809,7 @@ def submit_assessment_code(request, assessment_slug):
     total_runtime = Decimal("0")
     passed_count = 0
     all_passed = True
+    result_rows = []
     for test_case in test_cases:
         actual, runtime, run_error, run_status = execute_code(
             source_code,
@@ -1832,6 +1833,20 @@ def submit_assessment_code(request, assessment_slug):
             execution_time_ms=max(0, int(runtime or 0)),
             error_message=run_error or "",
         )
+        result_row = {
+            "position": test_case.position,
+            "status": "accepted" if passed else "wrong_answer",
+        }
+        if test_case.is_sample:
+            result_row.update(
+                {
+                    "input": test_case.input_data,
+                    "expected_output": test_case.expected_output,
+                    "actual_output": actual or "",
+                    "error": run_error or "",
+                }
+            )
+        result_rows.append(result_row)
     score = (
         question.max_score * Decimal(passed_weight) / Decimal(total_weight)
         if total_weight
@@ -1856,6 +1871,7 @@ def submit_assessment_code(request, assessment_slug):
             "total": len(test_cases),
             "score": str(score),
             "max_score": str(question.max_score),
+            "test_cases": result_rows,
         }
     )
 

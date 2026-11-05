@@ -122,10 +122,10 @@
   const renderTimer = () => {
     if (!attempt?.expires_at || !timer) return;
     const remaining = Math.max(0, Math.ceil((Date.parse(attempt.expires_at) - (Date.now() + clockOffset)) / 1000));
-    timer.textContent = formatTime(remaining);
+    timer.textContent = formatTime(remaining).split(":").join(" : ");
     timer.classList.toggle("is-low", remaining <= 300);
     if (remaining === 0) {
-      timer.textContent = "00:00:00";
+      timer.textContent = "00 : 00 : 00";
       window.clearInterval(timerInterval);
       void window.AssessmentExam?.submit(true);
     }
@@ -141,6 +141,8 @@
 
   const enterExamShell = (payload) => {
     attempt = payload;
+    page.classList.add("exam-active");
+    window.scrollTo(0, 0);
     config.attemptId = payload.id;
     config.sessionId = sessionId;
     Proctor.setAttempt({ ...payload, session_id: sessionId });
@@ -169,6 +171,7 @@
   };
 
   const finishShell = (message, status = "Submitted") => {
+    page.classList.add("exam-active");
     Proctor.stop();
     window.clearInterval(timerInterval);
     statusLabel.textContent = status;
@@ -261,7 +264,15 @@
 
   const updateWarningCounter = (remaining, result = {}) => {
     if (remaining !== null && remaining !== undefined) {
-      warningCounter.textContent = `Warnings remaining: ${remaining}`;
+      const previous = warningCounter.dataset.remaining;
+      warningCounter.textContent = `${remaining} Warnings`;
+      warningCounter.dataset.remaining = String(remaining);
+      warningCounter.dataset.level = Number(remaining) <= 1 ? "critical" : "ok";
+      if (previous !== undefined && previous !== String(remaining)) {
+        warningCounter.classList.remove("is-bump");
+        void warningCounter.offsetWidth;
+        warningCounter.classList.add("is-bump");
+      }
     } else if (result.error) {
       warningCounter.textContent = result.queued
         ? "Offline: proctoring event queued"

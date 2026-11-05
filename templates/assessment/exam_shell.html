@@ -1,50 +1,86 @@
 <section id="exam-shell" class="assessment-transition d-none" aria-label="Assessment in progress">
+
+  <!-- ============ Fixed header ============ -->
   <header class="exam-header">
     <div class="exam-header-title">
-      <strong>{{ version.name|default:assessment.name }}</strong>
-      <span>{{ request.user.get_full_name|default:request.user.user_name }}</span>
+      <span class="exam-brand">
+        <svg class="exam-brand-mark" viewBox="0 0 26 30" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2 1h12.2a6.3 6.3 0 0 1 4.6 10.6A7 7 0 0 1 15.6 29H2V1Zm5.2 5.2v5.4h6.4a2.7 2.7 0 0 0 0-5.4H7.2Zm0 10.4v7.2h7.4a3.6 3.6 0 0 0 0-7.2H7.2Z"/><path d="M19 8h5v3.6h-5zM20 18h4.5v3.6H20z" opacity=".45"/></svg>
+        <strong>BashaByte</strong>
+      </span>
+      <span class="exam-header-divider" aria-hidden="true"></span>
+      <div class="exam-header-assessment">
+        <strong>{{ version.name|default:assessment.name }}</strong>
+        <span>{{ request.user.get_full_name|default:request.user.user_name }}</span>
+      </div>
     </div>
+
     <div class="exam-header-status">
-      <span id="online-indicator" class="online-indicator" role="status"><span aria-hidden="true"></span> Online</span>
-      <span id="warning-counter" class="warning-counter">Warnings remaining: {{ proctor_config.warningsRemaining }}</span>
+      <span id="warning-counter" class="warning-counter" role="status" title="Integrity warnings (tab switch / leaving full screen). Your attempt is auto-submitted when they run out.">{{ proctor_config.warningsRemaining }} Warnings</span>
       <time id="exam-timer" class="exam-timer" aria-label="Time remaining">--:--:--</time>
-      <button id="assessment-theme-toggle" class="btn btn-outline-secondary btn-sm" type="button" aria-label="Toggle color theme">Light theme</button>
-      <button id="finish-exam" class="btn btn-danger btn-sm" type="button">Finish Exam</button>
+      <button id="assessment-theme-toggle" class="theme-toggle exam-theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme">
+        <svg class="exam-ic tt-icon tt-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+        <svg class="exam-ic tt-icon tt-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span class="tt-knob" aria-hidden="true">
+          <svg class="exam-ic tt-icon tt-knob-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+          <svg class="exam-ic tt-icon tt-knob-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </span>
+      </button>
+      <button id="finish-exam" class="exam-btn exam-btn-primary" type="button">
+        <span class="btn-label">Finish Exam</span>
+        <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
     </div>
   </header>
-  <div id="exam-section-tabs" class="exam-section-tabs" role="tablist" aria-label="Assessment sections"></div>
-  <div class="exam-runner-layout">
-    <aside class="exam-question-navigation" aria-label="Question navigation">
-      <h2 class="h6">Questions</h2>
-      <p class="exam-palette-legend">
-        <span><i class="palette-dot not-visited"></i>Not visited</span>
-        <span><i class="palette-dot visited"></i>Visited</span>
+
+  <!-- Only shown when the connection drops (replaces the always-on Online / Saved items) -->
+  <div id="online-indicator" class="exam-offline-banner" role="status"><span aria-hidden="true"></span> Online</div>
+
+  <!-- ============ Fixed section + question bar ============ -->
+  <nav class="exam-navigation-bar" aria-label="Assessment navigation">
+    <div id="exam-section-tabs" class="exam-section-tabs exam-scroll-x" role="tablist" aria-label="Assessment sections"></div>
+    <div class="exam-question-navigation" aria-label="Question navigation">
+      <strong class="exam-questions-label">Questions:</strong>
+      <div id="question-palette" class="question-palette exam-scroll-x"></div>
+      <div id="exam-palette-legend" class="exam-palette-legend" aria-label="Legend">
         <span><i class="palette-dot answered"></i>Answered</span>
-        <span><i class="palette-dot review"></i>Review</span>
-      </p>
-      <div id="question-palette" class="question-palette"></div>
-    </aside>
-    <main class="exam-question-main">
-      <div class="exam-section-heading">
-        <div><span class="text-secondary">Current section</span><strong id="current-section-name">Loading…</strong><small id="section-time-remaining" class="text-secondary"></small></div>
-        <span id="section-count-summary" class="text-secondary"></span>
+        <span><i class="palette-dot visited"></i>Visited</span>
+        <span><i class="palette-dot review"></i>Marked for Review</span>
       </div>
-      <div id="section-container" class="section-container" aria-live="polite">
-        <div class="exam-loading-skeleton" aria-label="Loading question">
-          <div></div><div></div><div></div>
-        </div>
-      </div>
-      <nav class="exam-question-controls" aria-label="Question controls">
-        <button id="previous-question" class="btn btn-outline-secondary" type="button">Previous</button>
-        <div>
-          <button id="clear-response" class="btn btn-outline-secondary" type="button">Clear Response</button>
-          <button id="mark-review" class="btn btn-outline-warning" type="button">Mark for Review</button>
-          <button id="next-question" class="btn btn-outline-secondary" type="button">Next</button>
-          <button id="save-next" class="btn btn-primary" type="button">Save &amp; Next</button>
-        </div>
-      </nav>
-    </main>
-  </div>
+      <span id="section-time-remaining" class="exam-section-timer"></span>
+      <p id="question-palette-summary" class="question-palette-summary"></p>
+    </div>
+  </nav>
+
+  <!-- ============ Workspace (only this row grows; panes scroll internally) ============ -->
+  <main class="exam-question-main">
+    <div class="visually-hidden"><span id="current-section-name">Loading…</span> <span id="section-count-summary"></span></div>
+    <div id="section-container" class="section-container">
+      <div class="exam-loading-skeleton" aria-label="Loading question"><div></div><div></div><div></div></div>
+    </div>
+  </main>
+
+  <!-- ============ Fixed footer ============ -->
+  <nav class="exam-question-controls" aria-label="Question controls">
+    <button id="previous-question" class="exam-btn" type="button">
+      <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      <span class="btn-label hide-sm">Previous</span>
+    </button>
+    <div>
+      <button id="clear-response" class="exam-btn exam-btn-danger" type="button">
+        <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>
+        <span class="btn-label hide-sm">Clear Response</span>
+      </button>
+      <button id="mark-review" class="exam-btn exam-btn-warn" type="button" aria-pressed="false">
+        <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4V3Z"/></svg>
+        <span class="btn-label hide-sm">Mark for Review</span>
+      </button>
+      <button id="save-next" class="exam-btn exam-btn-primary" type="button">
+        <span class="btn-label">Save &amp; Next</span>
+        <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </nav>
+
   <section id="exam-final-screen" class="exam-final-screen d-none" aria-live="polite">
     <h2 id="exam-final-title">Assessment submitted</h2>
     <p id="exam-final-message">Your responses have been submitted.</p>

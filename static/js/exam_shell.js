@@ -7,6 +7,9 @@
 
   const sectionsNode = document.getElementById("exam-section-tabs");
   const paletteNode = document.getElementById("question-palette");
+  const paletteSummaryNode = document.getElementById("question-palette-summary");
+  const legendButton = document.querySelector(".exam-legend-button");
+  const legendPanel = document.getElementById("exam-palette-legend");
   const questionNode = document.getElementById("section-container");
   const timerNode = document.getElementById("exam-timer");
   const onlineIndicator = document.getElementById("online-indicator");
@@ -102,6 +105,54 @@
     toast.hideTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 4500);
   };
   const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  /* ---------- UI helpers: icons, horizontal scrolling, clock format ---------- */
+  const ICONS = {
+    code: '<svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/></svg>',
+    list: '<svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>',
+    calc: '<svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg>',
+  };
+  const sectionIcon = (section) => {
+    const hint = `${section.question_type || section.type || section.questions?.[0]?.type || ""} ${section.title || ""}`;
+    if (/cod|program|dsa|algorithm/i.test(hint)) return ICONS.code;
+    if (/apti|quant|logic|reason|math|numeric/i.test(hint)) return ICONS.calc;
+    return ICONS.list;
+  };
+  const clockText = (seconds) => formatTime(seconds).split(":").join(" : ");
+
+  const updateFades = (node) => {
+    if (!node) return;
+    const overflowing = node.scrollWidth > node.clientWidth + 2;
+    node.classList.toggle("fade-l", overflowing && node.scrollLeft > 4);
+    node.classList.toggle("fade-r", overflowing && node.scrollLeft + node.clientWidth < node.scrollWidth - 4);
+  };
+  const enableHorizontalScroll = (node) => {
+    if (!node || node.dataset.hscroll) return;
+    node.dataset.hscroll = "1";
+    node.addEventListener("scroll", () => updateFades(node), { passive: true });
+    // Mouse wheel scrolls the strip sideways (trackpads already do).
+    node.addEventListener("wheel", (event) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || node.scrollWidth <= node.clientWidth) return;
+      event.preventDefault();
+      node.scrollBy({ left: event.deltaY, behavior: "auto" });
+    }, { passive: false });
+    window.addEventListener("resize", () => updateFades(node));
+  };
+  // innerHTML re-renders reset scroll; keep the strip where the candidate left it.
+  const renderKeepingScroll = (node, render, activeSelector, activeKey) => {
+    const left = node.scrollLeft;
+    render();
+    node.scrollTo({ left, behavior: "instant" });
+    if (node.dataset.activeKey !== activeKey) {
+      node.dataset.activeKey = activeKey;
+      const active = node.querySelector(activeSelector);
+      if (active) {
+        const target = active.offsetLeft - (node.clientWidth - active.offsetWidth) / 2;
+        node.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+      }
+    }
+    updateFades(node);
+  };
 
   const apiRequest = async (url, options = {}, retry = true) => {
     let response;
@@ -226,11 +277,21 @@
 
   const renderNavigation = () => {
     if (!state) return;
-    sectionsNode.innerHTML = state.sections.map((section) => (
-      `<button type="button" class="exam-section-tab${String(section.id) === String(currentSectionId) ? " active" : ""}" data-section-id="${section.id}" role="tab" aria-selected="${String(section.id) === String(currentSectionId)}" ${section.expired ? "disabled" : ""}>
-        <span>${escapeHtml(section.title)}</span><small>${section.questions.filter((question) => question.answered || isAnswerPending(question.id)).length}/${section.total} answered</small>
-      </button>`
-    )).join("");
+    const sectionAnswered = (section) => section.questions.filter(
+      (question) => question.answered || isAnswerPending(question.id),
+    ).length;
+    renderKeepingScroll(sectionsNode, () => {
+      sectionsNode.innerHTML = state.sections.map((section) => {
+        const done = sectionAnswered(section);
+        const isActive = String(section.id) === String(currentSectionId);
+        const pct = section.total ? Math.round((done / section.total) * 100) : 0;
+        return `<button type="button" class="exam-section-tab${isActive ? " active" : ""}" data-section-id="${section.id}" role="tab" aria-selected="${isActive}" ${section.expired ? "disabled" : ""}>
+        <span class="exam-section-icon">${sectionIcon(section)}</span>
+        <span class="exam-section-text"><span class="exam-section-name">${escapeHtml(section.title)}</span><small>${done} / ${section.total} answered</small></span>
+        <i class="exam-section-progress" aria-hidden="true"><b style="width: ${pct}%"></b></i>
+      </button>`;
+      }).join("");
+    }, ".exam-section-tab.active", String(currentSectionId));
     sectionsNode.querySelectorAll("[data-section-id]").forEach((button) => {
       button.addEventListener("click", () => {
         const section = findSection(button.dataset.sectionId);
@@ -248,13 +309,16 @@
       updateControls();
       return;
     }
-    paletteNode.innerHTML = section.questions.map((question, index) => {
-      let status = "not-visited";
-      if (question.marked_for_review) status = "review";
-      else if (question.answered || isAnswerPending(question.id)) status = "answered";
-      else if (question.visited) status = "visited";
-      return `<button type="button" class="question-palette-item ${status}${String(question.id) === String(currentQuestion?.id) ? " active" : ""}" data-question-id="${question.id}" aria-label="Question ${index + 1}, ${status.replace("-", " ")}">${index + 1}</button>`;
-    }).join("");
+    renderKeepingScroll(paletteNode, () => {
+      paletteNode.innerHTML = section.questions.map((question, index) => {
+        let status = "not-visited";
+        if (question.marked_for_review) status = "review";
+        else if (question.answered || isAnswerPending(question.id)) status = "answered";
+        else if (question.visited) status = "visited";
+        const isCurrent = String(question.id) === String(currentQuestion?.id);
+        return `<button type="button" class="question-palette-item ${status}${isCurrent ? " active" : ""}" data-question-id="${question.id}" aria-current="${isCurrent ? "page" : "false"}" aria-label="Question ${index + 1}, ${status.replace("-", " ")}" title="Question ${index + 1} · ${status.replace("-", " ")}">${index + 1}</button>`;
+      }).join("");
+    }, ".question-palette-item.active", `${section.id}:${currentQuestion?.id}`);
     paletteNode.querySelectorAll("[data-question-id]").forEach((button) => {
       button.addEventListener("click", () => void loadQuestion(button.dataset.questionId));
     });
@@ -263,6 +327,9 @@
     )).length;
     const marked = section.questions.filter((question) => question.marked_for_review).length;
     countNode.textContent = `${answered} of ${section.total} answered · ${marked} marked for review`;
+    if (paletteSummaryNode) {
+      paletteSummaryNode.textContent = `Answered ${answered} · Review ${marked} · Not answered ${Math.max(0, section.total - answered)}`;
+    }
     sectionNameNode.textContent = section.title;
     updateControls();
   };
@@ -341,6 +408,16 @@
       if (loadedSection) loadedSection.expires_at = question.section_expires_at;
       questionNode.innerHTML = question.html;
       questionNode.classList.remove("is-loading");
+      const numberNode = questionNode.querySelector("[data-q-number]");
+      if (numberNode) {
+        const position = (loadedSection?.questions || []).findIndex(
+          (item) => String(item.id) === String(question.id),
+        );
+        if (position >= 0) numberNode.textContent = `${position + 1}.`;
+      }
+      questionNode.classList.remove("is-entering");
+      void questionNode.offsetWidth;
+      questionNode.classList.add("is-entering");
       const navQuestion = findQuestion(question.id);
       if (navQuestion) navQuestion.visited = true;
       const onAnswerChange = (answered) => {
@@ -389,15 +466,26 @@
     }
   };
 
+  const setButtonLabel = (button, text) => {
+    const label = button?.querySelector(".btn-label");
+    if (label) label.textContent = text;
+  };
   const updateControls = () => {
     const questions = questionCollection();
     const index = questions.findIndex((question) => String(question.id) === String(currentQuestion?.id));
     document.getElementById("previous-question").disabled = index <= 0;
-    document.getElementById("next-question").disabled = index < 0 || index >= questions.length - 1;
+    const nextButton = document.getElementById("next-question");
+    if (nextButton) nextButton.disabled = index < 0 || index >= questions.length - 1;
+    const saveNext = document.getElementById("save-next");
+    if (saveNext) {
+      setButtonLabel(saveNext, index >= 0 && index === questions.length - 1 ? "Save" : "Save & Next");
+    }
     const current = findQuestion(currentQuestion?.id);
-    document.getElementById("mark-review").textContent = current?.marked_for_review
-      ? "Remove Review Mark"
-      : "Mark for Review";
+    const review = document.getElementById("mark-review");
+    const marked = Boolean(current?.marked_for_review);
+    setButtonLabel(review, marked ? "Remove Review Mark" : "Mark for Review");
+    review.classList.toggle("is-active", marked);
+    review.setAttribute("aria-pressed", String(marked));
   };
 
   const moveQuestion = async (offset) => {
@@ -417,6 +505,7 @@
 
   const showFinalScreen = (message, status = "submitted", summary = "") => {
     finalizing = true;
+    shell.classList.add("is-final");
     window.clearInterval(timerInterval);
     window.clearInterval(syncInterval);
     window.AssessmentMCQ?.destroy();
@@ -523,7 +612,7 @@
       0,
       Math.ceil((Date.parse(attempt.expires_at) - (Date.now() + clockOffset)) / 1000),
     );
-    timerNode.textContent = formatTime(remaining);
+    timerNode.textContent = clockText(remaining);
     timerNode.classList.toggle("is-low", remaining <= 300);
     const currentSection = findSection(currentSectionId);
     const sectionTimer = document.getElementById("section-time-remaining");
@@ -581,7 +670,16 @@
   const init = async (initialAttempt, activeSessionId) => {
     attempt = initialAttempt;
     sessionId = activeSessionId;
+    if (legendButton && legendPanel) {
+      legendButton.onclick = () => {
+        const open = legendPanel.hidden;
+        legendPanel.hidden = !open;
+        legendButton.setAttribute("aria-expanded", String(open));
+      };
+    }
     finalizing = false;
+    enableHorizontalScroll(sectionsNode);
+    enableHorizontalScroll(paletteNode);
     window.Proctor?.setExamPolicy({
       allowPasteInEditor: Boolean(state?.allow_paste_in_editor),
     });
@@ -617,11 +715,17 @@
     if (preferred) await loadQuestion(preferred.id);
 
     document.getElementById("previous-question").onclick = () => void moveQuestion(-1);
-    document.getElementById("next-question").onclick = () => void moveQuestion(1);
+    document.getElementById("next-question")?.addEventListener("click", () => void moveQuestion(1));
     document.getElementById("save-next").onclick = async () => {
       try {
         await activeQuestionModule?.save?.();
-        await moveQuestion(1);
+        const all = questionCollection();
+        const position = all.findIndex((item) => String(item.id) === String(currentQuestion?.id));
+        if (position === all.length - 1) {
+          notify("Saved. This is the last question — use Finish Exam when you are done.", "success");
+        } else {
+          await moveQuestion(1);
+        }
       } catch (error) {
         notify(`Could not save your response: ${error.message}`, "warning");
       }
@@ -671,17 +775,17 @@
       root.dataset.theme = theme;
       try {
         localStorage.setItem("editorTheme", theme);
+        localStorage.setItem("bb-theme", theme);
       } catch (error) {
         notify(`Could not save your theme preference: ${error.message}`, "warning");
       }
-      themeToggle.textContent = theme === "light" ? "Dark theme" : "Light theme";
+      themeToggle.setAttribute("aria-label", `Switch to ${theme === "light" ? "dark" : "light"} theme`);
       if (window.assessmentEditor && window.monaco) {
         window.monaco.editor.setTheme(theme === "light" ? "vs" : "vs-dark");
       }
     };
-    themeToggle.textContent = document.documentElement.dataset.theme === "light"
-      ? "Dark theme"
-      : "Light theme";
+    const initialTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+    themeToggle.setAttribute("aria-label", `Switch to ${initialTheme === "light" ? "dark" : "light"} theme`);
     document.addEventListener("keydown", (event) => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.target.matches("input,textarea,select,[contenteditable=true],.monaco-editor")) return;
       if (event.key === "ArrowRight") void moveQuestion(1);

@@ -119,7 +119,7 @@
                 <td><a href="{% url 'assessment:assessment_detail_by_slug' assessment.slug %}">{{ assessment.slug }}</a></td>
                 <td>{{ assessment.created_by.user_name }}</td>
                 <td>{% if assessment.start_time %}{{ assessment.start_time|date:"M j, Y" }}{% else %}—{% endif %}</td>
-                <td><span class="assessment-pill">{{ assessment.get_status_display }}</span></td>
+                <td><span class="assessment-pill" data-status="{{ assessment.status }}">{{ assessment.get_status_display }}</span></td>
               </tr>
             {% empty %}
               <tr><td class="assessment-empty" colspan="5">No assessments yet. Create one to get started.</td></tr>

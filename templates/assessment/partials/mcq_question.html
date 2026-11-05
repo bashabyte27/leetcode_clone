@@ -1,27 +1,52 @@
 <article class="exam-mcq-question" data-question-id="{{ question.pk }}">
-  <div class="exam-question-heading">
-    <div>
-      <p class="assessment-kicker mb-1">Question · MCQ</p>
-      <h2 class="h4 mb-0">{{ mcq.title }}</h2>
-    </div>
-    <span class="exam-question-marks">{{ question.max_score }} marks{% if question.negative_marks %} · −{{ question.negative_marks }}{% endif %}</span>
-  </div>
   <div class="exam-mcq-layout">
+
+    <!-- ============ LEFT: question ============ -->
     <section class="exam-question-description" aria-label="Question">
-      <div class="exam-question-statement">{{ mcq.statement|linebreaksbr }}</div>
-      {% if mcq.code_snippet %}<pre class="exam-code-snippet"><code>{{ mcq.code_snippet }}</code></pre>{% endif %}
+      <header class="exam-question-heading">
+        <h2><span class="exam-q-number" data-q-number></span>{{ mcq.title }}</h2>
+        <div class="exam-question-meta" aria-label="Question details">
+          <span class="exam-meta-pill exam-meta-difficulty"><svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>MCQ</span>
+          <span class="exam-meta-pill">{{ question.max_score|floatformat:"-2" }} Mark{{ question.max_score|pluralize }}</span>
+          {% if question.negative_marks %}<span class="exam-meta-pill exam-meta-negative">−{{ question.negative_marks|floatformat:"-2" }} for wrong</span>{% endif %}
+        </div>
+      </header>
+      <div class="exam-pane-scroll" style="padding-top:1.4rem">
+        <div class="exam-question-statement">{{ mcq.statement|linebreaksbr }}</div>
+        {% if mcq.code_snippet %}<pre class="exam-code-snippet"><code>{{ mcq.code_snippet }}</code></pre>{% endif %}
+      </div>
     </section>
-    <fieldset class="exam-mcq-options">
-      <legend>{% if mcq.allow_multiple %}Select all correct answers{% else %}Choose one answer{% endif %}</legend>
-      {% for option in mcq.options.all %}
-        <label class="exam-mcq-option">
-          <input type="{% if mcq.allow_multiple %}checkbox{% else %}radio{% endif %}"
-                 name="mcq-{{ question.pk }}" value="{{ option.pk }}"
-                 {% if option.pk in selected_option_ids %}checked{% endif %}>
-          <span>{{ option.text|linebreaksbr }}</span>
-        </label>
-      {% endfor %}
-      <p class="exam-save-state" aria-live="polite"></p>
+
+    <div class="exam-mcq-splitter" role="separator" aria-orientation="vertical" aria-valuemin="30" aria-valuemax="70" aria-valuenow="50" tabindex="0" aria-label="Resize question and options panes (double-click to reset)"></div>
+
+    <!-- ============ RIGHT: options ============ -->
+    <fieldset class="exam-mcq-options" data-multiple="{% if mcq.allow_multiple %}true{% else %}false{% endif %}">
+      <legend class="visually-hidden">{% if mcq.allow_multiple %}Select all correct answers{% else %}Choose one answer{% endif %}</legend>
+      <div class="exam-mcq-options-inner">
+        <div class="exam-mcq-options-head" aria-hidden="true">
+          <span class="exam-mcq-mode">
+            <svg class="exam-ic" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5"/></svg>
+            {% if mcq.allow_multiple %}Select all correct answers{% else %}Choose one answer{% endif %}
+          </span>
+          <span class="exam-mcq-count" data-mcq-count></span>
+        </div>
+        <div class="exam-mcq-list">
+          {% for option in mcq.options.all %}
+            <label class="exam-mcq-option" style="--i: {{ forloop.counter0 }}">
+              <input type="{% if mcq.allow_multiple %}checkbox{% else %}radio{% endif %}"
+                     name="mcq-{{ question.pk }}" value="{{ option.pk }}"
+                     {% if option.pk in selected_option_ids %}checked{% endif %}>
+              <span class="mcq-key" aria-hidden="true"></span>
+              <span class="mcq-text">{{ option.text|linebreaksbr }}</span>
+              <span class="mcq-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+            </label>
+          {% endfor %}
+        </div>
+        <div class="exam-mcq-foot">
+          <p class="exam-save-state" aria-live="polite"></p>
+          <span>Tip: press an option's letter to select it</span>
+        </div>
+      </div>
     </fieldset>
   </div>
 </article>

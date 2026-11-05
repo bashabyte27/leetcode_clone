@@ -1,17 +1,26 @@
 <article class="exam-coding-question" data-question-id="{{ question.pk }}">
-  <div class="exam-question-heading">
-    <div>
-      <p class="assessment-kicker mb-1">Question · Coding</p>
-      <h2 class="h4 mb-0">{{ coding.title }}</h2>
-    </div>
-    <span class="exam-question-marks">{{ question.max_score }} marks{% if question.negative_marks %} · −{{ question.negative_marks }}{% endif %}</span>
-  </div>
   <div class="exam-coding-workspace">
+
+    <!-- ============ LEFT: question ============ -->
     <section class="exam-coding-description">
+      <header class="exam-question-heading">
+        <h2><span class="exam-q-number" data-q-number></span>{{ coding.title }}</h2>
+        <div class="exam-question-meta" aria-label="Question details">
+          <span class="exam-meta-pill exam-meta-difficulty" data-difficulty="{{ coding.difficulty|lower }}">{{ coding.difficulty|capfirst }}</span>
+          <span class="exam-meta-pill"><svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/></svg>Coding</span>
+          <span class="exam-meta-pill">{{ question.max_score|floatformat:"-2" }} Mark{{ question.max_score|pluralize }}</span>
+        </div>
+      </header>
+
       <div class="exam-coding-tabs" role="tablist" aria-label="Coding question panels">
-        <button type="button" class="active" data-coding-tab="description" role="tab" aria-selected="true">Description</button>
-        <button type="button" data-coding-tab="submissions" role="tab" aria-selected="false">Submissions</button>
+        <button type="button" class="active" data-coding-tab="description" role="tab" aria-selected="true">
+          <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5M9 13h6M9 17h4"/></svg>Description
+        </button>
+        <button type="button" data-coding-tab="submissions" role="tab" aria-selected="false">
+          <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Submissions
+        </button>
       </div>
+
       <div class="exam-coding-panel active" data-coding-panel="description" role="tabpanel">
         <div class="exam-question-statement">{{ coding.statement|linebreaksbr }}</div>
         {% if coding.input_format %}<h3>Input</h3><div>{{ coding.input_format|linebreaksbr }}</div>{% endif %}
@@ -20,12 +29,13 @@
         {% for sample in samples %}
           <section class="exam-sample-case">
             <h3>Example {{ sample.position }}</h3>
-            <p><strong>Input</strong></p><pre>{{ sample.input_data }}</pre>
-            <p><strong>Output</strong></p><pre>{{ sample.expected_output }}</pre>
-            {% if sample.explanation %}<p>{{ sample.explanation|linebreaksbr }}</p>{% endif %}
+            <div class="exam-sample-row"><span class="exam-sample-key">Input:</span><pre class="exam-sample-val">{{ sample.input_data }}</pre></div>
+            <div class="exam-sample-row"><span class="exam-sample-key">Output:</span><pre class="exam-sample-val">{{ sample.expected_output }}</pre></div>
+            {% if sample.explanation %}<div class="exam-sample-row"><span class="exam-sample-key">Explanation:</span><span class="exam-sample-explain">{{ sample.explanation|linebreaksbr }}</span></div>{% endif %}
           </section>
         {% endfor %}
       </div>
+
       <div class="exam-coding-panel" data-coding-panel="submissions" role="tabpanel" hidden>
         <div class="exam-own-submissions">
           {% for submission in submissions %}
@@ -39,28 +49,66 @@
         </div>
       </div>
     </section>
+
+    <div class="exam-coding-splitter" role="separator" aria-orientation="vertical" aria-valuemin="30" aria-valuemax="70" aria-valuenow="50" tabindex="0" aria-label="Resize question and compiler panes (double-click to reset)"></div>
+
+    <!-- ============ RIGHT: compiler + tests ============ -->
     <section class="exam-coding-editor">
-      <div class="exam-editor-toolbar">
-        <label class="visually-hidden" for="exam-language-{{ question.pk }}">Programming language</label>
-        <select id="exam-language-{{ question.pk }}" class="form-select form-select-sm" data-coding-language>
-          {% for language in languages %}
-            <option value="{{ language.language_id }}" data-slug="{{ language.language_slug }}"
-              data-starter="{{ language.starter_code|escape }}"
-              {% if forloop.first %}selected{% endif %}>{{ language.language_name }}</option>
-          {% endfor %}
-        </select>
-        <button type="button" class="btn btn-success btn-sm" data-run-code>Run</button>
-        <button type="button" class="btn btn-primary btn-sm" data-submit-code>Submit</button>
+      <div class="exam-editor-card">
+        <div class="exam-editor-toolbar">
+          <div class="exam-lang-select">
+            <span class="exam-lang-badge" data-lang-badge aria-hidden="true">{ }</span>
+            <label class="visually-hidden" for="exam-language-{{ question.pk }}">Programming language</label>
+            <select id="exam-language-{{ question.pk }}" data-coding-language>
+              {% for language in languages %}
+                <option value="{{ language.language_id }}" data-slug="{{ language.language_slug }}"
+                  data-starter="{{ language.starter_code|escape }}"
+                  {% if forloop.first %}selected{% endif %}>{{ language.language_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <span class="exam-toolbar-spacer"></span>
+          <button type="button" class="exam-btn exam-btn-brand-outline exam-btn-sm" data-run-code>
+            <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor"><path d="M7 4.5v15l12-7.5-12-7.5Z"/></svg><span class="btn-label">Run</span>
+          </button>
+          <button type="button" class="exam-btn exam-btn-primary exam-btn-sm" data-submit-code>
+            <span class="btn-label">Submit</span>
+          </button>
+        </div>
+        <div class="exam-editor-stage">
+          <div class="exam-editor-host">
+            {% include "problems/partials/monaco_container.html" with coding_mode="assessment" %}
+          </div>
+          <div class="exam-editor-statusbar">
+            <span class="exam-save-pill" data-save-state data-state="saved">Saved</span>
+            <span class="exam-cursor-pos" data-cursor-pos>Ln 1, Col 1</span>
+          </div>
+        </div>
       </div>
-      {% include "problems/partials/monaco_container.html" with coding_mode="assessment" %}
+
+      <div class="exam-console-splitter" role="separator" aria-orientation="horizontal" aria-valuemin="44" tabindex="0" aria-label="Resize test console (double-click to collapse)"></div>
+
       <div class="exam-test-panel">
         <div class="exam-test-tabs" role="tablist" aria-label="Test cases and results">
-          <button type="button" class="active" data-test-tab="testcase">Testcase</button>
-          <button type="button" data-test-tab="result">Test Result</button>
+          <button type="button" class="active" data-test-tab="testcase" role="tab" aria-selected="true">
+            <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9V3M7.5 15h9"/></svg>Testcase
+          </button>
+          <button type="button" data-test-tab="result" role="tab" aria-selected="false">
+            <svg class="exam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Test Result
+          </button>
         </div>
         <div class="exam-test-content active" data-test-panel="testcase">
-          <label for="exam-custom-input-{{ question.pk }}">Sample input</label>
-          <textarea id="exam-custom-input-{{ question.pk }}" rows="3" readonly>{% if samples %}{{ samples.0.input_data }}{% endif %}</textarea>
+          <div class="exam-case-chips">
+            {% for sample in samples %}<button type="button" class="exam-case-chip{% if forloop.first %} active{% endif %}" data-case-position="{{ sample.position }}">Case {{ sample.position }}</button>{% empty %}<span class="text-secondary">No published cases</span>{% endfor %}
+          </div>
+          {% for sample in samples %}
+            <div class="exam-case-content{% if not forloop.first %} d-none{% endif %}" data-case-content="{{ sample.position }}">
+              <div><label>Sample input</label><pre>{{ sample.input_data }}</pre></div>
+              <div><label>Expected output</label><pre>{{ sample.expected_output }}</pre></div>
+            </div>
+          {% endfor %}
+          <label class="visually-hidden" for="exam-custom-input-{{ question.pk }}">Custom input</label>
+          <textarea id="exam-custom-input-{{ question.pk }}" class="d-none" rows="3" readonly>{% if samples %}{{ samples.0.input_data }}{% endif %}</textarea>
           <p class="text-secondary small mb-0">Run checks all published sample cases. Submit checks all cases.</p>
         </div>
         <div class="exam-test-content" data-test-panel="result" hidden data-test-results aria-live="polite">
