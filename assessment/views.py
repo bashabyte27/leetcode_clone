@@ -421,6 +421,123 @@ def _assessment_submission_history(assessment, selected_row):
     return sorted(rows, key=lambda row: row["submitted_at"], reverse=True)
 
 
+def _question_title(assignment):
+    return (
+        assignment.mcq_question.title
+        if assignment.mcq_question_id
+        else assignment.coding_question.title
+    )
+
+
+def _assessment_question_rows(assessment):
+    assignments = list(
+        assessment.assessment_questions.select_related(
+            "section", "mcq_question", "coding_question"
+        ).order_by("section__position", "position")
+    )
+    snapshots = (
+        AssessmentQuestionSnapshot.objects.filter(
+            source_assessment_question__in=assignments
+        )
+        .select_related("section__version")
+        .order_by("-section__version__version_number")
+    )
+    snapshots_by_assignment = {}
+    for snapshot in snapshots:
+        snapshots_by_assignment.setdefault(
+            snapshot.source_assessment_question_id, []
+        ).append(snapshot.pk)
+
+    participant_count = assessment.participants.count()
+    rows = []
+    for number, assignment in enumerate(assignments, start=1):
+        snapshot_ids = snapshots_by_assignment.get(assignment.pk, [])
+        coding_count = AssessmentSubmission.objects.filter(
+            assessment_question_snapshot_id__in=snapshot_ids
+        ).count()
+        answer_count = AttemptAnswer.objects.filter(
+            assessment_question_snapshot_id__in=snapshot_ids
+        ).filter(
+            Q(text_answer__gt="")
+            | Q(code_answer__gt="")
+            | Q(selected_options__isnull=False)
+        ).distinct().count()
+        rows.append(
+            {
+                "number": number,
+                "assignment": assignment,
+                "title": _question_title(assignment),
+                "signups": participant_count,
+                "submissions": coding_count + answer_count,
+            }
+        )
+    return rows
+
+
+def _question_snapshots(assignment):
+    return AssessmentQuestionSnapshot.objects.filter(
+        source_assessment_question=assignment
+    ).select_related(
+        "mcq_snapshot", "coding_snapshot", "section__version"
+    )
+
+
+def _question_activity_rows(assessment, snapshot_ids):
+    rows = []
+    coding_submissions = AssessmentSubmission.objects.filter(
+        assessment_question_snapshot_id__in=snapshot_ids,
+    ).select_related("attempt__participant__user", "language")
+    for submission in coding_submissions:
+        rows.append(
+            {
+                "user": submission.attempt.participant.user,
+                "kind": "Coding",
+                "status": submission.get_status_display(),
+                "score": submission.score,
+                "submitted_at": submission.submitted_at,
+                "item": submission,
+            }
+        )
+    answers = AttemptAnswer.objects.filter(
+        assessment_question_snapshot_id__in=snapshot_ids
+    ).filter(
+        Q(text_answer__gt="")
+        | Q(code_answer__gt="")
+        | Q(selected_options__isnull=False)
+    ).select_related("attempt__participant__user")
+    for answer in answers:
+        rows.append(
+            {
+                "user": answer.attempt.participant.user,
+                "kind": "MCQ",
+                "status": (
+                    "Correct" if answer.is_correct is True
+                    else "Wrong" if answer.is_correct is False
+                    else "Submitted"
+                ),
+                "score": answer.score,
+                "submitted_at": answer.answered_at,
+                "item": answer,
+            }
+        )
+    return sorted(rows, key=lambda row: row["submitted_at"], reverse=True)
+
+
+def _question_leaderboard(assessment, activity_rows):
+    best_by_user = {}
+    for row in activity_rows:
+        user_id = row["user"].pk
+        if user_id not in best_by_user or row["score"] > best_by_user[user_id]["score"]:
+            best_by_user[user_id] = row
+    leaderboard = sorted(
+        best_by_user.values(),
+        key=lambda row: (-row["score"], row["user"].user_name.casefold()),
+    )
+    for rank, row in enumerate(leaderboard, start=1):
+        row["rank"] = rank
+    return leaderboard
+
+
 @login_required
 def dashboard(request):
     _require_assessment_management_access(request.user)
@@ -2227,6 +2344,7 @@ def _assessment_detail_page(request, assessment):
     active_tab = request.GET.get("tab", "details")
     valid_tabs = {
         "details",
+        "sections",
         "questions",
         "moderators",
         "participants",
@@ -2258,6 +2376,8 @@ def _assessment_detail_page(request, assessment):
         active_tab = "details"
 
     context = _assessment_context(assessment)
+    if active_tab == "questions":
+        context["question_rows"] = _assessment_question_rows(assessment)
     if active_tab == "leaderboard":
         leaderboard = _assessment_leaderboard(assessment)
         selected_user_id = request.GET.get("user", "")
@@ -2375,6 +2495,56 @@ def _assessment_detail_page(request, assessment):
         "assessment/assessment_detail.html",
         context,
     )
+
+
+@login_required
+def assessment_question_detail(request, assessment_id, assignment_id):
+    assessment = _assessment_or_404(request, assessment_id)
+    assignment = get_object_or_404(
+        AssessmentQuestion.objects.select_related(
+            "section", "mcq_question", "coding_question"
+        ),
+        pk=assignment_id,
+        assessment=assessment,
+    )
+    snapshots = list(_question_snapshots(assignment))
+    snapshot_ids = [snapshot.pk for snapshot in snapshots]
+    activity_rows = _question_activity_rows(assessment, snapshot_ids)
+    active_tab = request.GET.get("tab", "dashboard")
+    if active_tab not in {"dashboard", "leaderboard", "submissions", "signups"}:
+        active_tab = "dashboard"
+    selected_participant = None
+    selected_user_id = request.GET.get("user")
+    if selected_user_id:
+        selected_participant = get_object_or_404(
+            Participant.objects.select_related("user").prefetch_related("attempts"),
+            assessment=assessment,
+            user_id=selected_user_id,
+        )
+
+    context = {
+        "assessment": assessment,
+        "assignment": assignment,
+        "question_title": _question_title(assignment),
+        "snapshots": snapshots,
+        "active_tab": active_tab,
+        "activity_rows": activity_rows,
+        "question_leaderboard": _question_leaderboard(assessment, activity_rows),
+        "question_submissions": activity_rows,
+        "question_signups": assessment.participants.select_related("user").prefetch_related(
+            "attempts"
+        ),
+        "selected_participant": selected_participant,
+        "selected_user_question_activity_count": (
+            sum(
+                row["user"].pk == selected_participant.user_id
+                for row in activity_rows
+            )
+            if selected_participant
+            else 0
+        ),
+    }
+    return render(request, "assessment/assessment_question_detail.html", context)
 
 
 @login_required
@@ -3245,7 +3415,7 @@ def section_question_add(request, assessment_id, section_id):
                 )
                 return redirect(
                     f"{reverse('assessment:assessment_detail', args=[assessment.pk])}"
-                    f"?tab=questions#section-{section.pk}"
+                    f"?tab=sections#section-{section.pk}"
                 )
 
     form = AssessmentQuestionAddForm(
@@ -3391,7 +3561,7 @@ def section_question_add(request, assessment_id, section_id):
             messages.success(request, "Question added to the section.")
             return redirect(
                 f"{reverse('assessment:assessment_detail', args=[assessment.pk])}"
-                f"?tab=questions#section-{section.pk}"
+                f"?tab=sections#section-{section.pk}"
             )
     return render(
         request,
@@ -3472,5 +3642,5 @@ def section_question_remove(request, assessment_id, section_id, assignment_id):
     messages.success(request, "Question removed from the section.")
     return redirect(
         f"{reverse('assessment:assessment_detail', args=[assessment.pk])}"
-        f"?tab=questions#section-{section.pk}"
+        f"?tab=sections#section-{section.pk}"
     )

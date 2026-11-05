@@ -25,6 +25,7 @@
 
   <nav class="assessment-detail-tabs" aria-label="Assessment management tabs">
     <a class="{% if active_tab == 'details' %}active{% endif %}" href="?tab=details">Details</a>
+    <a class="{% if active_tab == 'sections' %}active{% endif %}" href="?tab=sections">Sections</a>
     <a class="{% if active_tab == 'questions' %}active{% endif %}" href="?tab=questions">Questions</a>
     <a class="{% if active_tab == 'moderators' %}active{% endif %}" href="?tab=moderators">Moderators</a>
     <a class="{% if active_tab == 'participants' %}active{% endif %}" href="?tab=participants">Signups</a>
@@ -70,15 +71,12 @@
       </footer>
     </section>
 
-  {% elif active_tab == "questions" %}
+  {% elif active_tab == "sections" %}
     <section class="assessment-panel">
       <div class="assessment-card-head assessment-question-toolbar">
         <div>
-          <h2>Questions</h2>
-          <p class="assessment-muted">Questions are organized into sections.</p>
-        </div>
-        <div class="assessment-inline-actions">
-          <a class="assessment-button" href="{% url 'assessment:question_create_options' assessment.pk %}">Create question</a>
+          <h2>Sections</h2>
+          <p class="assessment-muted">Organize questions into sections.</p>
         </div>
       </div>
 
@@ -150,6 +148,34 @@
         {% empty %}
           <p class="assessment-empty">No sections yet. Create a section to add questions.</p>
         {% endfor %}
+      </div>
+    </section>
+
+  {% elif active_tab == "questions" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head">
+        <div>
+          <h2>Questions</h2>
+          <p class="assessment-muted">Questions assigned to this assessment and their activity.</p>
+        </div>
+        <a class="assessment-button" href="{% url 'assessment:question_create_options' assessment.pk %}">Add question</a>
+      </div>
+      <div class="assessment-table-wrap">
+        <table class="assessment-table">
+          <thead><tr><th>Question number</th><th>Question name</th><th>Signups</th><th>Submissions count</th></tr></thead>
+          <tbody>
+            {% for row in question_rows %}
+              <tr class="assessment-clickable-row">
+                <td><a class="assessment-row-link" href="{% url 'assessment:assessment_question_detail' assessment.pk row.assignment.pk %}">{{ row.number }}</a></td>
+                <td><a class="assessment-row-link" href="{% url 'assessment:assessment_question_detail' assessment.pk row.assignment.pk %}">{{ row.title }}</a></td>
+                <td>{{ row.signups }}</td>
+                <td>{{ row.submissions }}</td>
+              </tr>
+            {% empty %}
+              <tr><td class="assessment-empty" colspan="4">No questions have been added to this assessment yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </section>
 

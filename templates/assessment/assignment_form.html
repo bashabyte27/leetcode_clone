@@ -7,7 +7,7 @@
   {% include "assessment/_messages.html" %}
   <header class="assessment-header">
     <div>
-      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}</div>
+      <div class="assessment-eyebrow"><a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=sections#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}</div>
       <h1>Add questions to {{ section.title }}</h1>
       <p>Filter your question bank, select the questions to add, then add them all to this section.</p>
     </div>
@@ -84,7 +84,7 @@
     </form>
     </div>
     <div class="assessment-inline-actions" style="margin-top:16px">
-      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">Back to assessment</a>
+      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=sections#section-{{ section.pk }}">Back to assessment</a>
     </div>
   </section>
 </main>

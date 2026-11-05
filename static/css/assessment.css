@@ -386,6 +386,20 @@
     color: var(--text-heading);
 }
 
+.assessment-row-link {
+    color: inherit;
+    display: block;
+    text-decoration: none;
+}
+
+.assessment-clickable-row:hover {
+    background: color-mix(in srgb, var(--bg-input) 70%, transparent);
+}
+
+.assessment-question-bottom-tabs {
+    margin-top: 24px;
+}
+
 .assessment-admin-toolbar {
     align-items: center;
     display: flex;

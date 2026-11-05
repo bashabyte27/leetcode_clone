@@ -74,6 +74,11 @@ urlpatterns = [
         name="assessment_publish",
     ),
     path(
+        "<int:assessment_id>/questions/<int:assignment_id>/",
+        views.assessment_question_detail,
+        name="assessment_question_detail",
+    ),
+    path(
         "<int:assessment_id>/participants/<int:participant_id>/<str:action>/",
         views.assessment_participant_action,
         name="assessment_participant_action",

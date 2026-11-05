@@ -8,7 +8,7 @@
     <div>
       <div class="assessment-eyebrow">
         {% if section %}
-          <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}
+          <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=sections#section-{{ section.pk }}">{{ assessment.name }}</a> / {{ section.title }}
         {% elif assessment %}
           <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">{{ assessment.name }}</a> / Questions
         {% else %}
@@ -25,7 +25,7 @@
       <a class="assessment-button" href="{% url 'assessment:question_import' 'mcq' %}{% if assessment %}?assessment={{ assessment.pk }}{% if section %}&amp;section={{ section.pk }}{% endif %}{% endif %}">Import MCQs in bulk</a>
       <a class="assessment-button-secondary" href="{% url 'assessment:question_import' 'coding' %}{% if assessment %}?assessment={{ assessment.pk }}{% if section %}&amp;section={{ section.pk }}{% endif %}{% endif %}">Import coding questions in bulk</a>
       {% if section %}
-        <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions#section-{{ section.pk }}">Cancel</a>
+        <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=sections#section-{{ section.pk }}">Cancel</a>
       {% elif assessment %}
         <a class="assessment-button-secondary" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">Cancel</a>
       {% else %}

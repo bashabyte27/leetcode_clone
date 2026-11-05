@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ question_title }} | {{ assessment.name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block content %}
+<main class="assessment-shell">
+  <div class="assessment-eyebrow">
+    <a class="assessment-link" href="{% url 'assessment:assessment_detail' assessment.pk %}?tab=questions">Questions</a> /
+    {{ assessment.name }}
+  </div>
+  <header class="assessment-header assessment-detail-heading">
+    <div>
+      <h1>{{ question_title }}</h1>
+      <p class="assessment-muted">Question {{ assignment.position }} in {{ assignment.section.title }}</p>
+    </div>
+  </header>
+
+  {% if active_tab == "dashboard" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head"><div><h2>Question dashboard</h2><p class="assessment-muted">Assessment-scoped activity for this question.</p></div></div>
+      {% with snapshot=snapshots.0 %}
+        <dl class="assessment-participant-summary">
+          <div><dt>Signups</dt><dd>{{ assessment.participants.count }}</dd></div>
+          <div><dt>Submissions</dt><dd>{{ activity_rows|length }}</dd></div>
+          <div><dt>Maximum marks</dt><dd>{{ assignment.max_score }}</dd></div>
+          <div><dt>Type</dt><dd>{% if assignment.coding_question %}Coding{% else %}MCQ{% endif %}</dd></div>
+        </dl>
+        {% if snapshot.coding_snapshot %}
+          <h3>{{ snapshot.coding_snapshot.title }}</h3>
+          <p>{{ snapshot.coding_snapshot.statement|linebreaksbr }}</p>
+        {% elif snapshot.mcq_snapshot %}
+          <h3>{{ snapshot.mcq_snapshot.title }}</h3>
+          <p>{{ snapshot.mcq_snapshot.statement|linebreaksbr }}</p>
+        {% else %}
+          <p class="assessment-muted">Published question details will appear after this assessment is published.</p>
+        {% endif %}
+      {% endwith %}
+    </section>
+  {% elif active_tab == "leaderboard" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head"><div><h2>Question leaderboard</h2><p class="assessment-muted">Best score for this question within {{ assessment.name }}.</p></div></div>
+      <div class="assessment-table-wrap"><table class="assessment-table">
+        <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Last activity</th></tr></thead>
+        <tbody>
+          {% for row in question_leaderboard %}<tr><td>{{ row.rank }}</td><td>{{ row.user.user_name }}</td><td>{{ row.score }}</td><td>{{ row.submitted_at|date:"M j, Y H:i" }}</td></tr>
+          {% empty %}<tr><td class="assessment-empty" colspan="4">No submissions are available for this question.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+  {% elif active_tab == "submissions" %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head"><div><h2>Question submissions</h2><p class="assessment-muted">Every submission for this question in this assessment.</p></div></div>
+      <div class="assessment-table-wrap"><table class="assessment-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Score</th><th>Submitted</th></tr></thead>
+        <tbody>
+          {% for row in question_submissions %}<tr><td>{{ row.user.user_name }}</td><td>{{ row.kind }}</td><td>{{ row.status }}</td><td>{{ row.score }}</td><td>{{ row.submitted_at|date:"M j, Y H:i" }}</td></tr>
+          {% empty %}<tr><td class="assessment-empty" colspan="5">No submissions are available for this question.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+  {% else %}
+    <section class="assessment-panel">
+      <div class="assessment-card-head"><div><h2>Question signups</h2><p class="assessment-muted">Assessment-specific signup and timing data. No global profile data is shown.</p></div></div>
+      <div class="assessment-table-wrap"><table class="assessment-table">
+        <thead><tr><th>Name</th><th>Status</th><th>Signed up</th><th>Attempt timing</th></tr></thead>
+        <tbody>
+          {% for participant in question_signups %}<tr><td><a class="assessment-row-link" href="?tab=signups&amp;user={{ participant.user.pk }}#question-signup-details">{{ participant.user.user_name }}</a></td><td>{{ participant.get_status_display }}</td><td>{{ participant.registered_at|date:"M j, Y H:i" }}</td><td>{% with attempt=participant.attempts.last %}{% if attempt %}{{ attempt.started_at|date:"M j, Y H:i" }}{% else %}Not started{% endif %}{% endwith %}</td></tr>
+          {% empty %}<tr><td class="assessment-empty" colspan="4">No signups are available.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      {% if selected_participant %}
+        <section class="assessment-submission-detail" id="question-signup-details">
+          <div class="assessment-card-head">
+            <div>
+              <h3>{{ selected_participant.user.user_name }}</h3>
+              <p class="assessment-muted">Details for {{ assessment.name }} only</p>
+            </div>
+            <span class="assessment-pill">{{ selected_participant.get_status_display }}</span>
+          </div>
+          <dl class="assessment-participant-summary">
+            <div><dt>Signed up</dt><dd>{{ selected_participant.registered_at|date:"M j, Y H:i" }}</dd></div>
+            <div><dt>Attempts</dt><dd>{{ selected_participant.attempts.all|length }}</dd></div>
+            <div><dt>Question activity</dt><dd>{{ selected_user_question_activity_count }}</dd></div>
+          </dl>
+        </section>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <nav class="assessment-detail-tabs assessment-question-bottom-tabs" aria-label="Question assessment tabs">
+    <a class="{% if active_tab == 'leaderboard' %}active{% endif %}" href="?tab=leaderboard">Leaderboard</a>
+    <a class="{% if active_tab == 'submissions' %}active{% endif %}" href="?tab=submissions">Submissions</a>
+    <a class="{% if active_tab == 'signups' %}active{% endif %}" href="?tab=signups">Signups</a>
+  </nav>
+</main>
+{% endblock %}
