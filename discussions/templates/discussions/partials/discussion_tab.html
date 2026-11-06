@@ -1,29 +1,33 @@
 {% load discussion_extras %}
 <div class="discussion-container" id="discussion-container">
   <div class="discussion-header">
-    <h3>Discussion</h3>
-    <span class="discussion-count">{{ discussion.comment_count }} comments</span>
+    <div>
+      <h3>Discussion</h3>
+      <span class="discussion-sub">Share approaches, ask questions, help each other out.</span>
+    </div>
+    <span class="discussion-count"><i class="bi bi-chat-dots"></i> {{ discussion.comment_count }} comment{{ discussion.comment_count|pluralize }}</span>
   </div>
 
   {% if user.is_authenticated %}
   <div class="comment-form-wrapper">
     <div class="comment-form-row">
-      <div class="comment-avatar">{{ user.user_name|slice:":1"|upper }}</div>
-      <textarea id="new-comment-input" class="comment-form-input" placeholder="Add to the discussion..."></textarea>
+      <div class="comment-avatar me">{{ user.user_name|slice:":1"|upper }}</div>
+      <textarea id="new-comment-input" class="comment-form-input" placeholder="Share your approach or ask a question..."></textarea>
     </div>
     <div class="comment-form-actions">
-      <button class="comment-post-btn" data-action="post-comment" data-slug="{{ problem.slug }}">Comment</button>
+      <span class="comment-hint"><i class="bi bi-eye-slash"></i> Avoid posting full solutions without a spoiler warning</span>
+      <button class="comment-post-btn" data-action="post-comment" data-slug="{{ problem.slug }}"><i class="bi bi-send"></i> Comment</button>
     </div>
   </div>
   {% else %}
   <div class="login-prompt">
-    <a href="{% url 'users:login' %}">Log in</a> to join the discussion.
+    <i class="bi bi-lock"></i> <a href="{% url 'users:login' %}">Log in</a> to join the discussion.
   </div>
   {% endif %}
 
   <div class="comments-list">
     {% for comment in comments %}
-    <div class="comment-card" data-comment-id="{{ comment.id }}">
+    <div class="comment-card" data-comment-id="{{ comment.id }}" style="--i: {{ forloop.counter0 }}">
       <div class="comment-top">
         <div class="comment-avatar">{{ comment.user.user_name|slice:":1"|upper }}</div>
         <span class="comment-author">{{ comment.user.user_name }}</span>
@@ -31,17 +35,19 @@
       </div>
       <div class="comment-body">{{ comment.content }}</div>
       <div class="comment-actions">
-        <button class="vote-btn{% if comment.user_vote == 1 %} active-up{% endif %}"
-                data-action="vote" data-comment-id="{{ comment.id }}" data-value="1" title="Upvote">&#9650;</button>
-        <span class="vote-count" data-count-id="{{ comment.id }}">{{ comment.vote_count }}</span>
-        <button class="vote-btn{% if comment.user_vote == -1 %} active-down{% endif %}"
-                data-action="vote" data-comment-id="{{ comment.id }}" data-value="-1" title="Downvote">&#9660;</button>
-        <button class="reply-toggle-btn" data-action="toggle-reply" data-parent-id="{{ comment.id }}">Reply</button>
+        <div class="vote-group">
+          <button class="vote-btn{% if comment.user_vote == 1 %} active-up{% endif %}"
+                  data-action="vote" data-comment-id="{{ comment.id }}" data-value="1" title="Upvote"><i class="bi bi-arrow-up"></i></button>
+          <span class="vote-count" data-count-id="{{ comment.id }}">{{ comment.vote_count }}</span>
+          <button class="vote-btn{% if comment.user_vote == -1 %} active-down{% endif %}"
+                  data-action="vote" data-comment-id="{{ comment.id }}" data-value="-1" title="Downvote"><i class="bi bi-arrow-down"></i></button>
+        </div>
+        <button class="reply-toggle-btn" data-action="toggle-reply" data-parent-id="{{ comment.id }}"><i class="bi bi-reply"></i> Reply</button>
       </div>
       <div class="reply-form-wrapper" data-reply-form="{{ comment.id }}">
         {% if user.is_authenticated %}
         <div class="comment-form-row">
-          <div class="comment-avatar">{{ user.user_name|slice:":1"|upper }}</div>
+          <div class="comment-avatar me">{{ user.user_name|slice:":1"|upper }}</div>
           <textarea class="reply-form-input" placeholder="Write a reply..."></textarea>
         </div>
         <div class="reply-form-actions">
@@ -63,11 +69,13 @@
           </div>
           <div class="comment-body">{{ reply.content }}</div>
           <div class="comment-actions">
-            <button class="vote-btn{% if reply.user_vote == 1 %} active-up{% endif %}"
-                    data-action="vote" data-comment-id="{{ reply.id }}" data-value="1" title="Upvote">&#9650;</button>
-            <span class="vote-count" data-count-id="{{ reply.id }}">{{ reply.vote_count }}</span>
-            <button class="vote-btn{% if reply.user_vote == -1 %} active-down{% endif %}"
-                    data-action="vote" data-comment-id="{{ reply.id }}" data-value="-1" title="Downvote">&#9660;</button>
+            <div class="vote-group">
+              <button class="vote-btn{% if reply.user_vote == 1 %} active-up{% endif %}"
+                      data-action="vote" data-comment-id="{{ reply.id }}" data-value="1" title="Upvote"><i class="bi bi-arrow-up"></i></button>
+              <span class="vote-count" data-count-id="{{ reply.id }}">{{ reply.vote_count }}</span>
+              <button class="vote-btn{% if reply.user_vote == -1 %} active-down{% endif %}"
+                      data-action="vote" data-comment-id="{{ reply.id }}" data-value="-1" title="Downvote"><i class="bi bi-arrow-down"></i></button>
+            </div>
           </div>
         </div>
         {% endfor %}
@@ -76,8 +84,9 @@
     </div>
     {% empty %}
     <div class="discussion-empty">
-      <div class="discussion-empty-icon">💬</div>
-      No comments yet. Be the first to discuss this problem!
+      <span class="er-icon"><i class="bi bi-chat-square-heart"></i></span>
+      <strong>Start the conversation</strong>
+      <span>No comments yet. Share how you'd approach this problem.</span>
     </div>
     {% endfor %}
   </div>

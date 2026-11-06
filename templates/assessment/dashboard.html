@@ -1,36 +1,52 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Assessment management | BashaByte{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/assessment.css' %}?v=2">
+{% endblock %}
 {% block content %}
-<main class="assessment-shell">
+<main class="assessment-shell asx-dash">
   {% include "assessment/_messages.html" %}
-  <header class="assessment-header">
+
+  <header class="assessment-header asx-hero">
     <div>
       <div class="assessment-eyebrow">Administration</div>
       <h1>{% if active_tab == "questions" %}Manage Questions{% else %}Manage Assessments{% endif %}</h1>
+      <p class="asx-sub">
+        {% if active_tab == "questions" %}Build and organise the reusable question bank your assessments draw from.
+        {% else %}Schedule, publish and monitor coding assessments for your students.{% endif %}
+      </p>
     </div>
-    {% if active_tab == "assessments" %}
-      {% if request.user.is_faculty or request.user.is_staff %}
-        <a class="assessment-button" href="{% url 'assessment:assessment_create' %}">Create assessment</a>
+    <div class="assessment-inline-actions">
+      {% if active_tab == "assessments" %}
+        {% if request.user.is_faculty or request.user.is_staff %}
+          <a class="assessment-button" href="{% url 'assessment:assessment_create' %}"><i class="bi bi-plus-lg"></i> Create assessment</a>
+        {% endif %}
+      {% else %}
+        <a class="assessment-button-secondary" href="{% url 'assessment:question_add' %}"><i class="bi bi-box-arrow-in-down"></i> Add question</a>
+        {% if can_create_questions %}
+          <a class="assessment-button" href="{% url 'assessment:question_create' %}"><i class="bi bi-plus-lg"></i> Create question</a>
+        {% endif %}
       {% endif %}
-    {% endif %}
+    </div>
   </header>
 
-  <nav class="assessment-admin-tabs" aria-label="Assessment administration">
-    <a class="{% if active_tab == 'assessments' %}active{% endif %}" href="{% url 'assessment:dashboard' %}?tab=assessments">Manage Assessments</a>
-    <a class="{% if active_tab == 'questions' %}active{% endif %}" href="{% url 'assessment:dashboard' %}?tab=questions">Manage Questions</a>
+  <nav class="assessment-admin-tabs asx-tabs" aria-label="Assessment administration">
+    <a class="{% if active_tab == 'assessments' %}active{% endif %}" href="{% url 'assessment:dashboard' %}?tab=assessments"><i class="bi bi-clipboard-check"></i> Manage Assessments{% if kpis %}<b>{{ kpis.total }}</b>{% endif %}</a>
+    <a class="{% if active_tab == 'questions' %}active{% endif %}" href="{% url 'assessment:dashboard' %}?tab=questions"><i class="bi bi-collection"></i> Manage Questions{% if bank_totals %}<b>{{ bank_totals.coding|add:bank_totals.mcq }}</b>{% endif %}</a>
+    <span class="asx-tabs-ink" aria-hidden="true"></span>
   </nav>
 
   {% if active_tab == "questions" %}
-    <div class="assessment-question-manager-toolbar">
-      <div class="assessment-inline-actions">
-        <a class="assessment-button-secondary" href="{% url 'assessment:question_add' %}">Add question</a>
-        {% if can_create_questions %}
-          <a class="assessment-button" href="{% url 'assessment:question_create' %}">Create question</a>
-        {% endif %}
-      </div>
-    </div>
+    {# ═════════ QUESTION BANK ═════════ #}
+    <section class="asx-kpis asx-kpis-3">
+      <div class="asx-kpi"><span class="asx-kpi-icon"><i class="bi bi-code-slash"></i></span><div><strong data-count="{{ bank_totals.coding }}">{{ bank_totals.coding }}</strong><span>Coding questions</span></div></div>
+      <div class="asx-kpi"><span class="asx-kpi-icon ic-blue"><i class="bi bi-ui-radios"></i></span><div><strong data-count="{{ bank_totals.mcq }}">{{ bank_totals.mcq }}</strong><span>MCQ questions</span></div></div>
+      <div class="asx-kpi"><span class="asx-kpi-icon ic-amber"><i class="bi bi-funnel"></i></span><div><strong data-question-count-num>{{ question_count }}</strong><span>Matching current filters</span></div></div>
+    </section>
+
+    <div class="assessment-question-manager-toolbar"></div>
 
     <form
       class="assessment-question-bank-filters"
@@ -47,8 +63,9 @@
           {% endfor %}
         </select>
       </label>
-      <label>
+      <label class="asx-with-icon">
         <span>Search questions</span>
+        <i class="bi bi-search" aria-hidden="true"></i>
         <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search by title or content..." data-question-search>
       </label>
       <label>
@@ -66,7 +83,7 @@
         </datalist>
       </label>
       <label>
-        <span>Questions</span>
+        <span>Jump to question</span>
         <select class="form-select" data-question-select>
           <option value="">Select a question to edit</option>
           {% for row in question_rows %}
@@ -74,19 +91,25 @@
           {% endfor %}
         </select>
       </label>
-      <button class="assessment-button-secondary" type="submit">Search</button>
+      <button class="assessment-button-secondary" type="submit"><i class="bi bi-search"></i> Search</button>
     </form>
 
-    <section class="assessment-panel">
-      <p class="assessment-muted" data-question-count>{{ question_count }} question{{ question_count|pluralize }}</p>
+    <section class="assessment-panel has-table">
+      <div class="assessment-card-head">
+        <div>
+          <h2>Question bank</h2>
+          <p class="assessment-muted" data-question-count>{{ question_count }} question{{ question_count|pluralize }}</p>
+        </div>
+        <span class="asx-live-hint"><span class="asx-dot"></span> Results update as you type</span>
+      </div>
       <div class="assessment-table-wrap">
-        <table class="assessment-table assessment-admin-table">
+        <table class="assessment-table assessment-admin-table asx-qtable">
           <thead><tr><th>Question</th><th>Category</th><th>Topic</th><th>Subtopic</th></tr></thead>
           <tbody data-question-results>
             {% for row in question_rows %}
               <tr>
                 <td><a href="{{ row.edit_url }}">{{ row.title }}</a></td>
-                <td>{{ row.question_type }}</td>
+                <td data-type="{{ row.question_type }}">{{ row.question_type }}</td>
                 <td>{{ row.topic }}</td>
                 <td>{{ row.subtopic|default:"—" }}</td>
               </tr>
@@ -97,44 +120,128 @@
         </table>
       </div>
     </section>
-    <script src="{% static 'js/assessment_question_bank.js' %}" defer></script>
+    <script src="{% static 'js/assessment_question_bank.js' %}?v=2" defer></script>
+
   {% else %}
-    <form class="assessment-admin-toolbar" method="get">
-      <input type="hidden" name="tab" value="assessments">
-      <label class="assessment-search assessment-admin-search">
-        <span class="visually-hidden">Search assessments</span>
-        <input type="search" name="q" value="{{ query }}" placeholder="Start typing..." aria-label="Search assessments">
-      </label>
-      <button class="assessment-button-secondary" type="submit">Search</button>
-    </form>
+    {# ═════════ ASSESSMENTS ═════════ #}
+    <section class="asx-kpis">
+      <div class="asx-kpi"><span class="asx-kpi-icon"><i class="bi bi-clipboard-data"></i></span><div><strong data-count="{{ kpis.total }}">{{ kpis.total }}</strong><span>Total assessments</span></div></div>
+      <div class="asx-kpi is-live"><span class="asx-kpi-icon ic-live"><i class="bi bi-broadcast"></i></span><div><strong data-count="{{ kpis.live }}">{{ kpis.live }}</strong><span>Live now</span></div></div>
+      <div class="asx-kpi"><span class="asx-kpi-icon ic-blue"><i class="bi bi-calendar-event"></i></span><div><strong data-count="{{ kpis.upcoming }}">{{ kpis.upcoming }}</strong><span>Upcoming</span></div></div>
+      <div class="asx-kpi"><span class="asx-kpi-icon ic-amber"><i class="bi bi-pencil-square"></i></span><div><strong data-count="{{ kpis.draft }}">{{ kpis.draft }}</strong><span>Drafts</span></div></div>
+      <div class="asx-kpi"><span class="asx-kpi-icon ic-violet"><i class="bi bi-people"></i></span><div><strong data-count="{{ kpis.participants }}">{{ kpis.participants }}</strong><span>Participants</span></div></div>
+    </section>
+
+    <div class="asx-toolbar">
+      <form class="assessment-admin-toolbar asx-search" method="get" data-autosubmit>
+        <input type="hidden" name="tab" value="assessments">
+        <input type="hidden" name="status" value="{{ status_filter }}">
+        <label class="assessment-search assessment-admin-search">
+          <span class="visually-hidden">Search assessments</span>
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" name="q" value="{{ query }}" placeholder="Search by name or URL" aria-label="Search assessments" autocomplete="off">
+          <kbd aria-hidden="true">/</kbd>
+        </label>
+        <button class="assessment-button-secondary visually-hidden" type="submit">Search</button>
+      </form>
+
+      <nav class="asx-chips" aria-label="Filter by status">
+        <a href="?tab=assessments&status=all&q={{ query|urlencode }}" class="{% if status_filter == 'all' %}active{% endif %}">All <b>{{ kpis.total }}</b></a>
+        <a href="?tab=assessments&status=live&q={{ query|urlencode }}" class="{% if status_filter == 'live' %}active{% endif %}"><span class="asx-dot"></span>Live <b>{{ kpis.live }}</b></a>
+        <a href="?tab=assessments&status=upcoming&q={{ query|urlencode }}" class="{% if status_filter == 'upcoming' %}active{% endif %}">Upcoming <b>{{ kpis.upcoming }}</b></a>
+        <a href="?tab=assessments&status=published&q={{ query|urlencode }}" class="{% if status_filter == 'published' %}active{% endif %}">Published <b>{{ kpis.published }}</b></a>
+        <a href="?tab=assessments&status=draft&q={{ query|urlencode }}" class="{% if status_filter == 'draft' %}active{% endif %}">Drafts <b>{{ kpis.draft }}</b></a>
+        <a href="?tab=assessments&status=archived&q={{ query|urlencode }}" class="{% if status_filter == 'archived' %}active{% endif %}">Archived <b>{{ kpis.archived }}</b></a>
+      </nav>
+    </div>
+
     <p class="assessment-admin-intro">Assessments you can edit are below.</p>
-    <section class="assessment-panel">
-      <div class="assessment-table-wrap">
-        <table class="assessment-table assessment-admin-table">
-          <thead><tr><th>Assessment Name</th><th>Assessment URL</th><th>Owner</th><th>Start date</th><th>Status</th></tr></thead>
-          <tbody>
-            {% for assessment in page_obj %}
-              <tr>
-                <td><a href="{% url 'assessment:assessment_detail' assessment.pk %}">{{ assessment.name }}</a></td>
-                <td><a href="{% url 'assessment:assessment_detail_by_slug' assessment.slug %}">{{ assessment.slug }}</a></td>
-                <td>{{ assessment.created_by.user_name }}</td>
-                <td>{% if assessment.start_time %}{{ assessment.start_time|date:"M j, Y" }}{% else %}—{% endif %}</td>
-                <td><span class="assessment-pill" data-status="{{ assessment.status }}">{{ assessment.get_status_display }}</span></td>
-              </tr>
-            {% empty %}
-              <tr><td class="assessment-empty" colspan="5">No assessments yet. Create one to get started.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% if page_obj.has_other_pages %}
-        <nav class="assessment-page-links" aria-label="Assessment pages">
-          {% if page_obj.has_previous %}<a class="assessment-button-secondary" href="?tab=assessments&q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
-          <span class="assessment-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-          {% if page_obj.has_next %}<a class="assessment-button-secondary" href="?tab=assessments&q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
-        </nav>
+
+    {% if page_obj.object_list %}
+    <section class="asx-grid">
+      {% for assessment in page_obj %}
+        {% with start=assessment.start_time end=assessment.end_time %}
+        <article class="asx-card" data-status="{{ assessment.status }}" style="--i: {{ forloop.counter0 }}">
+          <div class="asx-card-top">
+            <span class="assessment-pill" data-status="{{ assessment.status }}">{{ assessment.get_status_display }}</span>
+            {% if assessment.status == "published" %}
+              {% if start and start > now %}
+                <span class="asx-when is-upcoming"><i class="bi bi-hourglass-split"></i> Starts in {{ start|timeuntil:now }}</span>
+              {% elif end and end <= now %}
+                <span class="asx-when is-ended"><i class="bi bi-flag"></i> Ended {{ end|timesince:now }} ago</span>
+              {% else %}
+                <span class="asx-when is-live"><span class="asx-dot"></span> Live now</span>
+              {% endif %}
+            {% elif assessment.status == "draft" %}
+              <span class="asx-when"><i class="bi bi-pencil"></i> Not published</span>
+            {% endif %}
+          </div>
+
+          <h3><a href="{% url 'assessment:assessment_detail' assessment.pk %}" class="asx-card-title">{{ assessment.name }}</a></h3>
+
+          <div class="asx-url">
+            <i class="bi bi-link-45deg" aria-hidden="true"></i>
+            <a href="{% url 'assessment:assessment_detail_by_slug' assessment.slug %}">{{ assessment.slug }}</a>
+            <button type="button" class="asx-copy" data-copy="{{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}" title="Copy student link" aria-label="Copy student link"><i class="bi bi-clipboard"></i></button>
+          </div>
+
+          <dl class="asx-meta">
+            <div><dt><i class="bi bi-stopwatch"></i> Duration</dt><dd>{{ assessment.duration_minutes }} min</dd></div>
+            <div><dt><i class="bi bi-layers"></i> Sections</dt><dd>{{ assessment.section_total }}</dd></div>
+            <div><dt><i class="bi bi-question-square"></i> Questions</dt><dd>{{ assessment.question_total }}</dd></div>
+            <div><dt><i class="bi bi-people"></i> Participants</dt><dd>{{ assessment.participant_total }}</dd></div>
+          </dl>
+
+          <div class="asx-schedule">
+            <i class="bi bi-calendar3"></i>
+            {% if start %}{{ start|date:"M j, Y · g:i A" }}{% else %}No start date{% endif %}
+            {% if end %}<span class="asx-arrow">→</span>{{ end|date:"M j, g:i A" }}{% endif %}
+          </div>
+
+          <footer class="asx-card-foot">
+            <span class="asx-owner">
+              <span class="asx-avatar">{{ assessment.created_by.user_name|slice:":1"|upper }}</span>
+              <span>{{ assessment.created_by.user_name }}<small>updated {{ assessment.updated_at|timesince }} ago</small></span>
+            </span>
+            <span class="asx-actions">
+              <a href="{% url 'assessment:assessment_edit' assessment.pk %}" class="asx-icon-btn" title="Edit settings" aria-label="Edit {{ assessment.name }}"><i class="bi bi-sliders"></i></a>
+              <a href="{% url 'assessment:assessment_detail' assessment.pk %}" class="asx-open">Open <i class="bi bi-arrow-right"></i></a>
+            </span>
+          </footer>
+        </article>
+        {% endwith %}
+      {% endfor %}
+    </section>
+    {% else %}
+    <section class="asx-empty">
+      <span class="asx-empty-icon"><i class="bi {% if query or status_filter != 'all' %}bi-search{% else %}bi-clipboard-plus{% endif %}"></i></span>
+      {% if query or status_filter != 'all' %}
+        <h3>No assessments match</h3>
+        <p>Try a different search or status filter.</p>
+        <a class="assessment-button-secondary" href="?tab=assessments">Clear filters</a>
+      {% else %}
+        <h3>No assessments yet. Create one to get started.</h3>
+        <p>Set a schedule, add sections from your question bank and share one link with your students.</p>
+        {% if request.user.is_faculty or request.user.is_staff %}
+          <a class="assessment-button" href="{% url 'assessment:assessment_create' %}"><i class="bi bi-plus-lg"></i> Create assessment</a>
+        {% endif %}
       {% endif %}
     </section>
+    {% endif %}
+
+    {% if page_obj.has_other_pages %}
+      <nav class="assessment-page-links" aria-label="Assessment pages">
+        {% if page_obj.has_previous %}<a class="assessment-button-secondary" href="?tab=assessments&status={{ status_filter }}&q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i> Previous</a>{% else %}<span></span>{% endif %}
+        <span class="assessment-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="assessment-button-secondary" href="?tab=assessments&status={{ status_filter }}&q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next <i class="bi bi-chevron-right"></i></a>{% else %}<span></span>{% endif %}
+      </nav>
+    {% endif %}
   {% endif %}
+
+  <div class="asx-toast" id="asxToast" role="status" aria-live="polite" hidden></div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/assessment_dashboard.js' %}?v=1" defer></script>
 {% endblock %}

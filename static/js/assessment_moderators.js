@@ -6,12 +6,19 @@
 
   const search = form.querySelector("[data-moderator-search]");
   const results = form.querySelector("[data-moderator-results]");
-  const status = form.querySelector("[data-moderator-status]");
+  const statusEl = form.querySelector("[data-moderator-status]");
+  // Writing status must never break the search (the element is optional).
+  const status = {
+    set textContent(value) { if (statusEl) statusEl.textContent = value; },
+  };
+  if (!search || !results) {
+    return;
+  }
   let debounceTimer;
   let activeRequest;
 
   function setOptions(users) {
-    results.replaceChildren(new Option("Select a user", ""));
+    results.replaceChildren(new Option(users.length ? "Select a user" : "Search for a user first", ""));
     users.forEach((user) => {
       results.add(new Option(user.user_name, user.id));
     });
@@ -46,6 +53,7 @@
         }
         const data = await response.json();
         setOptions(data.results);
+        if (data.results.length === 1) results.value = data.results[0].id;
         status.textContent = data.results.length
           ? `${data.results.length} matching user(s). Select one to continue.`
           : "No matching users found.";

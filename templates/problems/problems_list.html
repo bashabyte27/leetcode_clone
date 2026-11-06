@@ -1,518 +1,315 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Problems — BashaByte{% endblock %}
+{% block title %}Problems · BashaByte{% endblock %}
+{% block body_class %}page-problems{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/problems.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/problems.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
 <div class="bb-problems">
-  <div class="bbp-wrap">
+  <div class="pp-ambient" aria-hidden="true"><i></i><i></i></div>
 
-    <!-- ═══════════════ PAGE HEADER ═══════════════ -->
-    <header class="bbp-head">
+  <div class="pp-wrap">
+
+    <!-- ═══════════════ HERO ═══════════════ -->
+    <header class="pp-hero pp-in">
       <div>
-        <div class="bbp-kicker">
-          <span class="bbp-kicker-dot"></span>
-          The BashaByte Library
-        </div>
-        <h1 class="bbp-title">Sharpen your edge.</h1>
-        <p class="bbp-sub">
-          A curated set of problems across every difficulty. Practice daily,
-          build patterns, and level up.
-        </p>
+        <span class="pp-kicker"><span class="pp-kicker-dot"></span>Problem library</span>
+        {% if user.is_authenticated %}
+          <h1><span class="pp-greet" id="ppGreet">Welcome back</span>, <span class="pp-grad">{{ user.user_name }}</span>.</h1>
+          <p>
+            {% if calendar.practiced_today %}
+              You've already practiced today. Keep the streak going.
+            {% elif calendar.current_streak %}
+              You're on a {{ calendar.current_streak }}-day streak. Solve one today to keep it alive.
+            {% else %}
+              One problem a day compounds fast. Pick one and start a streak.
+            {% endif %}
+          </p>
+        {% else %}
+          <h1>Sharpen your <span class="pp-grad">edge.</span></h1>
+          <p>Curated problems across every difficulty, judged on hidden test cases.</p>
+        {% endif %}
       </div>
-      <div class="bbp-stats">
-        <div class="bbp-stat">
-          <span class="bbp-stat-num">{{ total_problems|default:"0" }}</span>
-          <span class="bbp-stat-lbl">Total</span>
-        </div>
-        <div class="bbp-stat bbp-stat-easy">
-          <span class="bbp-stat-num">{{ easy_count|default:"0" }}</span>
-          <span class="bbp-stat-lbl">Easy</span>
-        </div>
-        <div class="bbp-stat bbp-stat-medium">
-          <span class="bbp-stat-num">{{ medium_count|default:"0" }}</span>
-          <span class="bbp-stat-lbl">Medium</span>
-        </div>
-        <div class="bbp-stat bbp-stat-hard">
-          <span class="bbp-stat-num">{{ hard_count|default:"0" }}</span>
-          <span class="bbp-stat-lbl">Hard</span>
-        </div>
+      <div class="pp-hero-actions">
+        <a href="{% url 'problems:shuffle_problem' %}" class="pp-btn pp-btn-ghost"><i class="bi bi-shuffle"></i> Random problem</a>
+        {% if daily_pick %}
+          <a href="{% url 'problems:problem' daily_pick.slug %}" class="pp-btn pp-btn-primary">Today's pick <i class="bi bi-arrow-right"></i></a>
+        {% endif %}
       </div>
     </header>
 
-    <!-- ═══════════════ TOOLBAR — search + filters ═══════════════ -->
-    <div class="bbp-toolbar" role="search">
-      <div class="bbp-search">
-        <i class="bi bi-search bbp-search-icon" aria-hidden="true"></i>
-        <label for="bbpSearch" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Search problems</label>
-        <input
-          type="search"
-          id="bbpSearch"
-          class="bbp-search-input"
-          placeholder="Search by title or problem number…"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <kbd class="bbp-search-kbd" aria-hidden="true">/</kbd>
-        <button type="button" class="bbp-search-clear" id="bbpSearchClear" aria-label="Clear search">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
+    {% if user.is_authenticated %}
+    <!-- ═══════════════ DASHBOARD ═══════════════ -->
+    <section class="pp-dash" aria-label="Your practice overview">
 
-      <div class="bbp-filters">
-        <div class="bbp-seg" role="group" aria-label="Filter by difficulty">
-          <button type="button" class="bbp-seg-btn is-active" data-difficulty="all">
-            All
-          </button>
-          <button type="button" class="bbp-seg-btn" data-difficulty="easy">
-            <span class="bbp-seg-dot easy"></span>Easy
-          </button>
-          <button type="button" class="bbp-seg-btn" data-difficulty="medium">
-            <span class="bbp-seg-dot medium"></span>Medium
-          </button>
-          <button type="button" class="bbp-seg-btn" data-difficulty="hard">
-            <span class="bbp-seg-dot hard"></span>Hard
-          </button>
+      <!-- Progress -->
+      <article class="pp-card pp-progress pp-in" style="--i: 1">
+        <header class="pp-card-head"><i class="bi bi-bullseye"></i><h2>Progress</h2></header>
+        <div class="pp-ring-wrap">
+          <svg class="pp-ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="pp-ring-track" cx="60" cy="60" r="52" />
+            <circle class="pp-ring-fill" cx="60" cy="60" r="52" pathLength="100" style="--p: {{ progress }}" />
+          </svg>
+          <div class="pp-ring-center">
+            <strong><span data-count="{{ solved_total }}">{{ solved_total }}</span><small>/{{ total_problems }}</small></strong>
+            <span>Solved</span>
+          </div>
         </div>
+        <div class="pp-breakdown">
+          <div class="pp-bd easy" style="--w: {% widthratio easy_solved easy_count|default:1 100 %}%">
+            <span class="pp-bd-label">Easy</span>
+            <span class="pp-bd-val"><b>{{ easy_solved }}</b>/{{ easy_count }}</span>
+            <span class="pp-bd-bar"><i></i></span>
+          </div>
+          <div class="pp-bd medium" style="--w: {% widthratio medium_solved medium_count|default:1 100 %}%">
+            <span class="pp-bd-label">Medium</span>
+            <span class="pp-bd-val"><b>{{ medium_solved }}</b>/{{ medium_count }}</span>
+            <span class="pp-bd-bar"><i></i></span>
+          </div>
+          <div class="pp-bd hard" style="--w: {% widthratio hard_solved hard_count|default:1 100 %}%">
+            <span class="pp-bd-label">Hard</span>
+            <span class="pp-bd-val"><b>{{ hard_solved }}</b>/{{ hard_count }}</span>
+            <span class="pp-bd-bar"><i></i></span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Practice calendar -->
+      <article class="pp-card pp-activity pp-in" style="--i: 2">
+        <header class="pp-activity-head">
+          <div>
+            <h2><b data-count="{{ calendar.total }}">{{ calendar.total }}</b> submissions in the past year</h2>
+          </div>
+          <div class="pp-chips">
+            <span class="pp-chip"><i class="bi bi-calendar-check"></i> Active days <b>{{ calendar.active_days }}</b></span>
+            <span class="pp-chip pp-chip-fire{% if calendar.current_streak %} is-lit{% endif %}"><i class="bi bi-fire"></i> Streak <b>{{ calendar.current_streak }}</b></span>
+            <span class="pp-chip"><i class="bi bi-trophy"></i> Max streak <b>{{ calendar.max_streak }}</b></span>
+          </div>
+        </header>
+
+        <div class="pp-hm-scroll" id="ppHeatScroll">
+          <div class="pp-hm" style="--weeks: {{ calendar.weeks|length }}">
+            <div class="pp-hm-months" aria-hidden="true">
+              {% for m in calendar.months %}<span style="grid-column: {{ m.col }} / span 3">{{ m.label }}</span>{% endfor %}
+            </div>
+            <div class="pp-hm-days" aria-hidden="true"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+            <div class="pp-hm-grid" id="ppHeat" role="img" aria-label="{{ calendar.active_days }} active days in the past year">
+              {% for week in calendar.weeks %}{% for d in week %}{% if d %}<i class="l{{ d.level }}" style="--c: {{ forloop.parentloop.counter0 }}" data-n="{{ d.count }}" data-d="{{ d.date|date:'D, M j, Y' }}"></i>{% else %}<i class="pp-hm-blank"></i>{% endif %}{% endfor %}{% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="pp-totals">
+          <div><span class="pp-mono-label">All-time submissions</span><strong>{{ user_totals.submissions }}</strong></div>
+          <div><span class="pp-mono-label">Accepted</span><strong>{{ user_totals.accepted }}</strong></div>
+          <div><span class="pp-mono-label">Your acceptance</span><strong>{% if user_totals.rate != None %}{{ user_totals.rate|floatformat:"-1" }}%{% else %}&mdash;{% endif %}</strong></div>
+        </div>
+
+        <footer class="pp-hm-foot">
+          <span>Each square is a day, shaded by how many submissions you made.</span>
+          <span class="pp-hm-legend" aria-hidden="true">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More</span>
+        </footer>
+      </article>
+
+      <!-- Today's pick -->
+      <article class="pp-card pp-pick pp-in" style="--i: 3">
+        <header class="pp-card-head"><i class="bi bi-lightning-charge"></i><h2>Today's pick</h2><span class="pp-date" id="ppToday"></span></header>
+        {% if daily_pick %}
+          <a class="pp-pick-body" href="{% url 'problems:problem' daily_pick.slug %}">
+            <span class="pp-pick-num">#{{ daily_pick.order_num|default:"" }}</span>
+            <strong>{{ daily_pick.title }}</strong>
+            <span class="pp-pick-meta">
+              <span class="pp-diff {{ daily_pick.difficulty }}">{{ daily_pick.get_difficulty_display }}</span>
+              {% if daily_pick.acceptance != None %}<span class="pp-mono">{{ daily_pick.acceptance|floatformat:"-1" }}% accepted</span>{% endif %}
+            </span>
+            <span class="pp-pick-cta">Solve now <i class="bi bi-arrow-right"></i></span>
+          </a>
+        {% else %}
+          <p class="pp-muted">No problems available yet.</p>
+        {% endif %}
+        <div class="pp-rank">
+          {% if standing.rank %}
+            <div><span class="pp-mono-label">Global rank</span><strong>#{{ standing.rank }}</strong></div>
+            <div><span class="pp-mono-label">Points</span><strong>{{ standing.points }}</strong></div>
+          {% else %}
+            <div><span class="pp-mono-label">Global rank</span><strong class="pp-muted">Unranked</strong></div>
+            <div><span class="pp-mono-label">Points</span><strong>0</strong></div>
+          {% endif %}
+        </div>
+      </article>
+    </section>
+    {% else %}
+    <section class="pp-card pp-guest pp-in" style="--i: 1">
+      <div class="pp-guest-art" aria-hidden="true">
+        {% for i in "0123456789012345678901234567890123" %}<i class="l{% cycle 0 2 1 0 3 4 1 0 2 0 1 3 %}"></i>{% endfor %}
+      </div>
+      <div>
+        <h2>Track your progress and streaks</h2>
+        <p>Log in to save solved problems, build a daily practice streak and climb the leaderboard.</p>
+      </div>
+      <div class="pp-guest-actions">
+        <a href="{% url 'users:register' %}" class="pp-btn pp-btn-primary">Create free account</a>
+        <a href="{% url 'users:login' %}?next={{ request.path|urlencode }}" class="pp-btn pp-btn-ghost">Log in</a>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- ═══════════════ TOOLBAR ═══════════════ -->
+    <div class="pp-sentinel" id="ppSentinel" aria-hidden="true"></div>
+    <div class="pp-toolbar" id="ppToolbar" role="search">
+      <div class="pp-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label for="ppSearch" class="pp-sr">Search problems</label>
+        <input type="search" id="ppSearch" placeholder="Search by title or number" autocomplete="off" spellcheck="false" />
+        <kbd aria-hidden="true">/</kbd>
       </div>
 
-      <div class="bbp-toolbar-meta">
-        <span class="bbp-count" id="bbpCount">
-          <strong>{{ paginator.count|default:problems|length }}</strong> problems
-        </span>
-        <button type="button" class="bbp-reset" id="bbpReset" hidden>
-          <i class="bi bi-arrow-counterclockwise"></i> Reset filters
-        </button>
+      <div class="pp-seg" id="ppDiff" role="group" aria-label="Filter by difficulty">
+        <span class="pp-seg-pill" aria-hidden="true"></span>
+        <button type="button" class="is-active" data-value="all" aria-pressed="true">All</button>
+        <button type="button" data-value="easy" aria-pressed="false"><i class="dot easy"></i>Easy</button>
+        <button type="button" data-value="medium" aria-pressed="false"><i class="dot medium"></i>Medium</button>
+        <button type="button" data-value="hard" aria-pressed="false"><i class="dot hard"></i>Hard</button>
       </div>
+
+      {% if user.is_authenticated %}
+      <div class="pp-seg" id="ppStatus" role="group" aria-label="Filter by status">
+        <span class="pp-seg-pill" aria-hidden="true"></span>
+        <button type="button" class="is-active" data-value="all" aria-pressed="true">Any</button>
+        <button type="button" data-value="todo" aria-pressed="false">To do</button>
+        <button type="button" data-value="solved" aria-pressed="false">Solved</button>
+      </div>
+      {% endif %}
+
+      <label class="pp-sort">
+        <span class="pp-sr">Sort problems</span>
+        <i class="bi bi-sort-down" aria-hidden="true"></i>
+        <select id="ppSort">
+          <option value="num">Number</option>
+          <option value="acc-desc">Acceptance: high to low</option>
+          <option value="acc-asc">Acceptance: low to high</option>
+          <option value="diff">Difficulty</option>
+        </select>
+      </label>
+
+      <span class="pp-count" id="ppCount" aria-live="polite"><b>{{ total_problems }}</b> problems</span>
     </div>
 
-    <!-- ═══════════════ LAYOUT ═══════════════ -->
-    <div class="bbp-layout">
+    <!-- ═══════════════ LIST + SIDEBAR ═══════════════ -->
+    <div class="pp-layout">
+      <div class="pp-list-col">
+        <div class="pp-list-head" aria-hidden="true">
+          <span></span><span>#</span><span>Title</span><span>Difficulty</span><span>Acceptance</span><span></span>
+        </div>
 
-      <!-- ── Problem list ── -->
-      <div class="bbp-list-col">
-        <div class="bbp-list" id="bbpList" role="list">
-          {% for problem in problems %}
-            <div class="bbp-row"
-                 role="listitem"
-                 data-difficulty="{{ problem.difficulty|lower }}"
-                 data-title="{{ problem.title|lower }}"
-                 data-number="{{ problem.order_num|default:forloop.counter }}">
-
-              <div class="bbp-row-status">
-                {% if problem.is_solved %}
-                  <span class="bbp-status bbp-status-solved" title="Solved" aria-label="Solved">
-                    <i class="bi bi-check-lg"></i>
-                  </span>
-                {% else %}
-                  <span class="bbp-status bbp-status-unsolved" title="Not solved" aria-label="Not solved"></span>
-                {% endif %}
-              </div>
-
-              <div class="bbp-row-num">
-                {{ problem.order_num|default:forloop.counter }}
-              </div>
-
-              <div class="bbp-row-main">
-                <a href="{% url 'problems:problem' problem.slug %}" class="bbp-row-title">
-                  {{ problem.title }}
-                </a>
-              </div>
-
-              <div class="bbp-row-diff">
-                <span class="bbp-diff bbp-diff-{{ problem.difficulty|lower }}">
-                  {{ problem.get_difficulty_display }}
-                </span>
-              </div>
-
-              <div class="bbp-row-accept">
-                <span class="bbp-accept-val">{{ problem.acceptance_rate|default:"0" }}%</span>
-                <span class="bbp-accept-bar">
-                  <span class="bbp-accept-fill"
-                        style="width:{{ problem.acceptance_rate|default:0 }}%;"></span>
-                </span>
-              </div>
-
-              <div class="bbp-row-arrow" aria-hidden="true">
-                <i class="bi bi-arrow-right"></i>
-              </div>
-            </div>
+        <div class="pp-list" id="ppList">
+          {% for p in problems %}
+          <a class="pp-row{% if p.is_solved %} is-solved{% endif %}"
+             href="{% url 'problems:problem' p.slug %}"
+             style="--i: {{ forloop.counter0 }}"
+             data-num="{{ p.order_num|default:forloop.counter }}"
+             data-title="{{ p.title|lower }}"
+             data-diff="{{ p.difficulty }}"
+             data-acc="{% if p.acceptance != None %}{{ p.acceptance|stringformat:'s' }}{% else %}-1{% endif %}"
+             data-solved="{% if p.is_solved %}1{% else %}0{% endif %}">
+            <span class="pp-status" {% if p.is_solved %}title="Solved"{% endif %}>
+              {% if p.is_solved %}<i class="bi bi-check-circle-fill"></i>{% else %}<i class="bi bi-circle"></i>{% endif %}
+            </span>
+            <span class="pp-num">{{ p.order_num|default:forloop.counter }}</span>
+            <span class="pp-title">{{ p.title }}{% if p.is_premium %} <i class="bi bi-lock-fill pp-lock" title="Premium"></i>{% endif %}</span>
+            <span class="pp-diff-cell"><span class="pp-diff {{ p.difficulty }}">{{ p.get_difficulty_display }}</span></span>
+            <span class="pp-acc">
+              {% if p.acceptance != None %}
+                <span class="pp-acc-val">{{ p.acceptance|floatformat:"-1" }}%</span>
+                <span class="pp-acc-bar"><i style="--w: {{ p.acceptance|stringformat:'s' }}%"></i></span>
+              {% else %}
+                <span class="pp-acc-val pp-muted" title="No judged submissions yet">New</span>
+                <span class="pp-acc-bar"></span>
+              {% endif %}
+            </span>
+            <span class="pp-go" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+          </a>
           {% empty %}
-            <div class="bbp-empty" id="bbpEmptyDefault">
-              <div class="bbp-empty-icon">
-                <i class="bi bi-code-slash"></i>
-              </div>
-              <h3 class="bbp-empty-title">No problems yet</h3>
-              <p class="bbp-empty-sub">
-                The library is still being built. Check back soon for a fresh set of problems.
-              </p>
-            </div>
+          <div class="pp-empty">
+            <i class="bi bi-code-slash"></i>
+            <h3>No problems yet</h3>
+            <p>The library is still being built. Check back soon.</p>
+          </div>
           {% endfor %}
         </div>
 
-        <!-- Empty state for active filters (hidden by default) -->
-        <div class="bbp-empty" id="bbpEmptyFiltered" hidden>
-          <div class="bbp-empty-icon">
-            <i class="bi bi-search"></i>
-          </div>
-          <h3 class="bbp-empty-title">No matching problems</h3>
-          <p class="bbp-empty-sub">
-            Try a different search term or clear the difficulty filter.
-          </p>
-          <button type="button" class="bbp-empty-btn" id="bbpEmptyReset">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset filters
-          </button>
+        <div class="pp-empty" id="ppEmpty" hidden>
+          <i class="bi bi-search"></i>
+          <h3>No matching problems</h3>
+          <p>Try a different search or clear the filters.</p>
+          <button type="button" class="pp-btn pp-btn-ghost" id="ppReset"><i class="bi bi-arrow-counterclockwise"></i> Reset filters</button>
         </div>
-
-        <!-- ═══════════════ PAGINATION ═══════════════ -->
-        {% if is_paginated %}
-          <nav class="bbp-pagination" aria-label="Problem pagination">
-            <div class="bbp-pagination-info">
-              Showing <strong>{{ page_obj.start_index }}</strong>–<strong>{{ page_obj.end_index }}</strong>
-              of <strong>{{ paginator.count }}</strong> problems
-            </div>
-            <div class="bbp-pagination-nav">
-              {% if page_obj.has_previous %}
-                <a class="bbp-page-btn" href="?page={{ page_obj.previous_page_number }}"
-                   rel="prev" aria-label="Previous page">
-                  <i class="bi bi-chevron-left"></i>
-                </a>
-              {% else %}
-                <span class="bbp-page-btn" style="opacity:.35;pointer-events:none;" aria-disabled="true">
-                  <i class="bi bi-chevron-left"></i>
-                </span>
-              {% endif %}
-
-              <span class="bbp-page-current">
-                {{ page_obj.number }} / {{ paginator.num_pages }}
-              </span>
-
-              {% if page_obj.has_next %}
-                <a class="bbp-page-btn" href="?page={{ page_obj.next_page_number }}"
-                   rel="next" aria-label="Next page">
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-              {% else %}
-                <span class="bbp-page-btn" style="opacity:.35;pointer-events:none;" aria-disabled="true">
-                  <i class="bi bi-chevron-right"></i>
-                </span>
-              {% endif %}
-            </div>
-          </nav>
-        {% endif %}
       </div>
 
-      <!-- ═══════════════ SIDEBAR ═══════════════ -->
-      <aside class="bbp-sidebar">
-
-        <!-- Your Progress -->
-        <section class="sb-card">
-          <header class="sb-head">
-            <i class="bi bi-activity"></i>
-            <h6>Your Progress</h6>
-          </header>
-
-          {% if request.user.is_authenticated %}
-            <div class="progress-hero">
-              <div class="progress-ring-wrap">
-                <svg class="progress-ring" viewBox="0 0 36 36" aria-hidden="true">
-                  <path class="progress-ring-track"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                  <path class="progress-ring-fill"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        stroke-dasharray="{{ overall_progress_percent|default:'0' }}, 100"
-                        data-progress="{{ overall_progress_percent|default:'0' }}"/>
-                </svg>
-                <div class="progress-ring-text">
-                  <span class="progress-ring-percent">{{ progress|default:"0" }}<span class="progress-ring-pct">%</span></span>
-                </div>
-              </div>
-              <div class="progress-summary">
-                <div class="progress-summary-title">Keep shipping.</div>
-                <div class="progress-summary-sub">Solve problems across all difficulties to level up.</div>
-              </div>
-            </div>
-
-            <div class="progress-breakdown">
-              <div class="pb-row" style="--solved: {{ Easy_solved|default:0 }}; --total: {{ easy_count|default:1 }};">
-                <span class="pb-label"><span class="pb-dot easy"></span>Easy</span>
-                <span class="pb-bar"><span class="pb-fill easy"></span></span>
-                <span class="pb-count"><strong>{{ Easy_solved|default:"0" }}</strong> / {{ easy_count|default:"0" }}</span>
-              </div>
-              <div class="pb-row" style="--solved: {{ Medium_solved|default:0 }}; --total: {{ medium_count|default:1 }};">
-                <span class="pb-label"><span class="pb-dot medium"></span>Medium</span>
-                <span class="pb-bar"><span class="pb-fill medium"></span></span>
-                <span class="pb-count"><strong>{{ Medium_solved|default:"0" }}</strong> / {{ medium_count|default:"0" }}</span>
-              </div>
-              <div class="pb-row" style="--solved: {{ Hard_solved|default:0 }}; --total: {{ hard_count|default:1 }};">
-                <span class="pb-label"><span class="pb-dot hard"></span>Hard</span>
-                <span class="pb-bar"><span class="pb-fill hard"></span></span>
-                <span class="pb-count"><strong>{{ Hard_solved|default:"0" }}</strong> / {{ hard_count|default:"0" }}</span>
-              </div>
-            </div>
+      <aside class="pp-side">
+        {% if user.is_authenticated %}
+        <section class="pp-card">
+          <header class="pp-card-head"><i class="bi bi-clock-history"></i><h2>Recent submissions</h2></header>
+          {% if recent_submissions %}
+          <ul class="pp-recent">
+            {% for s in recent_submissions %}
+            <li>
+              <a href="{% url 'problems:problem' s.problem.slug %}">
+                <span class="pp-verdict v-{{ s.status }}">
+                  {% if s.status == 'accepted' %}<i class="bi bi-check-circle-fill"></i>{% elif s.status == 'pending' or s.status == 'running' %}<i class="bi bi-hourglass-split"></i>{% else %}<i class="bi bi-x-circle-fill"></i>{% endif %}
+                </span>
+                <span class="pp-recent-main">
+                  <b>{{ s.problem.title }}</b>
+                  <small>{{ s.get_status_display }} · {{ s.submitted_at|timesince }} ago</small>
+                </span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
           {% else %}
-            <div class="sb-auth-prompt">
-              <i class="bi bi-lock"></i>
-              <p>Log in to track progress and unlock study plans.</p>
-              <a href="{% url 'users:login' %}" class="btn-lc-orange">Log in</a>
-            </div>
+          <p class="pp-muted pp-side-empty">Your submissions will show up here.</p>
           {% endif %}
         </section>
-
-        <!-- Daily Challenge -->
-        {% if daily_challenge %}
-          <section class="dc-card">
-            <div class="dc-head">
-              <span class="dc-title"><i class="bi bi-fire"></i>Daily Challenge</span>
-              <span>{{ today_date|date:"M j, Y" }}</span>
-            </div>
-            <h6>{{ daily_challenge.title }}</h6>
-            <div class="dc-meta">
-              <span class="badge-{{ daily_challenge.difficulty|lower }}">{{ daily_challenge.get_difficulty_display }}</span>
-            </div>
-            <a href="/problems/{{ daily_challenge.slug }}/" class="dc-cta">
-              Solve now <i class="bi bi-arrow-right"></i>
-            </a>
-          </section>
         {% endif %}
 
-        <!-- Study Plans -->
-        <section class="sb-card">
-          <header class="sb-head">
-            <i class="bi bi-signpost-split"></i>
-            <h6>Study Plans</h6>
-          </header>
-
-          <div class="plan-list">
-            <div class="plan-item">
-              <div class="plan-row1">
-                <span class="plan-name"><i class="bi bi-diagram-3"></i>DSA Basics</span>
-                <span class="plan-level beginner">Beginner</span>
-              </div>
-              <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
-              <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
+        <section class="pp-card">
+          <header class="pp-card-head"><i class="bi bi-pie-chart"></i><h2>Library mix</h2></header>
+          <div class="pp-mix">
+            <div class="pp-mix-bar">
+              {% if easy_count %}<i class="easy" style="flex: {{ easy_count }}"></i>{% endif %}
+              {% if medium_count %}<i class="medium" style="flex: {{ medium_count }}"></i>{% endif %}
+              {% if hard_count %}<i class="hard" style="flex: {{ hard_count }}"></i>{% endif %}
             </div>
-
-            <div class="plan-item">
-              <div class="plan-row1">
-                <span class="plan-name"><i class="bi bi-briefcase"></i>Interview Prep</span>
-                <span class="plan-level intermediate">Intermediate</span>
-              </div>
-              <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
-              <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
-            </div>
-
-            <div class="plan-item">
-              <div class="plan-row1">
-                <span class="plan-name"><i class="bi bi-filetype-py"></i>Python Mastery</span>
-                <span class="plan-level beginner">Beginner</span>
-              </div>
-              <div class="plan-bar"><div class="plan-fill" style="width:0%"></div></div>
-              <button type="button" class="plan-cta">Start<i class="bi bi-arrow-right"></i></button>
-            </div>
+            <ul>
+              <li><i class="dot easy"></i>Easy <b>{{ easy_count }}</b></li>
+              <li><i class="dot medium"></i>Medium <b>{{ medium_count }}</b></li>
+              <li><i class="dot hard"></i>Hard <b>{{ hard_count }}</b></li>
+            </ul>
           </div>
         </section>
 
-        <!-- Popular Topics -->
-        <section class="sb-card">
-          <header class="sb-head">
-            <i class="bi bi-tag"></i>
-            <h6>Popular Topics</h6>
-          </header>
-
-          <div class="topic-cloud">
-            <span class="topic-chip">Array</span>
-            <span class="topic-chip">String</span>
-            <span class="topic-chip">Dynamic Programming</span>
-            <span class="topic-chip">Graph</span>
-            <span class="topic-chip">Tree</span>
-            <span class="topic-chip">Binary Search</span>
-            <span class="topic-chip">Stack</span>
-            <span class="topic-chip">Queue</span>
-            <span class="topic-chip">Sorting</span>
-          </div>
+        <section class="pp-card pp-keys">
+          <header class="pp-card-head"><i class="bi bi-keyboard"></i><h2>Shortcuts</h2></header>
+          <ul>
+            <li><kbd>/</kbd> Search</li>
+            <li><kbd>↑</kbd><kbd>↓</kbd> Move through the list</li>
+            <li><kbd>Enter</kbd> Open problem</li>
+            <li><kbd>Esc</kbd> Clear search</li>
+          </ul>
         </section>
-
       </aside>
     </div>
-
   </div>
+
+  <div class="pp-tip" id="ppTip" role="tooltip" hidden></div>
 </div>
+{% endblock %}
 
-<script>
-(function () {
-    "use strict";
-
-    // ── Elements ──
-    var searchInput  = document.getElementById("bbpSearch");
-    var searchClear  = document.getElementById("bbpSearchClear");
-    var resetBtn     = document.getElementById("bbpReset");
-    var emptyReset   = document.getElementById("bbpEmptyReset");
-    var emptyFilter  = document.getElementById("bbpEmptyFiltered");
-    var countEl      = document.getElementById("bbpCount");
-    var listEl       = document.getElementById("bbpList");
-    var segBtns      = document.querySelectorAll(".bbp-seg-btn");
-
-    if (!listEl) return;
-
-    var rows = Array.prototype.slice.call(listEl.querySelectorAll(".bbp-row"));
-    var totalProblems = rows.length;
-
-    // ── State ──
-    var state = { q: "", difficulty: "all" };
-
-    // Restore from sessionStorage (state survives pagination clicks)
-    try {
-        var saved = JSON.parse(sessionStorage.getItem("bbp-filters") || "null");
-        if (saved && typeof saved === "object") {
-            state.q = saved.q || "";
-            state.difficulty = saved.difficulty || "all";
-        }
-    } catch (e) {}
-
-    function persist() {
-        try { sessionStorage.setItem("bbp-filters", JSON.stringify(state)); } catch (e) {}
-    }
-
-    // ── Apply filters ──
-    function apply() {
-        var q = state.q.trim().toLowerCase();
-        var diff = state.difficulty;
-        var visible = 0;
-
-        for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            var rowDiff = row.getAttribute("data-difficulty") || "";
-            var rowTitle = row.getAttribute("data-title") || "";
-            var rowNum = row.getAttribute("data-number") || "";
-
-            var matchDiff = diff === "all" || rowDiff === diff;
-            var matchQ = !q ||
-                rowTitle.indexOf(q) !== -1 ||
-                rowNum.indexOf(q) !== -1;
-
-            var show = matchDiff && matchQ;
-            row.hidden = !show;
-            if (show) visible++;
-        }
-
-        // Update count
-        if (countEl) {
-            countEl.innerHTML = "<strong>" + visible + "</strong> " +
-                (visible === 1 ? "problem" : "problems");
-        }
-
-        // Show / hide filtered empty state
-        if (emptyFilter) emptyFilter.hidden = visible !== 0;
-        if (listEl) listEl.hidden = visible === 0 && totalProblems > 0;
-
-        // Show / hide reset button
-        var hasFilters = q || diff !== "all";
-        if (resetBtn) resetBtn.hidden = !hasFilters;
-
-        // Sync segmented control active state
-        for (var j = 0; j < segBtns.length; j++) {
-            var btn = segBtns[j];
-            if (btn.getAttribute("data-difficulty") === diff) {
-                btn.classList.add("is-active");
-            } else {
-                btn.classList.remove("is-active");
-            }
-        }
-
-        // Sync search input value
-        if (searchInput && searchInput.value !== state.q) {
-            searchInput.value = state.q;
-        }
-
-        persist();
-    }
-
-    // ── Search input ──
-    if (searchInput) {
-        var rafId = null;
-        searchInput.addEventListener("input", function () {
-            state.q = searchInput.value;
-            // Micro-debounce via rAF — instant on modern browsers
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = requestAnimationFrame(apply);
-        });
-
-        // Escape clears search
-        searchInput.addEventListener("keydown", function (e) {
-            if (e.key === "Escape" && searchInput.value) {
-                e.preventDefault();
-                searchInput.value = "";
-                state.q = "";
-                apply();
-            }
-        });
-    }
-
-    // ── Clear search button ──
-    if (searchClear) {
-        searchClear.addEventListener("click", function () {
-            state.q = "";
-            if (searchInput) {
-                searchInput.value = "";
-                searchInput.focus();
-            }
-            apply();
-        });
-    }
-
-    // ── Segmented difficulty filters ──
-    for (var k = 0; k < segBtns.length; k++) {
-        segBtns[k].addEventListener("click", function () {
-            var d = this.getAttribute("data-difficulty") || "all";
-            state.difficulty = d;
-            apply();
-        });
-    }
-
-    // ── Reset buttons ──
-    function reset() {
-        state.q = "";
-        state.difficulty = "all";
-        if (searchInput) searchInput.value = "";
-        apply();
-        if (searchInput) searchInput.focus();
-    }
-    if (resetBtn) resetBtn.addEventListener("click", reset);
-    if (emptyReset) emptyReset.addEventListener("click", reset);
-
-    // ── "/" keyboard shortcut ──
-    document.addEventListener("keydown", function (e) {
-        if (e.key !== "/") return;
-        var tag = (e.target && e.target.tagName) || "";
-        if (tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable)) return;
-        if (e.ctrlKey || e.metaKey || e.altKey) return;
-        if (!searchInput) return;
-        e.preventDefault();
-        searchInput.focus();
-        searchInput.select();
-    });
-
-    // ── Animate progress ring (existing behavior) ──
-    var ring = document.querySelector(".progress-ring-fill");
-    if (ring) {
-        var target = parseFloat(ring.getAttribute("data-progress")) || 0;
-        if (target > 0) {
-            ring.style.strokeDasharray = "0, 100";
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    ring.style.strokeDasharray = target + ", 100";
-                });
-            });
-        }
-    }
-
-    // ── Initial apply ──
-    apply();
-})();
-</script>
+{% block extra_js %}
+<script src="{% static 'js/problems_list.js' %}?v=2" defer></script>
 {% endblock %}

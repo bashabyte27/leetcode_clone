@@ -1,19 +1,34 @@
-{% load time_extras %} {% if submissions %}
-<table class="submissions-table">
-  <thead>
-    <tr>
-      <th>Status</th>
-      <th>Language</th>
-      <th>Runtime</th>
-      <th>Memory</th>
-      <th>Time Taken</th>
-      <th>Submitted</th>
-    </tr>
-  </thead>
-  <tbody>
+{% load time_extras %}{% if submissions %}
+<div class="subs">
+  <div class="subs-summary">
+    <div class="ss-tile">
+      <span class="ss-label">Attempts</span>
+      <strong>{{ summary.total }}</strong>
+    </div>
+    <div class="ss-tile">
+      <span class="ss-label">Accepted</span>
+      <strong class="ok">{{ summary.accepted }}</strong>
+      <span class="ss-meter"><i style="--w: {{ summary.rate }}%"></i></span>
+    </div>
+    <div class="ss-tile">
+      <span class="ss-label">Best runtime</span>
+      <strong>{% if summary.best_runtime != None %}{{ summary.best_runtime|floatformat:"-1" }}<small>ms</small>{% else %}&mdash;{% endif %}</strong>
+    </div>
+    <div class="ss-tile">
+      <span class="ss-label">Best memory</span>
+      <strong>{% if summary.best_memory != None %}{{ summary.best_memory|floatformat:0 }}<small>KB</small>{% else %}&mdash;{% endif %}</strong>
+    </div>
+  </div>
+
+  <div class="subs-head" aria-hidden="true">
+    <span>Status</span><span>Language</span><span>Runtime</span><span>Memory</span><span>Time taken</span><span></span>
+  </div>
+
+  <div class="subs-list">
     {% for sub in submissions %}
-    <tr
+    <div
       class="submission-row {% if sub.is_accepted %}accepted{% else %}failed{% endif %}"
+      style="--i: {{ forloop.counter0 }}"
       data-submission-id="{{ sub.id }}"
       data-submission-trigger
       data-detail-url="{% url 'submissions:submission_detail' sub.id %}"
@@ -21,31 +36,27 @@
       role="button"
       aria-label="View submission {{ sub.id }} details"
     >
-      <td>
-        <span
-          class="status-text {% if sub.is_accepted %}text-green{% else %}text-red{% endif %}"
-        >
-          {{ sub.get_status_display }}
+      <span class="sr-status">
+        <span class="sr-dot"><i class="bi {% if sub.is_accepted %}bi-check-lg{% else %}bi-x-lg{% endif %}"></i></span>
+        <span class="sr-status-text">
+          <b class="status-text {% if sub.is_accepted %}text-green{% else %}text-red{% endif %}">{{ sub.get_status_display }}</b>
+          <small class="time-ago">{{ sub.submitted_at|timesince }} ago</small>
         </span>
-      </td>
-      <td>
-        <span class="lang-badge"
-          >{{ sub.language.name|default:'Unknown' }}</span
-        >
-      </td>
-      <td>{% if sub.runtime_ms != None %}{{ sub.runtime_ms }} ms{% else %}&mdash;{% endif %}</td>
-      <td>{% if sub.memory_kb != None %}{{ sub.memory_kb|floatformat:0 }} KB{% else %}&mdash;{% endif %}</td>
-      <td>{{ sub.solve_time_seconds|mmss }}</td>
-
-      <td>
-        <span class="time-ago">{{ sub.submitted_at|timesince }} ago</span>
-      </td>
-    </tr>
+      </span>
+      <span><span class="lang-badge">{{ sub.language.name|default:'Unknown' }}</span></span>
+      <span class="sr-metric">{% if sub.runtime_ms != None %}<i class="bi bi-stopwatch"></i>{{ sub.runtime_ms|floatformat:"-1" }} ms{% else %}&mdash;{% endif %}</span>
+      <span class="sr-metric">{% if sub.memory_kb != None %}<i class="bi bi-memory"></i>{{ sub.memory_kb|floatformat:0 }} KB{% else %}&mdash;{% endif %}</span>
+      <span class="sr-metric">{% if sub.solve_time_seconds != None %}<i class="bi bi-hourglass-split"></i>{% endif %}{{ sub.solve_time_seconds|mmss }}</span>
+      <span class="sr-open"><i class="bi bi-chevron-right"></i></span>
+    </div>
     {% endfor %}
-  </tbody>
-</table>
+  </div>
+  <p class="subs-hint"><i class="bi bi-cursor"></i> Select a submission to open its full analysis next to the editor.</p>
+</div>
 {% else %}
-<div class="empty-state">
-  No submissions yet - click Submit to make your first attempt.
+<div class="empty-state empty-rich">
+  <span class="er-icon"><i class="bi bi-rocket-takeoff"></i></span>
+  <strong>No submissions yet</strong>
+  <span>Write a solution and press Submit. Every attempt will appear here with its runtime, memory and a full analysis.</span>
 </div>
 {% endif %}

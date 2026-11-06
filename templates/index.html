@@ -1,461 +1,542 @@
-{% load static %}
-<!doctype html>
+{% load static %}<!doctype html>
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b100e" />
-    <title>BashaByte | Build the skills that move your career</title>
+    <meta name="theme-color" content="#0a0f0c" />
+    <title>BashaByte · Practice, learn and get assessed in one coding workspace</title>
+    <meta name="description" content="BashaByte is a coding platform where students practice problems with instant judging, follow learning tracks and climb the leaderboard, and faculty run proctored coding and MCQ assessments." />
+    <meta property="og:title" content="BashaByte · The coding workspace for students and faculty" />
+    <meta property="og:description" content="Practice problems, instant verdicts in {{ languages|length|default:'multiple' }} languages, and proctored assessments for faculty." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}" />
+
+    <!-- Apply the saved theme before first paint to avoid a flash -->
+    <script>
+      (function () {
+        document.documentElement.classList.add("js");
+        try {
+          var t = localStorage.getItem("bb-theme");
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/home.css' %}" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=3" />
   </head>
-  <body class="landing-page">
-    <nav class="navbar navbar-expand-lg lc-navbar landing-nav" id="mainNavbar">
-      <div class="landing-shell nav-shell">
-        <a class="navbar-brand brand-lockup" href="/" aria-label="BashaByte home">
-          <img src="{% static 'images/logo.png' %}" alt="" />
-          <span>Basha<span class="brand-mark">Byte</span></span>
+
+  <body class="lp">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- ═══════════════ NAV ═══════════════ -->
+    <header class="nav" id="nav">
+      <div class="shell nav-inner">
+        <a class="brand" href="{% url 'home' %}" aria-label="BashaByte home">
+          <img src="{% static 'images/logo.png' %}" alt="" width="28" height="28" />
+          <span>Basha<b>Byte</b></span>
         </a>
+
+        {% if user.is_authenticated %}
+        <nav class="nav-links" id="navLinks" aria-label="Primary">
+          <a href="{% url 'problems:problem_list' %}">Problems</a>
+          <a href="#platform">Platform</a>
+          <a href="#tracks">Tracks</a>
+          <a href="#faculty">For faculty</a>
+          <a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a>
+
+          <div class="nav-mobile-actions">
+            {% if user.is_authenticated %}
+              {% if is_faculty %}<a href="{% url 'assessment:dashboard' %}">Assessments</a>{% endif %}
+              <a href="{% url 'users:profile' user.user_name %}">Your profile</a>
+              <a href="{% url 'users:logout' %}">Log out</a>
+            {% else %}
+              <a href="{% url 'users:login' %}">Log in</a>
+            {% endif %}
+          </div>
+        </nav>
+        {% endif %}
+
         <div class="nav-actions">
-          <button
-            class="theme-toggle"
-            id="themeToggle"
-            type="button"
-            aria-label="Switch theme"
-            title="Switch theme"
-          >
-            <i class="bi bi-sun-fill" id="themeIcon"></i>
+          <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch theme">
+            <i class="bi bi-sun" id="themeIcon"></i>
           </button>
-          <a href="{% url 'users:login' %}" class="nav-signin">Login</a>
-          <a href="/users/register/" class="nav-cta">
-            Register <i class="bi bi-arrow-up-right"></i>
-          </a>
+          {% if user.is_authenticated %}
+            {% if is_faculty %}
+              <a href="{% url 'assessment:dashboard' %}" class="nav-text hide-sm">Assessments</a>
+            {% endif %}
+            <a href="{% url 'users:profile' user.user_name %}" class="avatar hide-sm" title="{{ user.user_name }}">
+              {{ user.user_name|first|upper }}
+            </a>
+            <a href="{% url 'problems:problem_list' %}" class="btn btn-primary btn-sm">
+              Continue <i class="bi bi-arrow-right"></i>
+            </a>
+          {% else %}
+            <a href="{% url 'users:login' %}" class="nav-text">Log in</a>
+            <a href="{% url 'users:register' %}" class="btn btn-primary btn-sm">
+              Start free <i class="bi bi-arrow-right"></i>
+            </a>
+          {% endif %}
+          {% if user.is_authenticated %}
+          <button class="icon-btn nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+            <i class="bi bi-list"></i>
+          </button>
+          {% endif %}
         </div>
       </div>
-    </nav>
+    </header>
 
-    <main>
+    <main id="main">
       <!-- ═══════════════ HERO ═══════════════ -->
-      <section class="hero-section landing-shell">
-        <div class="hero-copy reveal">
-          <div class="eyebrow">
-            <span class="eyebrow-dot"></span> The developer learning platform
-          </div>
-          <h1>Learn deeply.<br /><em>Build boldly.</em></h1>
-          <p class="hero-lede">
-            BashaByte brings structured courses, real coding practice, and
-            career momentum into one focused workspace for the next generation
-            of developers.
-          </p>
-          <div class="hero-actions">
-            <a href="/users/register/" class="button button-primary">
-              Start for free <i class="bi bi-arrow-up-right"></i>
-            </a>
-            <a href="/problems/" class="button button-secondary">
-              <i class="bi bi-play-circle"></i> Explore the platform
-            </a>
-          </div>
-          <div class="hero-note">
-            <i class="bi bi-check2-circle"></i> No credit card required
-            <span></span> Practice at your own pace
-          </div>
+      <section class="hero" id="hero">
+        <div class="hero-bg" aria-hidden="true">
+          <div class="hero-grid"></div>
+          <div class="blob blob-a"></div>
+          <div class="blob blob-b"></div>
+          <div class="spotlight"></div>
         </div>
 
-        <div class="hero-product reveal" aria-label="BashaByte coding workspace preview">
-          <div class="product-window">
-            <div class="window-bar">
-              <div class="window-dots"><i></i><i></i><i></i></div>
-              <span>BashaByte / two-sum.py</span>
-              <span class="window-status"><b></b> Live workspace</span>
-            </div>
-            <div class="workspace-grid">
-              <aside class="workspace-sidebar">
-                <span>PROBLEM 001</span>
-                <strong>Two Sum</strong>
-                <em>EASY</em>
-                <hr />
-                <span>Algorithms</span>
-                <span>Arrays &amp; Hashing</span>
-                <span>17 min session</span>
-                <div class="side-progress"><b></b></div>
-                <small>Daily progress <b>72%</b></small>
-              </aside>
+        <div class="shell hero-inner">
+          <div class="hero-copy">
+            <a href="#faculty" class="pill reveal">
+              <span class="pill-tag">New</span>
+              Proctored assessments for faculty
+              <i class="bi bi-chevron-right"></i>
+            </a>
 
-              <div class="editor-pane" id="heroEditor">
-                <div class="editor-tabs">
-                  <span class="active"><i class="bi bi-filetype-py"></i> solution.py</span>
-                  <span>tests.py</span>
+            <h1 class="reveal">
+              Write code. Get<br />
+              <span class="grad h1-rot"><span class="rotator" id="rotator" aria-live="polite">interview-ready.</span></span>
+            </h1>
+
+            <p class="lede reveal">
+              Practice real problems with instant verdicts, follow structured
+              learning tracks, and take assessments your faculty can trust,
+              all in one focused coding workspace.
+            </p>
+
+            <div class="hero-ctas reveal">
+              {% if user.is_authenticated %}
+                <a href="{% url 'problems:problem_list' %}" class="btn btn-primary btn-lg">
+                  Continue practicing <i class="bi bi-arrow-right"></i>
+                </a>
+                <a href="{% url 'problems:shuffle_problem' %}" class="btn btn-ghost btn-lg">
+                  <i class="bi bi-shuffle"></i> Random problem
+                </a>
+              {% else %}
+                <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg">
+                  Start coding free <i class="bi bi-arrow-right"></i>
+                </a>
+                <a href="{% url 'problems:problem_list' %}" class="btn btn-ghost btn-lg">
+                  <i class="bi bi-code-square"></i> Browse problems
+                </a>
+              {% endif %}
+            </div>
+
+            <ul class="hero-trust reveal">
+              <li><i class="bi bi-check2-circle"></i> Free for students</li>
+              {% if languages %}<li><i class="bi bi-check2-circle"></i> {{ languages|length }} languages</li>{% endif %}
+              <li><i class="bi bi-check2-circle"></i> Hidden test cases</li>
+            </ul>
+          </div>
+
+          <!-- Interactive IDE demo -->
+          <div class="hero-demo reveal" id="heroDemo">
+            <div class="ide" id="ide">
+              <div class="ide-bar">
+                <span class="dots"><i></i><i></i><i></i></span>
+                <div class="ide-langs" role="tablist" aria-label="Demo language">
+                  <button type="button" role="tab" class="is-active" data-lang="python" aria-selected="true">Python</button>
+                  <button type="button" role="tab" data-lang="java" aria-selected="false">Java</button>
+                  <button type="button" role="tab" data-lang="cpp" aria-selected="false">C++</button>
+                  <button type="button" role="tab" data-lang="js" aria-selected="false">JS</button>
                 </div>
-                <div class="code-lines" id="heroCode" aria-label="Python solution code">
-                  <code><i>01</i> <b>def</b> <em>two_sum</em>(nums, target):</code>
-                  <code><i>02</i> seen = {}</code>
-                  <code><i>03</i> <b>for</b> index, value <b>in</b> <em>enumerate</em>(nums):</code>
-                  <code><i>04</i> complement = target - value</code>
-                  <code><i>05</i> <b>if</b> complement <b>in</b> seen:</code>
-                  <code><i>06</i> <b>return</b> [seen[complement], index]</code>
-                  <code><i>07</i> seen[value] = index</code>
-                  <code><i>08</i> </code>
-                  <code><i>09</i> <b>return</b> []</code>
-                </div>
-                <div class="editor-footer">
-                  <span><i class="bi bi-git"></i> main</span>
-                  <span>Python 3.12</span>
-                  <button type="button"><i class="bi bi-play-fill"></i> Run tests</button>
+                <span class="ide-live"><b></b> Demo</span>
+              </div>
+
+              <div class="ide-body">
+                <aside class="ide-problem">
+                  <span class="mono-label">Problem 1</span>
+                  <strong>Two Sum</strong>
+                  <span class="diff diff-easy">Easy</span>
+                  <p>Return indices of the two numbers that add up to <code>target</code>.</p>
+                  <div class="ide-example">
+                    <span>Input</span><code>nums = [2,7,11,15]<br />target = 9</code>
+                    <span>Output</span><code>[0,1]</code>
+                  </div>
+                </aside>
+
+                <div class="ide-editor">
+                  <div class="ide-file"><i class="bi bi-file-earmark-code"></i> <span id="ideFile">solution.py</span></div>
+                  <pre class="code" id="ideCode" aria-label="Example solution"></pre>
                 </div>
               </div>
 
-              <aside class="result-pane">
-                <div class="result-heading">
-                  <span>TEST RESULTS</span>
-                  <b><i class="bi bi-check2"></i> Accepted</b>
+              <div class="ide-console" id="ideConsole">
+                <div class="console-head">
+                  <span class="mono-label">Test results</span>
+                  <span class="verdict" id="ideVerdict" hidden><i class="bi bi-check-circle-fill"></i> Accepted</span>
+                  <button type="button" class="run-btn" id="ideRun"><i class="bi bi-play-fill"></i> Run</button>
                 </div>
-                <div class="result-score">
-                  <strong>100</strong><span>/ 100</span>
+                <div class="cases" id="ideCases">
+                  <span class="case" data-case="1">Case 1</span>
+                  <span class="case" data-case="2">Case 2</span>
+                  <span class="case" data-case="3">Hidden ×12</span>
+                  <span class="runtime" id="ideRuntime"></span>
                 </div>
-                <div class="result-bar"><b></b></div>
-                <div class="result-meta">
-                  <span>Runtime<strong>42 ms</strong></span>
-                  <span>Memory<strong>14.2 MB</strong></span>
-                </div>
-                <div class="test-list">
-                  <span><i class="bi bi-check-circle-fill"></i> Example 1 <b>Passed</b></span>
-                  <span><i class="bi bi-check-circle-fill"></i> Example 2 <b>Passed</b></span>
-                  <span><i class="bi bi-check-circle-fill"></i> Hidden tests <b>Passed</b></span>
-                </div>
-              </aside>
-            </div>
-          </div>
-          <div class="product-caption">
-            <span><b></b> A place to think, test, and improve</span>
-            <span>01 / 04</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════════════ STATS ═══════════════ -->
-      <section class="stats-section landing-shell reveal-stagger" aria-label="Platform statistics">
-        <div class="stats-intro">
-          <span class="section-kicker">Built for momentum</span>
-          <p>Small sessions compound<br />into serious progress.</p>
-        </div>
-        <div class="stat-item"><strong data-counter="500" data-suffix="+">500+</strong><span>Practice problems</span></div>
-        <div class="stat-item"><strong data-counter="10" data-suffix="+">10+</strong><span>Expert courses</span></div>
-        <div class="stat-item"><strong data-counter="50" data-suffix="K+">50K+</strong><span>Active students</span></div>
-        <div class="stat-item"><strong data-counter="95" data-suffix="%">95%</strong><span>Placement rate</span></div>
-      </section>
-
-      <!-- ═══════════════ STORY ═══════════════ -->
-      <section class="story-section landing-shell" id="curriculum">
-        <div class="story-heading reveal">
-          <span class="section-kicker">One connected system</span>
-          <h2>From first principles<br />to <em>production-ready.</em></h2>
-          <p>
-            Follow a clear path, then make it your own. Every part of BashaByte
-            turns passive watching into active skill.
-          </p>
-        </div>
-        <div class="story-grid">
-          <article class="story-panel panel-editor reveal">
-            <div class="panel-top"><span>01</span><i class="bi bi-braces"></i></div>
-            <div class="mini-code">
-              <span>// your next chapter</span>
-              <span><b>const</b> foundation = <em>"strong"</em>;</span>
-              <span><b>const</b> practice = <em>"daily"</em>;</span>
-              <span><b>const</b> trajectory = foundation + practice;</span>
-            </div>
-            <div class="panel-copy">
-              <h3>Learn with context.</h3>
-              <p>Deep courses in Python, Java, DSA, databases, system design, and AI that connect concepts to real work.</p>
-              <a href="#courses">Explore the curriculum <i class="bi bi-arrow-up-right"></i></a>
-            </div>
-          </article>
-          <article class="story-panel panel-chart reveal">
-            <div class="panel-top"><span>02</span><i class="bi bi-activity"></i></div>
-            <div class="chart-wrap">
-              <span>100<br /><br />50<br /><br />0</span>
-              <div class="chart">
-                <svg viewBox="0 0 430 140" preserveAspectRatio="none" aria-hidden="true">
-                  <path d="M0 119 C35 121 41 101 70 105 S106 83 130 91 S164 71 190 79 S223 55 252 63 S283 35 310 49 S350 23 375 30 S405 12 430 16" />
-                </svg>
               </div>
             </div>
-            <div class="panel-copy">
-              <h3>See yourself improve.</h3>
-              <p>Progress tracking that makes consistency visible, so you always know what to work on next.</p>
-              <a href="#progress">Make progress visible <i class="bi bi-arrow-up-right"></i></a>
+
+            <div class="float-chip chip-a" aria-hidden="true"><i class="bi bi-lightning-charge-fill"></i> Verdict in seconds</div>
+            <div class="float-chip chip-b" aria-hidden="true"><i class="bi bi-trophy-fill"></i> +10 pts</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ LANGUAGE MARQUEE ═══════════════ -->
+      {% if languages %}
+      <section class="marquee-band" aria-label="Supported languages">
+        <span class="marquee-label mono-label">Write in</span>
+        <div class="marquee" data-marquee>
+          <div class="marquee-track">
+            {% for lang in languages %}<span>{{ lang }}</span>{% endfor %}
+            {% for lang in languages %}<span aria-hidden="true">{{ lang }}</span>{% endfor %}
+            {% for lang in languages %}<span aria-hidden="true">{{ lang }}</span>{% endfor %}
+            {% for lang in languages %}<span aria-hidden="true">{{ lang }}</span>{% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- ═══════════════ LIVE STATS ═══════════════ -->
+      <section class="shell stats" aria-label="Platform at a glance">
+        <div class="stat reveal">
+          <strong data-count="{{ problem_stats.total }}">{{ problem_stats.total }}</strong>
+          <span>Practice problems</span>
+        </div>
+        <div class="stat reveal">
+          <strong data-count="{{ languages|length }}">{{ languages|length }}</strong>
+          <span>Languages supported</span>
+        </div>
+        <div class="stat reveal">
+          <strong data-count="{{ question_bank_size }}">{{ question_bank_size }}</strong>
+          <span>Assessment questions</span>
+        </div>
+        <div class="stat reveal">
+          <strong data-count="{{ accepted_count }}">{{ accepted_count }}</strong>
+          <span>Accepted solutions</span>
+        </div>
+        <p class="stats-note mono-label"><span class="live-dot"></span> Live from the platform</p>
+      </section>
+
+      <!-- ═══════════════ PLATFORM BENTO ═══════════════ -->
+      <section class="section shell" id="platform">
+        <header class="section-head reveal">
+          <span class="kicker">The platform</span>
+          <h2>Everything you need to<br /><span class="grad">practice with purpose.</span></h2>
+          <p>Pick a problem, write your solution, and get judged against hidden tests. Every accepted solution counts toward your rank.</p>
+        </header>
+
+        <div class="bento">
+          <!-- Practice: live problems -->
+          <article class="tile tile-practice reveal">
+            <div class="tile-head">
+              <span class="tile-icon"><i class="bi bi-code-slash"></i></span>
+              <div>
+                <h3>A problem set that grows with you</h3>
+                <p>Curated problems from arrays to graphs, each with examples, editorials and discussion.</p>
+              </div>
+            </div>
+
+            {% if problem_stats.total %}
+            <div class="diff-meter" aria-label="Problems by difficulty">
+              <div class="diff-bar">
+                {% if problem_stats.easy %}<i class="bar-easy" style="flex: {{ problem_stats.easy }}"></i>{% endif %}
+                {% if problem_stats.medium %}<i class="bar-medium" style="flex: {{ problem_stats.medium }}"></i>{% endif %}
+                {% if problem_stats.hard %}<i class="bar-hard" style="flex: {{ problem_stats.hard }}"></i>{% endif %}
+              </div>
+              <div class="diff-legend">
+                <span><b class="dot-easy"></b> Easy {{ problem_stats.easy }}</span>
+                <span><b class="dot-medium"></b> Medium {{ problem_stats.medium }}</span>
+                <span><b class="dot-hard"></b> Hard {{ problem_stats.hard }}</span>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if featured_problems %}
+            <ul class="problem-list">
+              {% for p in featured_problems %}
+              <li>
+                <a href="{% url 'problems:problem' p.slug %}">
+                  <span class="pnum">{{ p.order_num|default:forloop.counter }}</span>
+                  <span class="ptitle">{{ p.title }}</span>
+                  {% if p.acceptance != None %}<span class="pacc">{{ p.acceptance|floatformat:0 }}%</span>{% endif %}
+                  <span class="diff diff-{{ p.difficulty }}">{{ p.get_difficulty_display }}</span>
+                  <i class="bi bi-arrow-up-right"></i>
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+
+            <a class="tile-link" href="{% url 'problems:problem_list' %}">See all problems <i class="bi bi-arrow-right"></i></a>
+          </article>
+
+          <!-- Judge -->
+          <article class="tile tile-judge reveal">
+            <div class="tile-head">
+              <span class="tile-icon"><i class="bi bi-cpu"></i></span>
+              <div>
+                <h3>Instant, honest verdicts</h3>
+                <p>Your code runs against visible and hidden test cases in a sandbox.</p>
+              </div>
+            </div>
+            <div class="verdict-stack" aria-hidden="true">
+              <span class="v v-ok"><i class="bi bi-check-circle-fill"></i> Accepted <em>38 ms</em></span>
+              <span class="v v-wa"><i class="bi bi-x-circle-fill"></i> Wrong Answer <em>case 7</em></span>
+              <span class="v v-tle"><i class="bi bi-hourglass-split"></i> Time Limit <em>&gt; 2 s</em></span>
             </div>
           </article>
-          <article class="story-panel panel-contest reveal" id="contests">
-            <div class="panel-top"><span>03</span><i class="bi bi-lightning-charge"></i></div>
-            <div class="contest-time">
-              <span>WEEKLY CONTEST</span>
-              <strong>02 : 14 : 38</strong>
-              <small>Saturday, 20:00 UTC</small>
+
+          <!-- Leaderboard -->
+          <article class="tile tile-board reveal">
+            <div class="tile-head">
+              <span class="tile-icon"><i class="bi bi-trophy"></i></span>
+              <div>
+                <h3>Climb the leaderboard</h3>
+                <p>Easy 10, Medium 25, Hard 50. Every unique solve counts.</p>
+              </div>
             </div>
-            <div class="panel-copy">
-              <h3>Raise the stakes.</h3>
-              <p>Compete in live contests, learn from the leaderboard, and sharpen the instincts interviews demand.</p>
-              <a href="#community">Find your edge <i class="bi bi-arrow-up-right"></i></a>
+            {% if top_solvers %}
+            <ol class="board">
+              {% for s in top_solvers %}
+              <li>
+                <span class="rank rank-{{ forloop.counter }}">{{ forloop.counter }}</span>
+                <span class="ava">{{ s.username|first|upper }}</span>
+                <span class="who">{{ s.username }}<small>{{ s.solved }} solved</small></span>
+                <b>{{ s.points }}</b>
+              </li>
+              {% endfor %}
+            </ol>
+            {% else %}
+            <p class="empty-note">Be the first name on the board.</p>
+            {% endif %}
+            <a class="tile-link" href="{% url 'leaderboard:leaderboard' %}">Full leaderboard <i class="bi bi-arrow-right"></i></a>
+          </article>
+
+          <!-- Discussion -->
+          <article class="tile tile-discuss reveal">
+            <div class="tile-head">
+              <span class="tile-icon"><i class="bi bi-chat-square-text"></i></span>
+              <div>
+                <h3>Learn out loud</h3>
+                <p>Every problem has editorials and a discussion thread.</p>
+              </div>
+            </div>
+            <div class="chat" aria-hidden="true">
+              <span class="bubble">Why does a hash map beat sorting here?</span>
+              <span class="bubble bubble-me">One pass, O(n). Sorting costs O(n log n).</span>
             </div>
           </article>
         </div>
       </section>
 
-      <!-- ═══════════════ CURRICULUM ═══════════════ -->
-      <section class="curriculum-section" id="courses">
-        <div class="landing-shell curriculum-layout">
-          <div class="curriculum-intro reveal">
-            <span class="section-kicker">The curriculum</span>
-            <h2>Go broad.<br /><em>Go deep.</em></h2>
-            <p>Practical tracks for the whole developer journey, from your first function to your next system.</p>
-            <a href="/users/register/" class="text-link">Start exploring <i class="bi bi-arrow-up-right"></i></a>
+      <!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+      <section class="section shell steps-section">
+        <header class="section-head center reveal">
+          <span class="kicker">How it works</span>
+          <h2>From blank editor to <span class="grad">accepted.</span></h2>
+        </header>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-num">01</span>
+            <i class="bi bi-search"></i>
+            <h3>Pick a problem</h3>
+            <p>Filter by difficulty and topic, or let us shuffle one for you.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">02</span>
+            <i class="bi bi-terminal"></i>
+            <h3>Write and run</h3>
+            <p>A full editor in your language of choice. Run the samples as often as you like.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">03</span>
+            <i class="bi bi-patch-check"></i>
+            <h3>Submit and level up</h3>
+            <p>Hidden tests decide the verdict. Earn points, track runtime, and compare approaches.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ═══════════════ FACULTY ═══════════════ -->
+      <section class="faculty" id="faculty">
+        <div class="shell faculty-inner">
+          <div class="faculty-copy reveal">
+            <span class="kicker kicker-orange">For faculty</span>
+            <h2>Run coding assessments<br /><span class="grad-orange">you can actually trust.</span></h2>
+            <p>
+              Build sectioned, timed tests from your own question bank, invite
+              co-moderators, and let BashaByte grade the code while proctoring
+              keeps every attempt honest.
+            </p>
+            <ul class="feature-list">
+              <li><i class="bi bi-collection"></i><div><b>Question bank</b><span>MCQ and coding questions, organized by topic and difficulty.</span></div></li>
+              <li><i class="bi bi-file-earmark-spreadsheet"></i><div><b>Bulk import</b><span>Upload questions from a spreadsheet instead of typing them one by one.</span></div></li>
+              <li><i class="bi bi-shield-check"></i><div><b>Built-in proctoring</b><span>Fullscreen enforcement, tab-switch and copy-paste detection, with a violation log.</span></div></li>
+              <li><i class="bi bi-robot"></i><div><b>Auto-grading</b><span>Coding answers are judged on hidden test cases. You decide when results are released.</span></div></li>
+            </ul>
+            {% if is_faculty %}
+              <a href="{% url 'assessment:dashboard' %}" class="btn btn-orange btn-lg">Open assessment dashboard <i class="bi bi-arrow-right"></i></a>
+            {% else %}
+              <a href="{% url 'users:register' %}" class="btn btn-orange btn-lg">Create a faculty account <i class="bi bi-arrow-right"></i></a>
+            {% endif %}
           </div>
-          <div class="track-list reveal-stagger">
-            <div class="track-row"><span>01</span><strong>Python &amp; Java</strong><small>Foundations / OOP / Patterns</small><i class="bi bi-arrow-up-right"></i></div>
-            <div class="track-row"><span>02</span><strong>Data structures &amp; algorithms</strong><small>Problems / Interviews / DSA</small><i class="bi bi-arrow-up-right"></i></div>
-            <div class="track-row"><span>03</span><strong>Full-stack development</strong><small>Django / APIs / Deployment</small><i class="bi bi-arrow-up-right"></i></div>
-            <div class="track-row"><span>04</span><strong>AI &amp; machine learning</strong><small>LLMs / Agents / Models</small><i class="bi bi-arrow-up-right"></i></div>
-            <div class="track-row"><span>05</span><strong>System design</strong><small>Scale / Architecture / Tradeoffs</small><i class="bi bi-arrow-up-right"></i></div>
+
+          <div class="console reveal" aria-label="Example assessment monitoring console">
+            <div class="console-top">
+              <div>
+                <span class="mono-label">Assessment · Live</span>
+                <strong>DSA Mid-term · Section B</strong>
+              </div>
+              <span class="timer" id="examTimer">00:45:00</span>
+            </div>
+
+            <div class="console-kpis">
+              <div><b>48</b><span>In progress</span></div>
+              <div><b id="kpiSubmitted">12</b><span>Submitted</span></div>
+              <div><b id="kpiFlags">3</b><span>Flags</span></div>
+            </div>
+
+            <div class="console-progress">
+              <div class="cp-row"><span>Q1 · MCQ</span><div class="cp-bar"><i style="width: 92%"></i></div><em>92%</em></div>
+              <div class="cp-row"><span>Q2 · Coding</span><div class="cp-bar"><i style="width: 64%"></i></div><em>64%</em></div>
+              <div class="cp-row"><span>Q3 · Coding</span><div class="cp-bar"><i style="width: 31%"></i></div><em>31%</em></div>
+            </div>
+
+            <div class="feed">
+              <span class="mono-label">Proctor feed</span>
+              <ul id="proctorFeed">
+                <li class="ev ev-warn"><i class="bi bi-window-stack"></i> Candidate #14 switched tabs <time>now</time></li>
+                <li class="ev ev-ok"><i class="bi bi-check2-circle"></i> Candidate #07 submitted Q2 <time>12s</time></li>
+                <li class="ev ev-info"><i class="bi bi-arrows-fullscreen"></i> Candidate #31 re-entered fullscreen <time>40s</time></li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ═══════════════ COMMUNITY + ORBIT ═══════════════ -->
-      <section class="community-section landing-shell" id="community">
-        <div class="community-copy reveal">
-          <span class="section-kicker">More than a problem set</span>
-          <h2>A practice space that<br /><em>keeps you moving.</em></h2>
-          <p>Get unstuck with smart hints. Build confidence in contests. Share your thinking with a community that speaks your language.</p>
-          <div class="community-points">
-            <span><i class="bi bi-check2"></i> Real-time code execution</span>
-            <span><i class="bi bi-check2"></i> AI-powered guidance</span>
-            <span><i class="bi bi-check2"></i> Peer discussion &amp; review</span>
+      <!-- ═══════════════ TRACKS ═══════════════ -->
+      <section class="section shell" id="tracks">
+        <header class="section-head split reveal">
+          <div>
+            <span class="kicker">Learning tracks</span>
+            <h2>Go broad. <span class="grad">Go deep.</span></h2>
           </div>
-        </div>
+          <p>Structured paths from your first function to system design. Courses are rolling out track by track. Join now to get early access.</p>
+        </header>
 
-        <div class="orbit-visual reveal" aria-hidden="true">
-          <div class="orbit-glow"></div>
-          <div class="orbit-ring ring-one"></div>
-          <div class="orbit-ring ring-two"></div>
-
-          <div class="orbit-wave"></div>
-          <div class="orbit-wave"></div>
-          <div class="orbit-wave"></div>
-
-          <div class="orbit-spin orbit-spin-outer"><b></b></div>
-          <div class="orbit-spin orbit-spin-inner"><b></b></div>
-
-          <div class="orbit-center">
-            <img src="{% static 'images/logo.png' %}" alt="" />
-            <strong>BB</strong>
-            <span>your workspace</span>
-          </div>
-
-          <div class="orbit-node node-one"><i class="bi bi-code-slash"></i><span>Practice</span></div>
-          <div class="orbit-node node-two"><i class="bi bi-chat-square-text"></i><span>Discuss</span></div>
-          <div class="orbit-node node-three"><i class="bi bi-bar-chart-line"></i><span>Grow</span></div>
+        <div class="tracks">
+          <a class="track reveal" href="{% url 'users:register' %}" style="--hue: 145">
+            <i class="bi bi-filetype-py"></i>
+            <h3>Python &amp; Java</h3>
+            <p>Foundations, OOP, patterns</p>
+            <span class="track-meta">Track 01 <i class="bi bi-arrow-up-right"></i></span>
+          </a>
+          <a class="track reveal" href="{% url 'users:register' %}" style="--hue: 35">
+            <i class="bi bi-diagram-3"></i>
+            <h3>Data structures &amp; algorithms</h3>
+            <p>Interview patterns, complexity</p>
+            <span class="track-meta">Track 02 <i class="bi bi-arrow-up-right"></i></span>
+          </a>
+          <a class="track reveal" href="{% url 'users:register' %}" style="--hue: 200">
+            <i class="bi bi-layers"></i>
+            <h3>Full-stack development</h3>
+            <p>Django, APIs, deployment</p>
+            <span class="track-meta">Track 03 <i class="bi bi-arrow-up-right"></i></span>
+          </a>
+          <a class="track reveal" href="{% url 'users:register' %}" style="--hue: 275">
+            <i class="bi bi-stars"></i>
+            <h3>AI &amp; machine learning</h3>
+            <p>Models, LLMs, agents</p>
+            <span class="track-meta">Track 04 <i class="bi bi-arrow-up-right"></i></span>
+          </a>
+          <a class="track reveal" href="{% url 'users:register' %}" style="--hue: 330">
+            <i class="bi bi-hdd-network"></i>
+            <h3>System design</h3>
+            <p>Scale, architecture, trade-offs</p>
+            <span class="track-meta">Track 05 <i class="bi bi-arrow-up-right"></i></span>
+          </a>
         </div>
       </section>
 
       <!-- ═══════════════ FINAL CTA ═══════════════ -->
-      <section class="final-cta landing-shell reveal">
-        <div>
-          <span class="section-kicker">Your next level starts here</span>
-          <h2>Make the hours<br /><em>count.</em></h2>
-        </div>
-        <div class="final-action">
-          <p>A clearer path to the developer you want to become.</p>
-          <a href="/users/register/" class="button button-primary">
-            Join BashaByte <i class="bi bi-arrow-up-right"></i>
-          </a>
+      <section class="shell">
+        <div class="cta reveal">
+          <div class="cta-glow" aria-hidden="true"></div>
+          <span class="kicker">Your next commit starts here</span>
+          <h2>Make every practice hour <span class="grad">count.</span></h2>
+          <p>Join BashaByte as a student to practice and climb, or as faculty to run assessments.</p>
+          <div class="hero-ctas center">
+            {% if user.is_authenticated %}
+              <a href="{% url 'problems:problem_list' %}" class="btn btn-primary btn-lg">Continue practicing <i class="bi bi-arrow-right"></i></a>
+            {% else %}
+              <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg">Start coding free <i class="bi bi-arrow-right"></i></a>
+              <a href="{% url 'users:login' %}" class="btn btn-ghost btn-lg">I already have an account</a>
+            {% endif %}
+          </div>
         </div>
       </section>
     </main>
 
     <!-- ═══════════════ FOOTER ═══════════════ -->
-    <footer class="lc-footer landing-footer">
-      <div class="landing-shell footer-lead">
-        <div class="footer-lead-copy">
-          <span class="section-kicker">The next step is yours</span>
-          <h2>Build the developer<br />you want to <em>become.</em></h2>
-          <p>
-            Thousands of learners are turning daily practice into long-term
-            craft. BashaByte is the workspace that keeps them moving.
-          </p>
-          <a href="/users/register/" class="button button-primary">
-            Join BashaByte <i class="bi bi-arrow-up-right"></i>
+    <footer class="footer">
+      <div class="shell footer-inner">
+        <div class="footer-brand">
+          <a class="brand" href="{% url 'home' %}">
+            <img src="{% static 'images/logo.png' %}" alt="" width="24" height="24" />
+            <span>Basha<b>Byte</b></span>
           </a>
+          <p>The coding workspace for students who practice and faculty who assess.</p>
         </div>
         <div class="footer-cols">
           <div>
-            <span class="footer-label">Explore</span>
-            <a href="/problems/">Problems</a>
-            <a href="#courses">Courses</a>
-            <a href="#contests">Contests</a>
+            <span class="mono-label">Practice</span>
+            <a href="{% url 'problems:problem_list' %}">Problems</a>
+            <a href="{% url 'problems:shuffle_problem' %}">Random problem</a>
+            <a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a>
           </div>
           <div>
-            <span class="footer-label">Learn</span>
-            <a href="#curriculum">Curriculum</a>
-            <a href="#progress">Progress</a>
-            <a href="#community">Community</a>
+            <span class="mono-label">Learn</span>
+            <a href="#platform">Platform</a>
+            <a href="#tracks">Learning tracks</a>
           </div>
           <div>
-            <span class="footer-label">Community</span>
-            <a href="#community">Discuss</a>
-            <a href="#contests">Leaderboards</a>
-            <a href="#community">Events</a>
+            <span class="mono-label">Faculty</span>
+            <a href="#faculty">Assessments</a>
+            {% if is_faculty %}<a href="{% url 'assessment:dashboard' %}">Dashboard</a>{% endif %}
           </div>
           <div>
-            <span class="footer-label">Account</span>
-            <a href="{% url 'users:login' %}">Sign in</a>
-            <a href="/users/register/">Register</a>
-            <a href="/">Home</a>
+            <span class="mono-label">Account</span>
+            {% if user.is_authenticated %}
+              <a href="{% url 'users:profile' user.user_name %}">Profile</a>
+              <a href="{% url 'users:logout' %}">Log out</a>
+            {% else %}
+              <a href="{% url 'users:login' %}">Log in</a>
+              <a href="{% url 'users:register' %}">Register</a>
+            {% endif %}
           </div>
         </div>
       </div>
-
-      <div class="landing-shell footer-bottom">
-        <a class="brand-lockup" href="/">
-          <img src="{% static 'images/logo.png' %}" alt="" />
-          <span>Basha<span class="brand-mark">Byte</span></span>
-        </a>
-        <span class="footer-copy">© 2025 BashaByte. All rights reserved.</span>
-        <span class="footer-mark">Made for the next commit <i class="bi bi-arrow-up-right"></i></span>
+      <div class="shell footer-bottom">
+        <span>© {% now "Y" %} BashaByte. All rights reserved.</span>
+        <span class="mono-label">Made for the next commit</span>
       </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/test.js' %}"></script>
-
-    <!-- Theme toggle (unchanged) -->
-    <script>
-      (function () {
-        const html = document.documentElement;
-        const toggleBtn = document.getElementById("themeToggle");
-        const themeIcon = document.getElementById("themeIcon");
-        const savedTheme = localStorage.getItem("bb-theme") || "dark";
-        function updateTheme(theme) {
-          html.setAttribute("data-theme", theme);
-          themeIcon.className = theme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
-          toggleBtn.setAttribute(
-            "aria-label",
-            theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
-          );
-        }
-        updateTheme(savedTheme);
-        toggleBtn.addEventListener("click", function () {
-          const nextTheme =
-            html.getAttribute("data-theme") === "dark" ? "light" : "dark";
-          localStorage.setItem("bb-theme", nextTheme);
-          updateTheme(nextTheme);
-        });
-      })();
-    </script>
-
-    <!-- Hero typing animation (self-contained, no dependencies) -->
-    <script>
-      (function heroTyping() {
-        const container = document.getElementById("heroCode");
-        const editor = document.getElementById("heroEditor");
-        if (!container || !editor) return;
-
-        const prefersReduced = window.matchMedia(
-          "(prefers-reduced-motion: reduce)"
-        ).matches;
-
-        const lines = container.querySelectorAll("code");
-        const queue = [];
-
-        // Wrap each visible character in a span; skip line numbers.
-        lines.forEach(function (line) {
-          const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
-          const nodes = [];
-          while (walker.nextNode()) {
-            const n = walker.currentNode;
-            if (n.parentElement && n.parentElement.closest("i")) continue;
-            nodes.push(n);
-          }
-          nodes.forEach(function (node) {
-            const frag = document.createDocumentFragment();
-            const text = node.textContent;
-            for (let i = 0; i < text.length; i++) {
-              const span = document.createElement("span");
-              span.className = "ch ch-hidden";
-              span.textContent = text[i];
-              frag.appendChild(span);
-              queue.push(span);
-            }
-            node.parentNode.replaceChild(frag, node);
-          });
-        });
-
-        // Reduced motion — reveal instantly.
-        if (prefersReduced || queue.length === 0) {
-          queue.forEach(function (s) { s.classList.remove("ch-hidden"); });
-          editor.classList.add("typing-done");
-          return;
-        }
-
-        // Caret element that travels with typing.
-        const caret = document.createElement("span");
-        caret.className = "typing-caret";
-        caret.setAttribute("aria-hidden", "true");
-
-        let i = 0;
-        function step() {
-          if (i >= queue.length) {
-            if (caret.parentNode) caret.parentNode.removeChild(caret);
-            editor.classList.add("typing-done");
-            return;
-          }
-          const span = queue[i];
-          span.parentNode.insertBefore(caret, span);
-          span.classList.remove("ch-hidden");
-          const ch = span.textContent;
-          i++;
-
-          // Natural timing
-          let delay = 14 + Math.random() * 14;
-          if (ch === " ") delay = 10;
-          if (ch === "(" || ch === ")" || ch === ":" || ch === ",") delay = 18;
-          const isLastOfLine =
-            span.parentElement && span.parentElement.lastChild === span;
-          if (isLastOfLine) delay = 150 + Math.random() * 60;
-
-          setTimeout(step, delay);
-        }
-
-        setTimeout(step, 380);
-      })();
-
-      // Reveal observer — safety net if test.js doesn't already handle it.
-      (function revealSafety() {
-        if (!("IntersectionObserver" in window)) return;
-        const nodes = document.querySelectorAll(".reveal, .reveal-stagger");
-        if (!nodes.length) return;
-        const io = new IntersectionObserver(
-          function (entries) {
-            entries.forEach(function (e) {
-              if (e.isIntersecting) {
-                e.target.classList.add("reveal-visible");
-                io.unobserve(e.target);
-              }
-            });
-          },
-          { threshold: 0.14, rootMargin: "0px 0px -60px 0px" }
-        );
-        nodes.forEach(function (el) { io.observe(el); });
-      })();
-    </script>
+    <script src="{% static 'js/home.js' %}?v=3" defer></script>
   </body>
 </html>

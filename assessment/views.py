@@ -547,14 +547,48 @@ def dashboard(request):
     query = request.GET.get("q", "").strip()
     context = {"active_tab": active_tab, "query": query}
     if active_tab == "assessments":
-        assessments = _managed_assessments(request.user).select_related(
+        managed = _managed_assessments(request.user)
+        now = timezone.now()
+        status_filter = request.GET.get("status", "all")
+        if status_filter not in {"all", "live", "upcoming", *Assessment.Status.values}:
+            status_filter = "all"
+        assessments = managed.select_related(
             "created_by"
-        ).prefetch_related("sections")
+        ).prefetch_related("sections").annotate(
+            section_total=Count("sections", distinct=True),
+            question_total=Count("assessment_questions", distinct=True),
+            participant_total=Count("participants", distinct=True),
+        ).order_by("-created_at")
         if query:
             assessments = assessments.filter(
                 Q(name__icontains=query) | Q(slug__icontains=query)
             )
-        context["page_obj"] = Paginator(assessments, 25).get_page(
+        live_q = Q(status=Assessment.Status.PUBLISHED) & (
+            Q(start_time__isnull=True) | Q(start_time__lte=now)
+        ) & (Q(end_time__isnull=True) | Q(end_time__gt=now))
+        upcoming_q = Q(status=Assessment.Status.PUBLISHED, start_time__gt=now)
+        if status_filter == "live":
+            assessments = assessments.filter(live_q)
+        elif status_filter == "upcoming":
+            assessments = assessments.filter(upcoming_q)
+        elif status_filter != "all":
+            assessments = assessments.filter(status=status_filter)
+        managed_ids = managed.values("pk")
+        base = Assessment.objects.filter(pk__in=managed_ids)
+        context["kpis"] = base.aggregate(
+            total=Count("pk"),
+            published=Count("pk", filter=Q(status=Assessment.Status.PUBLISHED)),
+            draft=Count("pk", filter=Q(status=Assessment.Status.DRAFT)),
+            archived=Count("pk", filter=Q(status=Assessment.Status.ARCHIVED)),
+            live=Count("pk", filter=live_q),
+            upcoming=Count("pk", filter=upcoming_q),
+        )
+        context["kpis"]["participants"] = Participant.objects.filter(
+            assessment__in=managed_ids
+        ).count()
+        context["status_filter"] = status_filter
+        context["now"] = now
+        context["page_obj"] = Paginator(assessments, 24).get_page(
             request.GET.get("page", 1)
         )
     else:
@@ -592,6 +626,10 @@ def dashboard(request):
             .distinct()
         )
         question_rows = _question_bank_payload(questions, model_type)
+        context["bank_totals"] = {
+            "coding": _managed_questions(CodingQuestion, request.user).count(),
+            "mcq": _managed_questions(McqQuestion, request.user).count(),
+        }
         context.update(
             {
                 "question_group": question_group,
@@ -2340,6 +2378,129 @@ def log_violation(request, assessment_slug):
     )
 
 
+def _participant_drilldown(selected_participant, submission_key):
+    """Per-candidate detail for the leaderboard: question breakdown and history."""
+    attempt = selected_participant["attempt"]
+    result = selected_participant["result"]
+    coding = list(
+        AssessmentSubmission.objects.filter(attempt=attempt).select_related(
+            "language",
+            "attempt__participant__user",
+            "assessment_question_snapshot__coding_snapshot",
+            "assessment_question_snapshot__section",
+        )
+    )
+    answers = list(
+        AttemptAnswer.objects.filter(
+            attempt=attempt,
+            assessment_question_snapshot__mcq_snapshot__isnull=False,
+        )
+        .filter(
+            Q(text_answer__gt="")
+            | Q(code_answer__gt="")
+            | Q(selected_options__isnull=False)
+        )
+        .select_related(
+            "attempt__participant__user",
+            "assessment_question_snapshot__mcq_snapshot",
+            "assessment_question_snapshot__section",
+        )
+        .prefetch_related("selected_options")
+        .distinct()
+    )
+    history = [_assessment_submission_row("coding", item) for item in coding]
+    history.extend(_assessment_submission_row("answer", item) for item in answers)
+    history.sort(key=lambda row: row["submitted_at"], reverse=True)
+
+    # Question-by-question outcome for this attempt
+    best_coding = {}
+    for item in coding:
+        current = best_coding.get(item.assessment_question_snapshot_id)
+        if current is None or (item.score, item.status == AssessmentSubmission.Status.ACCEPTED) > (
+            current.score,
+            current.status == AssessmentSubmission.Status.ACCEPTED,
+        ):
+            best_coding[item.assessment_question_snapshot_id] = item
+    answer_by_snapshot = {item.assessment_question_snapshot_id: item for item in answers}
+    breakdown = []
+    if attempt.assessment_version_id:
+        snapshots = (
+            AssessmentQuestionSnapshot.objects.filter(
+                section__version_id=attempt.assessment_version_id
+            )
+            .select_related("section", "mcq_snapshot", "coding_snapshot")
+            .order_by("section__position", "position")
+        )
+        for number, snapshot in enumerate(snapshots, start=1):
+            question = snapshot.mcq_snapshot or snapshot.coding_snapshot
+            coding_item = best_coding.get(snapshot.pk)
+            answer_item = answer_by_snapshot.get(snapshot.pk)
+            item = coding_item or answer_item
+            score = item.score if item else Decimal("0")
+            if coding_item:
+                state = (
+                    "correct"
+                    if coding_item.status == AssessmentSubmission.Status.ACCEPTED
+                    else "partial" if coding_item.score > 0 else "incorrect"
+                )
+            elif answer_item:
+                state = (
+                    "correct" if answer_item.is_correct
+                    else "incorrect" if answer_item.is_correct is False
+                    else "submitted"
+                )
+            else:
+                state = "unanswered"
+            breakdown.append(
+                {
+                    "number": number,
+                    "title": question.title if question else "Question",
+                    "kind": "MCQ" if snapshot.mcq_snapshot_id else "Coding",
+                    "section": snapshot.section.title,
+                    "score": score,
+                    "max_score": snapshot.max_score,
+                    "state": state,
+                }
+            )
+
+    selected = next((row for row in history if row["key"] == submission_key), None)
+    detail = None
+    if selected is not None:
+        snapshot = selected["item"].assessment_question_snapshot
+        if selected["kind"] == "coding":
+            detail = {
+                "question": snapshot.coding_snapshot,
+                "test_results": list(
+                    selected["item"].test_results.select_related("test_case_snapshot").order_by("pk")
+                ),
+            }
+        else:
+            chosen = {opt.option_id for opt in selected["item"].selected_options.all()}
+            detail = {
+                "question": snapshot.mcq_snapshot,
+                "options": [
+                    {"option": option, "chosen": option.pk in chosen}
+                    for option in snapshot.mcq_snapshot.options.order_by("position")
+                ],
+            }
+
+    total = float(result.max_score or 0)
+    return {
+        "participant_history": history,
+        "participant_breakdown": breakdown,
+        "participant_sections": list(
+            result.section_results.select_related("section_snapshot").order_by(
+                "section_snapshot__position"
+            )
+        ),
+        "participant_violations": attempt.violations.count(),
+        "participant_attempts": attempt.participant.attempts.count(),
+        "participant_percent": round(float(result.total_score) * 100 / total, 1) if total else 0,
+        "participant_selected": selected,
+        "participant_detail": detail,
+    }
+
+
 def _assessment_detail_page(request, assessment):
     active_tab = request.GET.get("tab", "details")
     valid_tabs = {
@@ -2412,6 +2573,24 @@ def _assessment_detail_page(request, assessment):
                 "participant_submissions": participant_submissions,
             }
         )
+        if selected_participant is not None:
+            context.update(
+                _participant_drilldown(
+                    selected_participant, request.GET.get("submission", "")
+                )
+            )
+    elif active_tab == "reports":
+        from . import reports as assessment_reports
+
+        report = assessment_reports.build_report(
+            assessment, _assessment_leaderboard(assessment)
+        )
+        export = request.GET.get("export")
+        if export == "xlsx":
+            return assessment_reports.xlsx_response(assessment, report)
+        if export == "pdf":
+            return assessment_reports.pdf_response(assessment, report)
+        context["report"] = report
     elif active_tab == "submissions":
         submission_rows = _assessment_submission_rows(assessment)
         selected_key = request.GET.get("submission", "")

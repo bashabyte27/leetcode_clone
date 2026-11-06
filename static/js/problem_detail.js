@@ -19,12 +19,16 @@
 
   function setButtonLoading(btn, loading) {
     if (!btn) return;
+    var label = btn.querySelector('.btn-label');
+    if (label && !btn.dataset.idleLabel) btn.dataset.idleLabel = label.textContent;
     if (loading) {
       btn.classList.add('btn-loading');
       btn.disabled = true;
+      if (label && btn.dataset.loadingLabel && btn.id === 'btn-' + document.body.dataset.busy) label.textContent = btn.dataset.loadingLabel;
     } else {
       btn.classList.remove('btn-loading');
       btn.disabled = false;
+      if (label && btn.dataset.idleLabel) label.textContent = btn.dataset.idleLabel;
     }
   }
 
@@ -71,7 +75,7 @@
     const saved = localStorage.getItem('editorTheme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     const btn = document.getElementById('btn-theme-toggle');
-    if (btn) btn.textContent = saved === 'dark' ? '☀' : '🌙';
+    if (btn) btn.innerHTML = saved === 'dark' ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
   })();
 
   const btnTheme = document.getElementById('btn-theme-toggle');
@@ -81,10 +85,10 @@
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('editorTheme', next);
-      btnTheme.textContent = next === 'dark' ? '☀' : '🌙';
+      btnTheme.innerHTML = next === 'dark' ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
 
       if (window.monaco && window.editor) {
-        monaco.editor.setTheme(next === 'dark' ? 'neonMatrix' : 'vs');
+        monaco.editor.setTheme(next === 'dark' ? 'neonMatrix' : 'bbLight');
       }
     });
   }
@@ -180,6 +184,22 @@
       if (target === 'submissions') lazyLoadSubmissions();
     });
   });
+
+  function moveInk(bar) {
+    if (!bar) return;
+    var ink = bar.querySelector('.tabs-ink');
+    var active = bar.querySelector('.active');
+    if (!ink || !active) return;
+    ink.style.width = active.offsetWidth + 'px';
+    ink.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  }
+  function syncInks() { document.querySelectorAll('.tabs-bar, .testcase-tabs-bar').forEach(moveInk); }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.tab-btn, .testcase-tab-btn')) requestAnimationFrame(syncInks);
+  });
+  window.addEventListener('resize', syncInks);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncInks);
+  requestAnimationFrame(syncInks);
 
   function lazyLoadTab(tabName, url) {
     const el = document.getElementById('tab-' + tabName);
@@ -485,6 +505,7 @@
     const resultContent = document.getElementById('tc-tab-result');
     if (resultBtn) resultBtn.classList.add('active');
     if (resultContent) resultContent.classList.add('active');
+    requestAnimationFrame(function () { moveInk(document.querySelector('.testcase-tabs-bar')); });
   }
 
   /* ══════════════════════════
@@ -634,7 +655,7 @@
             className: 'error-highlight-line',
             linesDecorationsClassName: 'error-highlight-line-number',
             hoverMessage: { value: escapeHtml(text) },
-            overviewRuler: { color: '#ef4444', position: monaco.editor.OverviewRulerPosition.Left },
+            overviewRuler: { color: '#ef4444', position: monaco.editor.OverviewRulerLane.Left },
           },
         };
       })
@@ -648,6 +669,7 @@
     /* ══════════════════════════
      RESULT RENDERING
   ══════════════════════════ */
+  var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Status helpers
   function statusClass(status) {
@@ -666,6 +688,16 @@
     return titleize(status);
   }
 
+  var VERDICT_ICON = {
+    accepted: 'bi-check-lg', wrong: 'bi-x-lg', tle: 'bi-hourglass-bottom',
+    runtime: 'bi-exclamation-triangle', compile: 'bi-bug', failed: 'bi-x-lg'
+  };
+
+  function isPass(status) {
+    var s = String(status || '').toLowerCase();
+    return s === 'success' || s === 'accepted';
+  }
+
   function formatMemoryKB(kb) {
     if (!kb && kb !== 0) return null;
     var val = parseFloat(kb);
@@ -674,24 +706,162 @@
     return Math.round(val) + ' KB';
   }
 
-  /* ── Banner HTML ──
-     Status text is bold + text-shadow for accepted,
-     bold + red-tinted for errors. No emojis. */
-  function bannerHTML(cls, label, statsRow) {
-    return '<div class="result-status-banner ' + cls + '">' +
-      '<div class="result-banner-title">' + label + '</div>' +
-      (statsRow ? '<div class="result-stats-row">' + statsRow + '</div>' : '') +
-      '</div>';
+  function formatMs(ms) {
+    var v = parseFloat(ms);
+    if (!isFinite(v)) return '—';
+    return (v >= 100 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, '')) + ' ms';
   }
 
-  /* ── Case pill ──
-     Filled green background for pass, filled red for fail.
-     No emoji tick/cross — just the text "Case N". */
-  function casePillHTML(num, passed, active) {
-    return '<button class="result-case-pill ' +
+  function languageLabel() {
+    var sel = document.getElementById('language-select');
+    return sel && sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : getSelectedLanguage();
+  }
+
+  /* ── Celebration burst (accepted verdicts) ── */
+  function celebrate(host) {
+    if (REDUCED_MOTION || !host) return;
+    var burst = document.createElement('div');
+    burst.className = 'confetti';
+    var colors = ['var(--brand)', 'var(--accent)', '#7cc4ff', '#c3a6ff', '#ffe58a'];
+    for (var i = 0; i < 28; i++) {
+      var piece = document.createElement('i');
+      var angle = (Math.PI * 2 * i) / 28 + Math.random() * 0.4;
+      var dist = 70 + Math.random() * 110;
+      piece.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+      piece.style.setProperty('--ty', Math.sin(angle) * dist - 40 + 'px');
+      piece.style.setProperty('--r', Math.round(Math.random() * 540 - 270) + 'deg');
+      piece.style.setProperty('--d', Math.round(Math.random() * 120) + 'ms');
+      piece.style.background = colors[i % colors.length];
+      burst.appendChild(piece);
+    }
+    host.appendChild(burst);
+    setTimeout(function () { if (burst.parentNode) burst.parentNode.removeChild(burst); }, 1600);
+  }
+
+  /* ══════════════════════════
+     JUDGE PIPELINE ANIMATION
+     Purely visual: real results always come from the server response.
+  ══════════════════════════ */
+  var JUDGE_STAGES = {
+    run: [
+      ['Packaging code', 'bi-box-seam'],
+      ['Compiling', 'bi-gear'],
+      ['Running sample cases', 'bi-play-circle'],
+      ['Comparing output', 'bi-check2-square']
+    ],
+    submit: [
+      ['Queued on judge', 'bi-hourglass-split'],
+      ['Compiling', 'bi-gear'],
+      ['Running hidden tests', 'bi-shield-lock'],
+      ['Scoring & ranking', 'bi-graph-up-arrow']
+    ]
+  };
+  var STAGE_AT = [0, 650, 1500, 2900];
+
+  function judgeSceneHTML(kind) {
+    var stages = JUDGE_STAGES[kind];
+    var sampleCount = document.querySelectorAll('#testcase-pills-row .case-pill').length || 1;
+    var cells = '';
+    var n = kind === 'submit' ? 40 : sampleCount;
+    for (var i = 0; i < n; i++) cells += '<i style="--k:' + i + '"></i>';
+    return '<div class="judge judge-' + kind + '" data-judge>' +
+      '<div class="judge-head">' +
+        '<div class="judge-orb" aria-hidden="true"><span class="orb-ring"></span><span class="orb-ring r2"></span><span class="orb-sweep"></span><i class="bi bi-cpu"></i></div>' +
+        '<div class="judge-copy">' +
+          '<strong class="judge-title">' + (kind === 'submit' ? 'Judging your submission' : 'Running your code') + '</strong>' +
+          '<span class="judge-sub"><b class="judge-elapsed">0.0s</b><span>·</span>' + escapeHtml(languageLabel()) +
+          '<span>·</span>' + (kind === 'submit' ? 'all test cases' : sampleCount + ' sample case' + (sampleCount === 1 ? '' : 's')) + '</span>' +
+        '</div>' +
+        '<span class="judge-pct">0%</span>' +
+      '</div>' +
+      '<div class="judge-track"><i class="judge-fill"></i></div>' +
+      '<ol class="judge-stages">' + stages.map(function (s, i) {
+        return '<li data-stage="' + i + '"><span class="st-dot"><i class="bi ' + s[1] + '"></i></span><span class="st-label">' + s[0] + '</span><span class="st-state"></span></li>';
+      }).join('') + '</ol>' +
+      '<div class="judge-cells' + (kind === 'run' ? ' judge-cells-run' : '') + '" aria-hidden="true">' + cells + '</div>' +
+      '<div class="judge-log" aria-live="polite"></div>' +
+    '</div>';
+  }
+
+  var JUDGE_LOG = {
+    run: ['$ bashabyte run --lang ', '› compiling…', '› executing sample cases', '› diffing stdout against expected'],
+    submit: ['$ bashabyte submit --lang ', '› build ok, sandbox ready', '› executing hidden tests in isolation', '› scoring runtime & memory']
+  };
+
+  function startJudgeScene(host, kind) {
+    if (!host) return;
+    host.innerHTML = judgeSceneHTML(kind);
+    var scene = host.querySelector('[data-judge]');
+    var stages = scene.querySelectorAll('.judge-stages li');
+    var fill = scene.querySelector('.judge-fill');
+    var pct = scene.querySelector('.judge-pct');
+    var elapsed = scene.querySelector('.judge-elapsed');
+    var log = scene.querySelector('.judge-log');
+    var t0 = performance.now();
+    var current = -1;
+    scene._timers = [];
+
+    function setStage(i) {
+      if (!scene.isConnected) return;
+      for (var k = 0; k < stages.length; k++) {
+        stages[k].classList.toggle('is-done', k < i);
+        stages[k].classList.toggle('is-active', k === i);
+      }
+      current = i;
+      var line = document.createElement('div');
+      line.textContent = JUDGE_LOG[kind][i] + (i === 0 ? getSelectedLanguage() : '');
+      log.appendChild(line);
+      while (log.children.length > 3) log.removeChild(log.firstChild);
+    }
+    STAGE_AT.forEach(function (at, i) {
+      scene._timers.push(setTimeout(function () { setStage(i); }, REDUCED_MOTION ? 0 : at));
+    });
+
+    (function tick(now) {
+      if (!scene.isConnected || scene.classList.contains('is-finished')) return;
+      var t = now - t0;
+      var p = 94 * (1 - Math.exp(-t / 2600));
+      fill.style.transform = 'scaleX(' + (p / 100).toFixed(4) + ')';
+      pct.textContent = Math.floor(p) + '%';
+      elapsed.textContent = (t / 1000).toFixed(1) + 's';
+      requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  // Completes the animation, then calls done(). Falls through immediately when no scene is showing.
+  function finishJudgeScene(host, ok, done) {
+    var scene = host && host.querySelector('[data-judge]');
+    if (!scene || REDUCED_MOTION) { done(); return; }
+    (scene._timers || []).forEach(clearTimeout);
+    scene.classList.add('is-finished', ok ? 'is-ok' : 'is-fail');
+    scene.querySelectorAll('.judge-stages li').forEach(function (li) { li.classList.remove('is-active'); li.classList.add('is-done'); });
+    scene.querySelector('.judge-fill').style.transform = 'scaleX(1)';
+    scene.querySelector('.judge-pct').textContent = '100%';
+    setTimeout(done, 520);
+  }
+
+  /* ── Banner HTML (also used by error paths in the run handler) ── */
+  function bannerHTML(cls, label, statsRow) {
+    return '<div class="result-status-banner ' + cls + '">' +
+      '<div class="vb-icon"><i class="bi ' + (VERDICT_ICON[cls] || 'bi-exclamation-triangle') + '"></i></div>' +
+      '<div class="vb-copy"><div class="result-banner-title">' + label + '</div>' +
+      (statsRow ? '<div class="result-stats-row">' + statsRow + '</div>' : '') +
+      '</div></div>';
+  }
+
+  function casePillHTML(num, passed, active, runtime) {
+    return '<button type="button" class="result-case-pill ' +
       (passed ? 'pill-passed' : 'pill-failed') +
       (active ? ' active' : '') +
-      '" data-index="' + (num - 1) + '">Case ' + num + '</button>';
+      '" data-index="' + (num - 1) + '"><i class="bi ' + (passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill') + '"></i>Case ' + num +
+      (runtime ? '<small>' + formatMs(runtime) + '</small>' : '') + '</button>';
+  }
+
+  function errorConsoleHTML(cls, message) {
+    if (!message) return '';
+    return '<div class="error-console ' + cls + '">' +
+      '<div class="ec-head"><span class="ec-dots"><i></i><i></i><i></i></span><span>' + (cls === 'compile' ? 'Compiler output' : 'stderr') + '</span></div>' +
+      '<pre>' + escapeHtml(message) + '</pre></div>';
   }
 
   function renderRunResult(response) {
@@ -705,132 +875,90 @@
       return;
     }
 
-    // Determine overall status from first non-success result
     var overallStatus = 'success';
+    var errMsg = '';
     for (var k = 0; k < results.length; k++) {
-      if (results[k].status !== 'success' && results[k].status !== 'accepted') {
+      if (!isPass(results[k].status)) {
         overallStatus = results[k].status;
+        errMsg = results[k].actual || '';
         break;
       }
     }
     var cls = statusClass(overallStatus);
     var label = statusLabel(overallStatus);
 
-    // Highlight the offending source line for runtime / compile errors
     if (cls === 'runtime' || cls === 'compile') {
-      var errMsg = '';
-      for (var e = 0; e < results.length; e++) {
-        if (results[e].status !== 'success' && results[e].status !== 'accepted') {
-          errMsg = results[e].actual || '';
-          break;
-        }
-      }
       try { highlightErrorLines(errMsg); } catch (_) { /* Monaco not ready */ }
     } else {
       try { clearErrorHighlights(); } catch (_) {}
     }
 
-    // Compute total runtime
     var totalMs = 0;
+    var passedCount = 0;
     for (var j = 0; j < results.length; j++) {
       totalMs += parseFloat(results[j].runtime_ms) || 0;
+      if (isPass(results[j].status)) passedCount++;
     }
-    totalMs = totalMs.toFixed(1);
 
-    var header = bannerHTML(cls, label, '<span>' + totalMs + ' ms</span>');
+    var sub = cls === 'accepted'
+      ? 'All sample cases passed. Submit to run the hidden tests.'
+      : passedCount + ' of ' + results.length + ' sample cases passed';
+    var header = '<div class="verdict-banner v-' + cls + '">' +
+      '<div class="vb-icon"><i class="bi ' + VERDICT_ICON[cls] + '"></i></div>' +
+      '<div class="vb-copy"><h3>' + escapeHtml(label) + '</h3><p>' + sub + '</p></div>' +
+      '<div class="vb-stats"><span><b>' + passedCount + '</b>/' + results.length + '<small>passed</small></span>' +
+      '<span><b>' + formatMs(totalMs).replace(' ms', '') + '</b>ms<small>total runtime</small></span></div>' +
+    '</div>';
 
-    // Case pills (for multi-case run)
-    var pillsHTML = '';
     var selectedCase = response.selected_case ? parseInt(response.selected_case, 10) : null;
     var activeResultIndex = results.findIndex(function (result) {
       return selectedCase !== null && result.tc_num === selectedCase;
     });
-    if (activeResultIndex < 0) activeResultIndex = 0;
-
-    if (results.length > 1) {
-      pillsHTML = '<div class="result-case-pills">';
-      for (var p = 0; p < results.length; p++) {
-        var passed = results[p].status === 'success' || results[p].status === 'accepted';
-        pillsHTML += casePillHTML(results[p].tc_num, passed, p === activeResultIndex);
-      }
-      pillsHTML += '</div>';
+    if (activeResultIndex < 0) {
+      // Open the first failing case so the problem is visible immediately
+      activeResultIndex = results.findIndex(function (r) { return !isPass(r.status); });
+      if (activeResultIndex < 0) activeResultIndex = 0;
     }
 
-    container.innerHTML = header + pillsHTML + '<div id="case-detail-panel"></div>';
+    var pillsHTML = '<div class="result-case-pills">';
+    for (var p = 0; p < results.length; p++) {
+      pillsHTML += casePillHTML(results[p].tc_num, isPass(results[p].status), p === activeResultIndex, results[p].runtime_ms);
+    }
+    pillsHTML += '</div>';
 
-    // Render first case detail
-    if (results.length > 0) renderCaseDetail(results[activeResultIndex]);
+    var consoleHTML = (cls === 'compile' || cls === 'runtime') ? errorConsoleHTML(cls, errMsg) : '';
 
-    // Wire up pill clicks
-    container.querySelectorAll('.result-case-pill').forEach(function (pill) {
+    container.innerHTML = '<div class="rr rr-enter">' + header + consoleHTML + pillsHTML + '<div id="case-detail-panel"></div></div>';
+    renderCaseDetail(results[activeResultIndex]);
+    if (cls === 'accepted') celebrate(container.querySelector('.verdict-banner'));
+
+    container.querySelectorAll('.result-case-pill').forEach(function (pill, idx) {
       pill.addEventListener('click', function () {
         container.querySelectorAll('.result-case-pill').forEach(function (b) { b.classList.remove('active'); });
         pill.classList.add('active');
-        var idx = parseInt(pill.dataset.index, 10);
         if (results[idx]) renderCaseDetail(results[idx]);
       });
     });
   }
 
   function renderSubmitResult(data) {
+    // Kept for compatibility; submissions render in the editor's status view.
     var container = document.getElementById('test-result-content');
     if (!container) return;
-
     var cls = statusClass(data.status);
-    var label = statusLabel(data.status);
     var accepted = data.accepted || 0;
     var total = data.total || 0;
-    var pct = total > 0 ? Math.round((accepted / total) * 100) : 0;
-
-    // Highlight the offending source line for runtime / compile errors
-    if (cls === 'runtime' || cls === 'compile') {
-      var errMsg = '';
-      var tcResultsErr = data.test_case_results || [];
-      for (var ee = 0; ee < tcResultsErr.length; ee++) {
-        if (tcResultsErr[ee].status !== 'accepted' && tcResultsErr[ee].status !== 'success') {
-          errMsg = tcResultsErr[ee].actual || '';
-          break;
-        }
-      }
-      try { highlightErrorLines(errMsg); } catch (_) { /* Monaco not ready */ }
-    } else {
-      try { clearErrorHighlights(); } catch (_) {}
-    }
-
-    // Stats
-    var runtimeStr = data.runtime_ms ? (parseFloat(data.runtime_ms)).toFixed(1) + ' ms' : '—';
-    var memStr = formatMemoryKB(data.memory_kb) || '—';
-
-    var statsRow = '<span>' + runtimeStr + '</span>' +
-      '<span>' + memStr + '</span>' +
-      '<span>' + accepted + '/' + total + ' passed</span>';
-
-    var header = bannerHTML(cls, label, statsRow);
-
-    // Progress bar
-    header += '<div class="result-progress-bar"><div class="result-progress-fill" style="width:' + pct + '%"></div></div>';
-
-    // Case pills
     var tcResults = data.test_case_results || [];
-    var pillsHTML = '<div class="result-case-pills">';
-    for (var i = 0; i < tcResults.length; i++) {
-      var tc = tcResults[i];
-      var passed = tc.status === 'accepted' || tc.status === 'success';
-      pillsHTML += casePillHTML(tc.tc_num, passed, i === 0);
-    }
-    pillsHTML += '</div>';
-
-    container.innerHTML = header + pillsHTML + '<div id="case-detail-panel"></div>';
-
-    // Render first case detail
+    var statsRow = '<span>' + formatMs(data.runtime_ms) + '</span><span>' + (formatMemoryKB(data.memory_kb) || '—') + '</span><span>' + accepted + '/' + total + ' passed</span>';
+    var pillsHTML = '<div class="result-case-pills">' + tcResults.map(function (tc, i) {
+      return casePillHTML(tc.tc_num, isPass(tc.status), i === 0, tc.runtime_ms);
+    }).join('') + '</div>';
+    container.innerHTML = bannerHTML(cls, statusLabel(data.status), statsRow) + pillsHTML + '<div id="case-detail-panel"></div>';
     if (tcResults.length > 0) renderCaseDetail(tcResults[0]);
-
-    // Wire up pill clicks
-    container.querySelectorAll('.result-case-pill').forEach(function (pill) {
+    container.querySelectorAll('.result-case-pill').forEach(function (pill, idx) {
       pill.addEventListener('click', function () {
         container.querySelectorAll('.result-case-pill').forEach(function (b) { b.classList.remove('active'); });
         pill.classList.add('active');
-        var idx = parseInt(pill.dataset.index, 10);
         if (tcResults[idx]) renderCaseDetail(tcResults[idx]);
       });
     });
@@ -838,14 +966,18 @@
 
   function renderCaseDetail(tc) {
     var panel = document.getElementById('case-detail-panel');
-    if (!panel) return;
+    if (!panel || !tc) return;
 
-    // If IO data is available (sample / run mode), show full cards
     if (tc.input !== undefined) {
+      var actual = normalizeCaseText(tc.actual);
+      var expected = normalizeCaseText(tc.expected);
+      var passed = isPass(tc.status);
+      var cls = statusClass(tc.status);
+      var showDiff = !passed && cls === 'wrong';
       panel.innerHTML =
         ioCard('Input', normalizeCaseText(tc.input)) +
-        ioCard('Output', normalizeCaseText(tc.actual)) +
-        ioCard('Expected', normalizeCaseText(tc.expected));
+        ioCard('Output', actual, showDiff ? diffLines(actual, expected) : null, passed ? 'io-pass' : 'io-fail') +
+        ioCard('Expected', expected);
       panel.querySelectorAll('.copy-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var text = btn.dataset.copy;
@@ -856,23 +988,264 @@
         });
       });
     } else {
-      // Hidden test case — compact summary only
-      var passed = tc.status === 'accepted' || tc.status === 'success';
-      panel.innerHTML = '<div class="result-case-summary ' + (passed ? 'case-pass' : 'case-fail') + '">' +
-        'Case ' + tc.tc_num + ': ' + titleize(tc.status) +
-        (tc.runtime_ms ? ' - ' + tc.runtime_ms + ' ms' : '') + '</div>';
+      var ok = isPass(tc.status);
+      panel.innerHTML = '<div class="result-case-summary ' + (ok ? 'case-pass' : 'case-fail') + '">' +
+        '<i class="bi ' + (ok ? 'bi-shield-check' : 'bi-shield-x') + '"></i>' +
+        '<div><b>Case ' + tc.tc_num + ' · ' + titleize(tc.status) + '</b><span>Hidden test case' +
+        (tc.runtime_ms ? ' · ' + formatMs(tc.runtime_ms) : '') + '</span></div></div>';
     }
   }
 
-  function ioCard(label, value) {
-    var safe = escapeHtml(value || '');
-    return '<div class="case-io-card">' +
+  // Line-by-line diff of actual vs expected output (marks differing lines)
+  function diffLines(actual, expected) {
+    var a = String(actual || '').split('\n');
+    var e = String(expected || '').split('\n');
+    return a.map(function (line, i) {
+      var bad = line.replace(/\s+$/, '') !== String(e[i] === undefined ? '\u0000' : e[i]).replace(/\s+$/, '');
+      return '<span class="diff-line' + (bad ? ' is-bad' : '') + '">' + (escapeHtml(line) || '&nbsp;') + '</span>';
+    }).join('');
+  }
+
+  function ioCard(label, value, html, extraClass) {
+    var safe = html || escapeHtml(value || '');
+    return '<div class="case-io-card ' + (extraClass || '') + '">' +
       '<div class="case-io-card-header">' +
         '<span class="case-header-tag">' + label + '</span>' +
-        '<button class="copy-btn" data-copy="' + escapeAttr(value || '') + '">Copy</button>' +
+        (extraClass === 'io-fail' ? '<span class="io-flag"><i class="bi bi-x-circle"></i> Differs from expected</span>' : '') +
+        (extraClass === 'io-pass' ? '<span class="io-flag ok"><i class="bi bi-check-circle"></i> Matches</span>' : '') +
+        '<button type="button" class="copy-btn" data-copy="' + escapeAttr(value || '') + '">Copy</button>' +
       '</div>' +
-      '<div class="case-io-card-body">' + safe + '</div>' +
+      '<div class="case-io-card-body">' + (safe || '<span class="io-empty">(empty)</span>') + '</div>' +
     '</div>';
+  }
+
+  /* ══════════════════════════
+     COMPLEXITY ESTIMATOR
+     A static, heuristic read of the code's structure (loops, recursion,
+     sorting, allocations). It is labelled as an estimate in the UI.
+  ══════════════════════════ */
+  var CX_ORDER = ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)', 'O(n³)', 'O(2ⁿ)'];
+  var CX_NAME = ['Constant', 'Logarithmic', 'Linear', 'Linearithmic', 'Quadratic', 'Cubic', 'Exponential'];
+
+  function cxRankOf(str) {
+    var s = String(str || '').toLowerCase().replace(/\s+/g, '').replace(/\^2|\*\*2/g, '²').replace(/\^3|\*\*3/g, '³').replace(/\^n|\*\*n/g, 'ⁿ').replace(/\*/g, '');
+    var table = { 'o(1)': 0, 'o(logn)': 1, 'o(n)': 2, 'o(nlogn)': 3, 'o(n²)': 4, 'o(n³)': 5, 'o(2ⁿ)': 6 };
+    return table.hasOwnProperty(s) ? table[s] : -1;
+  }
+
+  function stripCode(code, lang) {
+    var c = String(code || '');
+    c = c.replace(/("""|''')[\s\S]*?\1/g, '""');
+    c = c.replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`/g, '""');
+    if (/python/i.test(lang)) c = c.replace(/#.*$/gm, '');
+    else c = c.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    return c;
+  }
+
+  function estimateComplexity(code, lang) {
+    var src = stripCode(code, lang);
+    var isPy = /python/i.test(lang) || (/\bdef\b|\belif\b/.test(src) && !/[{};]\s*$/m.test(src));
+    var lines = src.split('\n');
+    var signals = [];
+    var maxDepth = 0;
+    var logLoops = 0;
+
+    if (isPy) {
+      var stack = []; // indents of open loops
+      lines.forEach(function (raw) {
+        if (!raw.trim()) return;
+        var indent = raw.match(/^\s*/)[0].replace(/\t/g, '    ').length;
+        while (stack.length && indent <= stack[stack.length - 1]) stack.pop();
+        var t = raw.trim();
+        var compFor = (t.match(/\bfor\b[^:]*\bin\b/g) || []).length;
+        if (/^(for|while)\b/.test(t)) {
+          stack.push(indent);
+          maxDepth = Math.max(maxDepth, stack.length + Math.max(0, compFor - 1));
+        } else if (compFor) {
+          maxDepth = Math.max(maxDepth, stack.length + compFor);
+        }
+      });
+    } else {
+      var depth = 0;
+      var braceStack = [];
+      var pendingLoop = false;
+      var tokens = src.match(/\b(for|while)\b|[{}]|;/g) || [];
+      tokens.forEach(function (tok) {
+        if (tok === 'for' || tok === 'while') { pendingLoop = true; return; }
+        if (tok === '{') { braceStack.push(pendingLoop); if (pendingLoop) depth++; pendingLoop = false; maxDepth = Math.max(maxDepth, depth); return; }
+        if (tok === '}') { if (braceStack.pop()) depth--; return; }
+        if (tok === ';' && pendingLoop) { maxDepth = Math.max(maxDepth, depth + 1); }
+      });
+      // single-statement loops without braces: count once at least
+      if (!maxDepth && /\b(for|while)\b/.test(src)) maxDepth = 1;
+    }
+
+    if (/(\/\/=|\/=|>>=|\*=)\s*2\b|>>\s*1\b|\bmid\b|\blo\b.*\bhi\b|\bleft\b.*\bright\b.*\/\s*2/.test(src)) {
+      logLoops = 1;
+      signals.push({ icon: 'bi-scissors', text: 'Search space is halved each step (logarithmic loop)' });
+    }
+    var sorts = /\bsorted\s*\(|\.sort\s*\(|Arrays\.sort|Collections\.sort|\bsort\s*\(|sort\.(Ints|Slice)/.test(src);
+    if (sorts) signals.push({ icon: 'bi-sort-down', text: 'Sorting call detected (n log n)' });
+
+    // Recursion: count calls to a function *inside its own body*
+    var fns = [];
+    var m;
+    if (isPy) {
+      lines.forEach(function (raw, i) {
+        var dm = raw.match(/^(\s*)def\s+([A-Za-z_]\w*)/);
+        if (!dm) return;
+        var ind = dm[1].replace(/\t/g, '    ').length;
+        var body = [];
+        for (var j = i + 1; j < lines.length; j++) {
+          var l = lines[j];
+          if (l.trim() && l.match(/^\s*/)[0].replace(/\t/g, '    ').length <= ind) break;
+          body.push(l);
+        }
+        fns.push({ name: dm[2], body: body.join('\n') });
+      });
+    } else {
+      var fnRe = /\b([A-Za-z_]\w*)\s*\([^;{}()]*(?:\([^()]*\)[^;{}()]*)*\)\s*(?:const\s*|throws\s+[\w.,\s]+)?\{/g;
+      while ((m = fnRe.exec(src))) {
+        if (/^(if|for|while|switch|catch|main|return|else)$/.test(m[1])) continue;
+        var start = m.index + m[0].length, d = 1, k = start;
+        while (k < src.length && d > 0) { if (src[k] === '{') d++; else if (src[k] === '}') d--; k++; }
+        fns.push({ name: m[1], body: src.slice(start, k - 1) });
+      }
+    }
+    var recursion = 0;
+    fns.forEach(function (fn) {
+      var calls = (fn.body.match(new RegExp('\\b' + fn.name + '\\s*\\(', 'g')) || []).length;
+      if (calls >= 2) recursion = Math.max(recursion, 2);
+      else if (calls === 1) recursion = Math.max(recursion, 1);
+    });
+    if (recursion === 2) signals.push({ icon: 'bi-diagram-3', text: 'Branching recursion (the function calls itself more than once)' });
+    else if (recursion === 1) signals.push({ icon: 'bi-arrow-return-left', text: 'Linear recursion detected' });
+
+    if (maxDepth === 1) signals.unshift({ icon: 'bi-arrow-repeat', text: 'One loop over the input' });
+    else if (maxDepth > 1) signals.unshift({ icon: 'bi-layers', text: maxDepth + ' nested loops' });
+
+    var timeRank = 0;
+    if (maxDepth > 0) {
+      timeRank = maxDepth === 1 ? (logLoops ? 1 : 2) : maxDepth === 2 ? (logLoops ? 3 : 4) : 5;
+    }
+    if (sorts) timeRank = Math.max(timeRank, 3);
+    if (recursion === 2) timeRank = 6;
+    else if (recursion === 1) timeRank = Math.max(timeRank, logLoops ? 1 : 2);
+
+    // Space
+    var spaceSignals = [];
+    var spaceRank = 0;
+    var grid = /\[\s*\[|new\s+\w+\s*\[[^\]]+\]\s*\[|vector\s*<\s*vector|for\b[^\n]*\bfor\b[^\n]*\]/.test(src);
+    var collections = /\[\s*\]|\{\s*\}|\bdict\s*\(|\bset\s*\(|\blist\s*\(|new\s+(Hash|Tree|Array|Linked)\w*|new\s+\w+\s*\[|\bvector\s*<|\bunordered_(map|set)\b|\bmake\s*\(|\bVec::|\bnew Map\b|\bnew Set\b|\[\s*0\s*\]\s*\*|\.append\(|\.push(_back)?\(|\.add\(|\.put\(/.test(src);
+    if (grid) { spaceRank = 4; spaceSignals.push({ icon: 'bi-grid-3x3', text: '2-D structure allocated (grid / matrix)' }); }
+    else if (collections) { spaceRank = 2; spaceSignals.push({ icon: 'bi-collection', text: 'Auxiliary collection that can grow with input' }); }
+    if (recursion) { spaceRank = Math.max(spaceRank, 2); spaceSignals.push({ icon: 'bi-stack', text: 'Recursion uses call-stack space' }); }
+    if (!spaceSignals.length) spaceSignals.push({ icon: 'bi-box', text: 'Only a fixed number of variables' });
+    if (!signals.length) signals.push({ icon: 'bi-lightning', text: 'No loops or recursion: a fixed number of steps' });
+
+    return { time: timeRank, space: spaceRank, timeSignals: signals, spaceSignals: spaceSignals };
+  }
+
+  function growthCurveSVG(rank) {
+    var fns = [
+      function () { return 1; },
+      function (n) { return Math.log2(n + 1); },
+      function (n) { return n; },
+      function (n) { return n * Math.log2(n + 1); },
+      function (n) { return n * n; },
+      function (n) { return n * n * n; },
+      function (n) { return Math.pow(2, n); }
+    ];
+    var W = 300, H = 150, cap = 40;
+    var paths = fns.map(function (f, i) {
+      var d = '';
+      for (var s = 0; s <= 40; s++) {
+        var n = 1 + (s / 40) * 15;
+        var y = Math.min(f(n), cap) / cap;
+        d += (s ? 'L' : 'M') + (s / 40 * W).toFixed(1) + ' ' + (H - y * H).toFixed(1);
+      }
+      return '<path d="' + d + '" class="gc-line' + (i === rank ? ' is-you' : '') + '" style="--i:' + i + '"/>';
+    }).join('');
+    return '<svg viewBox="-4 -6 ' + (W + 8) + ' ' + (H + 12) + '" class="growth" preserveAspectRatio="none" aria-hidden="true">' +
+      '<line x1="0" y1="' + H + '" x2="' + W + '" y2="' + H + '" class="gc-axis"/><line x1="0" y1="0" x2="0" y2="' + H + '" class="gc-axis"/>' + paths + '</svg>';
+  }
+
+  /* ── Distribution analysis ── */
+  function numbers(list, key) {
+    return (list || []).map(function (item) { return parseFloat(item[key]); }).filter(function (v) { return isFinite(v); });
+  }
+
+  function quantile(sorted, q) {
+    if (!sorted.length) return NaN;
+    var pos = (sorted.length - 1) * q;
+    var lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  }
+
+  function distributionHTML(values, current, unit, fmt, lang) {
+    if (!isFinite(current)) {
+      return '<div class="dist-empty"><i class="bi bi-bar-chart"></i><span>No measurement was recorded for this submission.</span></div>';
+    }
+    if (values.length < 2) {
+      return '<div class="dist-empty"><i class="bi bi-flag"></i><span>You are the first accepted ' + escapeHtml(lang) + ' solution here, so there is nothing to compare against yet.</span></div>';
+    }
+    var sorted = values.slice().sort(function (a, b) { return a - b; });
+    var min = sorted[0], max = sorted[sorted.length - 1];
+    var span = Math.max(max - min, 1e-9);
+    var B = 18;
+    var bins = new Array(B).fill(0);
+    values.forEach(function (v) { bins[Math.min(B - 1, Math.floor(((v - min) / span) * B))]++; });
+    var peak = Math.max.apply(null, bins);
+    var youBin = Math.min(B - 1, Math.floor(((current - min) / span) * B));
+    var beats = Math.round(values.filter(function (v) { return v > current; }).length / values.length * 100);
+    var pos = Math.max(0, Math.min(100, ((current - min) / span) * 100));
+    var bars = bins.map(function (c, i) {
+      return '<i class="' + (i === youBin ? 'is-you' : i < youBin ? 'is-slower' : '') + '" style="--h:' + Math.max(4, c / peak * 100) + '%;--i:' + i + '" title="' + c + ' submission' + (c === 1 ? '' : 's') + '"></i>';
+    }).join('');
+    return '<div class="dist">' +
+      '<div class="dist-head"><div><span class="dist-beats">Beats <b>' + beats + '%</b></span><span class="dist-sub">of ' + values.length + ' accepted ' + escapeHtml(lang) + ' submissions</span></div>' +
+      '<div class="dist-stats"><span>Yours<b>' + fmt(current) + '</b></span><span>Median<b>' + fmt(quantile(sorted, 0.5)) + '</b></span><span>Best<b>' + fmt(min) + '</b></span><span>P90<b>' + fmt(quantile(sorted, 0.9)) + '</b></span></div></div>' +
+      '<div class="dist-plot"><div class="dist-bars">' + bars + '</div>' +
+      '<div class="dist-marker" style="left:' + pos + '%"><span>You</span></div></div>' +
+      '<div class="dist-axis"><span>' + fmt(min) + '</span><span>' + unit + '</span><span>' + fmt(max) + '</span></div>' +
+    '</div>';
+  }
+
+  function complexityPaneHTML(kind, est, data, ref) {
+    var isTime = kind === 'time';
+    var rank = isTime ? est.time : est.space;
+    var refStr = ref ? (isTime ? ref.time : ref.space) : '';
+    var refRank = cxRankOf(refStr);
+    var verdict = '';
+    if (refStr) {
+      if (refRank >= 0 && rank <= refRank) verdict = '<div class="cx-verdict good"><i class="bi bi-patch-check-fill"></i> Matches the editorial\'s ' + escapeHtml(refStr) + '</div>';
+      else if (refRank >= 0) verdict = '<div class="cx-verdict warn"><i class="bi bi-arrow-up-circle"></i> The editorial reaches ' + escapeHtml(refStr) + ', so there is room to optimize</div>';
+      else verdict = '<div class="cx-verdict"><i class="bi bi-book"></i> Editorial reference: ' + escapeHtml(refStr) + '</div>';
+    }
+    var signals = (isTime ? est.timeSignals : est.spaceSignals).map(function (s) {
+      return '<li><i class="bi ' + s.icon + '"></i>' + escapeHtml(s.text) + '</li>';
+    }).join('');
+    var tone = rank <= 2 ? 'good' : rank <= 3 ? 'ok' : 'warn';
+    var values = numbers(data.performance, isTime ? 'runtime_ms' : 'memory_kb');
+    var current = parseFloat(isTime ? data.runtime_ms : data.memory_kb);
+    var dist = data.status === 'accepted'
+      ? distributionHTML(values, current, isTime ? 'runtime' : 'memory', isTime ? formatMs : function (v) { return formatMemoryKB(v) || '—'; }, data.language || languageLabel())
+      : '<div class="dist-empty"><i class="bi bi-lock"></i><span>Comparison with other submissions unlocks once this solution is accepted.</span></div>';
+
+    return '<div class="cx-grid">' +
+        '<div class="cx-card cx-main">' +
+          '<span class="cx-label">' + (isTime ? 'Time' : 'Space') + ' complexity · estimated</span>' +
+          '<div class="cx-big cx-' + tone + '">' + CX_ORDER[rank] + '</div>' +
+          '<span class="cx-name">' + CX_NAME[rank] + (isTime ? ' time' : ' extra space') + '</span>' +
+          verdict +
+          '<ul class="cx-signals">' + signals + '</ul>' +
+          '<p class="cx-note">Estimated from the structure of your code (loops, recursion, sorting and allocations). Treat it as a guide, not a proof.</p>' +
+        '</div>' +
+        '<div class="cx-card cx-curve"><span class="cx-label">How it scales</span>' + growthCurveSVG(rank) +
+          '<div class="gc-legend">' + CX_ORDER.map(function (c, i) { return '<span class="' + (i === rank ? 'is-you' : '') + '">' + c + '</span>'; }).join('') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cx-card cx-dist"><span class="cx-label">' + (isTime ? 'Runtime' : 'Memory') + ' distribution</span>' + dist + '</div>';
   }
 
   /* ══════════════════════════
@@ -891,6 +1264,8 @@
     if (submissionTab) submissionTab.classList.toggle('active', isSubmission);
     if (codePanel) codePanel.classList.toggle('active', !isSubmission);
     if (submissionPanel) submissionPanel.classList.toggle('active', isSubmission);
+    var rp = document.getElementById('right-panel');
+    if (rp) rp.classList.toggle('report-open', isSubmission);
     if (!isSubmission && window.editor) window.editor.layout();
   }
 
@@ -901,6 +1276,7 @@
     submissionTab.hidden = true;
     submissionTab.style.display = '';
     activateEditorView('code');
+    document.querySelectorAll('#tab-submissions .submission-row.is-active').forEach(function (r) { r.classList.remove('is-active'); });
   }
   if (submissionTabClose) {
     submissionTabClose.addEventListener('click', function (event) {
@@ -919,82 +1295,190 @@
     return String(status || '').toLowerCase() === 'accepted' ? 'accepted' : 'failed';
   }
 
-  function statusAcknowledgement(status) {
-    const accepted = submissionStatusClass(status) === 'accepted';
-    return '<span class="submission-ack ' + (accepted ? 'ack-success' : 'ack-failure') + '" aria-hidden="true"></span>';
+  function referenceComplexity() {
+    var el = document.getElementById('reference-complexity');
+    if (!el) return null;
+    try { return JSON.parse(el.textContent); } catch (e) { return null; }
   }
 
-  function performanceGraph(data) {
-    const samples = data.performance || [];
-    const runtimeSamples = samples.map(function (item) { return parseFloat(item.runtime_ms); }).filter(Number.isFinite);
-    const memorySamples = samples.map(function (item) { return parseFloat(item.memory_kb); }).filter(Number.isFinite);
-    let mode = 'runtime';
-
-    function graphMarkup(kind) {
-      const values = kind === 'runtime' ? runtimeSamples : memorySamples;
-      const current = parseFloat(kind === 'runtime' ? data.runtime_ms : data.memory_kb);
-      if (!Number.isFinite(current) || values.length === 0) {
-        return '<div class="performance-empty">Performance distribution is not available yet.</div>';
-      }
-      const all = values.concat([current]).sort(function (a, b) { return a - b; });
-      const min = all[0];
-      const max = all[all.length - 1] || min + 1;
-      const bins = Array(10).fill(0);
-      values.forEach(function (value) {
-        const index = Math.min(9, Math.floor(((value - min) / Math.max(1, max - min)) * 10));
-        bins[index] += 1;
-      });
-      const peak = Math.max.apply(null, bins.concat([1]));
-      const position = ((current - min) / Math.max(1, max - min)) * 100;
-      const percent = Math.round((values.filter(function (value) { return value >= current; }).length / values.length) * 100);
-      return '<div class="performance-chart" data-graph-kind="' + kind + '">' +
-        '<div class="performance-y-axis"><span>100%</span><span>50%</span><span>0%</span></div>' +
-        '<div class="performance-plot"><div class="performance-grid"></div><div class="performance-bars">' + bins.map(function (count) { return '<i style="height:' + Math.max(3, (count / peak) * 100) + '%"></i>'; }).join('') + '</div><div class="performance-marker" style="left:' + position + '%"><b></b><span>' + current + (kind === 'runtime' ? ' ms' : ' KB') + '<small>' + percent + '% of submissions</small></span></div><div class="performance-x-axis"><span>' + min.toFixed(1) + '</span><span>' + ((min + max) / 2).toFixed(1) + '</span><span>' + max.toFixed(1) + '</span></div></div></div>';
-    }
-
-    function render() {
-      const graph = document.getElementById('submission-performance-graph');
-      if (graph) graph.innerHTML = graphMarkup(mode);
-      document.querySelectorAll('[data-performance-mode]').forEach(function (button) { button.classList.toggle('active', button.dataset.performanceMode === mode); });
-    }
-
-    const controls = '<div class="performance-head"><div><span class="submission-section-label">Performance</span><h4>How your submission compares</h4></div><div class="performance-switch"><button type="button" data-performance-mode="runtime">Runtime</button><button type="button" data-performance-mode="memory">Memory</button></div></div><div id="submission-performance-graph"></div>';
-    return { html: controls, init: function () { document.querySelectorAll('[data-performance-mode]').forEach(function (button) { button.addEventListener('click', function () { mode = button.dataset.performanceMode; render(); }); }); render(); } };
+  function monacoLangFor(name) {
+    var n = String(name || '').toLowerCase();
+    if (n.indexOf('python') >= 0) return 'python';
+    if (n.indexOf('java') === 0 && n.indexOf('javascript') < 0) return 'java';
+    if (n.indexOf('javascript') >= 0 || n === 'js') return 'javascript';
+    if (n.indexOf('c++') >= 0 || n.indexOf('cpp') >= 0) return 'cpp';
+    if (n === 'c') return 'c';
+    if (n.indexOf('go') === 0) return 'go';
+    if (n.indexOf('rust') >= 0) return 'rust';
+    return 'plaintext';
   }
 
-  function renderSubmissionStatus(data) {
+  function formatWhen(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return { date: 'Just now', time: '' };
+    var diff = (Date.now() - d.getTime()) / 1000;
+    var rel = diff < 45 ? 'just now' : diff < 3600 ? Math.round(diff / 60) + ' min ago' : diff < 86400 ? Math.round(diff / 3600) + ' h ago' : Math.round(diff / 86400) + ' d ago';
+    return {
+      date: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + ' · ' + rel
+    };
+  }
+
+  function passRing(pct, ok) {
+    var r = 26, c = 2 * Math.PI * r;
+    return '<svg class="pass-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + r + '" class="pr-track"/>' +
+      '<circle cx="32" cy="32" r="' + r + '" class="pr-fill ' + (ok ? 'ok' : 'bad') + '" style="--c:' + c.toFixed(1) + ';--o:' + (c * (1 - pct / 100)).toFixed(1) + '"/></svg>';
+  }
+
+  function caseChartHTML(results) {
+    if (!results.length) return '';
+    var times = results.map(function (r) { return parseFloat(r.runtime_ms) || 0; });
+    var peak = Math.max.apply(null, times.concat([0.0001]));
+    var bars = results.map(function (r, i) {
+      var ok = isPass(r.status);
+      return '<i class="' + (ok ? 'ok' : 'bad') + '" style="--h:' + Math.max(6, times[i] / peak * 100) + '%;--i:' + i + '" title="Case ' + escapeAttr(r.tc_num) + ' · ' + escapeAttr(ok ? 'Passed' : titleize(r.status)) + (r.runtime_ms ? ' · ' + escapeAttr(formatMs(r.runtime_ms)) : '') + '"></i>';
+    }).join('');
+    var avg = times.reduce(function (a, b) { return a + b; }, 0) / times.length;
+    return '<div class="case-chart"><div class="cc-bars">' + bars + '</div>' +
+      '<div class="cc-axis"><span>Case 1</span><span>avg ' + formatMs(avg) + ' · slowest ' + formatMs(peak) + '</span><span>Case ' + escapeHtml(results[results.length - 1].tc_num) + '</span></div></div>';
+  }
+
+  function renderSubmissionStatusNow(data) {
     if (!submissionStatusContent || !submissionTab) return;
     const status = submissionStatusClass(data.status);
-    const accepted = Number(data.accepted || 0);
-    const total = Number(data.total || (data.test_case_results || []).length);
+    const ok = status === 'accepted';
+    const verdictCls = ok ? 'accepted' : statusClass(data.status);
     const results = data.test_case_results || data.results || [];
-    const graph = status === 'accepted' ? performanceGraph(data) : null;
+    const accepted = Number(data.accepted || 0);
+    const total = Number(data.total || results.length);
+    const pct = total ? Math.round(accepted / total * 100) : 0;
+    const lang = data.language || languageLabel();
+    const code = data.code || getEditorCode();
+    const when = formatWhen(data.submitted_at);
+    const est = estimateComplexity(code, lang);
+    const ref = referenceComplexity();
+    const label = ok ? 'Accepted' : titleize(data.status);
+
+    let errMsg = '';
+    if (!ok) {
+      const failing = results.filter(function (r) { return !isPass(r.status); })[0];
+      errMsg = (failing && (verdictCls === 'compile' || verdictCls === 'runtime') && failing.actual) || (!results.length ? (data.actual || '') : '');
+    }
+
+    const runtimeVals = numbers(data.performance, 'runtime_ms');
+    const memoryVals = numbers(data.performance, 'memory_kb');
+    const rt = parseFloat(data.runtime_ms), mem = parseFloat(data.memory_kb);
+    function beats(vals, cur) {
+      if (!ok || !isFinite(cur) || vals.length < 2) return null;
+      return Math.round(vals.filter(function (v) { return v > cur; }).length / vals.length * 100);
+    }
+    const rtBeats = beats(runtimeVals, rt), memBeats = beats(memoryVals, mem);
+    function beatsBar(b) {
+      return b === null ? '<span class="kpi-sub">' + (ok ? 'Not enough data to compare' : 'Compared once accepted') + '</span>'
+        : '<span class="kpi-sub">Beats <b>' + b + '%</b></span><span class="kpi-meter"><i style="--w:' + b + '%"></i></span>';
+    }
+
+    const failedCases = results.filter(function (r) { return !isPass(r.status); });
     const cases = results.map(function (result) {
-      const passed = result.status === 'accepted' || result.status === 'success';
-      const details = passed ? '' : '<div class="submission-case-details"><div><b>Input</b><pre>' + escapeHtml(result.input || '') + '</pre></div><div><b>Expected</b><pre>' + escapeHtml(result.expected || '') + '</pre></div><div><b>Actual</b><pre>' + escapeHtml(result.actual || '') + '</pre></div></div>';
-      return '<div class="submission-case ' + (passed ? 'passed' : 'failed') + '"><button type="button" class="submission-case-row" data-case-toggle><span class="submission-case-indicator" aria-hidden="true"></span><span>Case ' + escapeHtml(result.tc_num) + '</span><strong>' + (passed ? 'Passed' : titleize(result.status)) + '</strong></button>' + details + '</div>';
+      const passed = isPass(result.status);
+      const hasIO = result.input !== undefined;
+      const details = passed ? '' : '<div class="submission-case-details">' + (hasIO
+        ? '<div><b>Input</b><pre>' + escapeHtml(normalizeCaseText(result.input)) + '</pre></div><div><b>Expected</b><pre>' + escapeHtml(normalizeCaseText(result.expected)) + '</pre></div><div><b>Actual</b><pre class="is-bad">' + escapeHtml(normalizeCaseText(result.actual)) + '</pre></div>'
+        : '<p class="hidden-note"><i class="bi bi-eye-slash"></i> This is a hidden test case, so its input and output stay private.</p>') + '</div>';
+      return '<div class="submission-case ' + (passed ? 'passed' : 'failed') + '"><button type="button" class="submission-case-row" data-case-toggle' + (passed ? ' disabled' : '') + '><span class="submission-case-indicator" aria-hidden="true"></span><span>Case ' + escapeHtml(result.tc_num) + (result.input === undefined ? ' <small>hidden</small>' : '') + '</span>' + (result.runtime_ms ? '<em>' + formatMs(result.runtime_ms) + '</em>' : '<em></em>') + '<strong>' + (passed ? 'Passed' : titleize(result.status)) + '</strong>' + (passed ? '' : '<i class="bi bi-chevron-down"></i>') + '</button>' + details + '</div>';
     }).join('');
+
     submissionTab.hidden = false;
     submissionTab.style.display = '';
     submissionTab.className = 'editor-view-tab editor-view-tab-submission status-' + status + ' active';
-    document.getElementById('editor-view-tab-submission-label').textContent = status === 'accepted' ? 'Accepted' : titleize(data.status);
-    submissionStatusContent.innerHTML = '<div class="submission-status-header"><div><span class="submission-section-label">Submission status</span><h3>' + statusAcknowledgement(data.status) + (status === 'accepted' ? 'Accepted' : titleize(data.status)) + '</h3><p>' + accepted + ' / ' + total + ' test cases passed</p></div><span class="submission-status-time">' + escapeHtml(data.submitted_at || 'Just now') + '</span></div>' +
-      '<div class="submission-meta"><span>Language<strong>' + escapeHtml(data.language || getSelectedLanguage()) + '</strong></span><span>Runtime<strong>' + escapeHtml(data.runtime_ms || '—') + ' ms</strong></span><span>Memory<strong>' + escapeHtml(data.memory_kb || '—') + ' KB</strong></span><span>Passed<strong>' + accepted + ' / ' + total + '</strong></span></div>' +
-      (graph ? '<div class="submission-performance">' + graph.html + '</div>' : '') +
-      '<div class="submission-section-label">Test cases</div><div class="submission-cases">' + cases + '</div>' +
-      '<div class="submission-section-label submitted-code-label">Submitted code</div><pre class="submitted-code"><code>' + escapeHtml(data.code || getEditorCode()) + '</code></pre>';
-    submissionStatusContent.querySelectorAll('[data-case-toggle]').forEach(function (button) { button.addEventListener('click', function () { const details = button.nextElementSibling; if (details) details.classList.toggle('open'); }); });
-    if (graph) graph.init();
+    document.getElementById('editor-view-tab-submission-label').textContent = label;
+
+    const lineCount = String(code).split('\n').length;
+    submissionStatusContent.innerHTML =
+      '<div class="sr sr-enter v-' + verdictCls + '">' +
+        '<header class="sr-hero">' +
+          '<div class="sr-verdict"><span class="sr-icon"><i class="bi ' + (ok ? 'bi-check-lg' : (VERDICT_ICON[verdictCls] || 'bi-x-lg')) + '"></i></span>' +
+            '<div><span class="sr-kicker">' + (data.submission_id ? 'Submission #' + escapeHtml(data.submission_id) + ' · ' : '') + escapeHtml(lang) + '</span>' +
+            '<h3>' + escapeHtml(label) + '</h3>' +
+            '<p>' + accepted + ' / ' + total + ' test cases passed</p></div></div>' +
+          '<div class="sr-when"><b>' + escapeHtml(when.date) + '</b><span>' + escapeHtml(when.time) + '</span></div>' +
+        '</header>' +
+        errorConsoleHTML(verdictCls === 'compile' ? 'compile' : 'runtime', errMsg) +
+        '<section class="sr-kpis">' +
+          '<div class="kpi"><span class="kpi-label"><i class="bi bi-stopwatch"></i> Runtime</span><strong>' + (isFinite(rt) ? formatMs(rt) : '—') + '</strong>' + beatsBar(rtBeats) + '</div>' +
+          '<div class="kpi"><span class="kpi-label"><i class="bi bi-memory"></i> Memory</span><strong>' + (formatMemoryKB(data.memory_kb) || '—') + '</strong>' + beatsBar(memBeats) + '</div>' +
+          '<div class="kpi kpi-ring">' + passRing(pct, ok) + '<div><span class="kpi-label">Pass rate</span><strong>' + pct + '%</strong><span class="kpi-sub">' + accepted + ' of ' + total + ' cases</span></div></div>' +
+        '</section>' +
+        '<section class="sr-card sr-analysis">' +
+          '<div class="sr-tabs" role="tablist">' +
+            '<button type="button" class="sr-tab active" data-sr-tab="time"><i class="bi bi-stopwatch"></i> Time complexity <b>' + CX_ORDER[est.time] + '</b></button>' +
+            '<button type="button" class="sr-tab" data-sr-tab="space"><i class="bi bi-memory"></i> Space complexity <b>' + CX_ORDER[est.space] + '</b></button>' +
+          '</div>' +
+          '<div class="sr-pane active" data-sr-pane="time">' + complexityPaneHTML('time', est, data, ref) + '</div>' +
+          '<div class="sr-pane" data-sr-pane="space">' + complexityPaneHTML('space', est, data, ref) + '</div>' +
+        '</section>' +
+        (results.length ? '<section class="sr-card"><div class="sr-card-head"><h4>Test case breakdown</h4><span class="sr-legend"><i class="ok"></i>Passed <i class="bad"></i>Failed</span></div>' +
+          caseChartHTML(results) +
+          (failedCases.length ? '<div class="submission-section-label">Failed cases</div>' : '') +
+          '<div class="submission-cases' + (failedCases.length ? '' : ' all-passed') + '">' + cases + '</div></section>' : '') +
+        '<section class="sr-card sr-code"><div class="sr-card-head"><h4>Submitted code</h4><span class="sr-code-meta">' + escapeHtml(lang) + ' · ' + lineCount + ' line' + (lineCount === 1 ? '' : 's') + '</span><button type="button" class="copy-btn" data-copy-code>Copy</button></div>' +
+          '<pre class="submitted-code"><code>' + String(code).split('\n').map(function (l) { return '<span class="ln">' + (escapeHtml(l) || ' ') + '</span>'; }).join('') + '</code></pre></section>' +
+      '</div>';
+
+    // Interactions
+    submissionStatusContent.querySelectorAll('[data-case-toggle]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const details = button.nextElementSibling;
+        if (details) { details.classList.toggle('open'); button.classList.toggle('open'); }
+      });
+    });
+    submissionStatusContent.querySelectorAll('[data-sr-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        submissionStatusContent.querySelectorAll('[data-sr-tab]').forEach(function (t) { t.classList.toggle('active', t === tab); });
+        submissionStatusContent.querySelectorAll('[data-sr-pane]').forEach(function (p) { p.classList.toggle('active', p.dataset.srPane === tab.dataset.srTab); });
+      });
+    });
+    const copyCode = submissionStatusContent.querySelector('[data-copy-code]');
+    if (copyCode) copyCode.addEventListener('click', function () {
+      navigator.clipboard.writeText(code).then(function () {
+        copyCode.textContent = 'Copied';
+        setTimeout(function () { copyCode.textContent = 'Copy'; }, 1500);
+      });
+    });
+
+    // Syntax-highlight the submitted code once Monaco is available
+    const codeEl = submissionStatusContent.querySelector('.submitted-code code');
+    if (codeEl && window.monaco && monaco.editor && monaco.editor.colorize) {
+      monaco.editor.colorize(String(code), monacoLangFor(lang), { tabSize: 4 }).then(function (html) {
+        if (!codeEl.isConnected) return;
+        codeEl.innerHTML = html.split(/<br\s*\/?>/).map(function (l) { return '<span class="ln">' + (l || ' ') + '</span>'; }).join('');
+      }).catch(function () {});
+    }
+
     activateEditorView('submission');
+    submissionStatusContent.scrollTop = 0;
+    if (ok && data._fresh) celebrate(submissionStatusContent.querySelector('.sr-hero'));
   }
 
-  function renderSubmissionPending() {
+  function renderSubmissionStatus(data) {
+    if (!submissionStatusContent) return;
+    // Let the judging animation complete before revealing the verdict
+    finishJudgeScene(submissionStatusContent, submissionStatusClass(data.status) === 'accepted', function () {
+      renderSubmissionStatusNow(data);
+    });
+  }
+
+  function renderSubmissionPending(mode) {
     if (!submissionTab || !submissionStatusContent) return;
     submissionTab.hidden = false;
     submissionTab.style.display = '';
     submissionTab.className = 'editor-view-tab editor-view-tab-submission status-pending active';
-    document.getElementById('editor-view-tab-submission-label').textContent = 'Pending';
-    submissionStatusContent.innerHTML = '<div class="submission-pending"><span class="pending-loader"></span><div><strong>Pending</strong><span>Your submission is being evaluated.</span></div></div>';
+    document.getElementById('editor-view-tab-submission-label').textContent = mode === 'history' ? 'Loading' : 'Judging';
+    if (mode === 'history') {
+      submissionStatusContent.innerHTML = '<div class="sr-loading"><div class="skeleton skeleton-line w-1-2 h-tall"></div><div class="sr-loading-kpis"><div class="skeleton skeleton-block"></div><div class="skeleton skeleton-block"></div><div class="skeleton skeleton-block"></div></div><div class="skeleton skeleton-block tall"></div><div class="skeleton skeleton-line w-full"></div><div class="skeleton skeleton-line w-3-4"></div></div>';
+    } else {
+      startJudgeScene(submissionStatusContent, 'submit');
+    }
     activateEditorView('submission');
   }
 
@@ -1009,12 +1493,13 @@
       const code = getEditorCode().trim();
       if (!code) { alert('Please write some code first.'); return; }
 
+      document.body.dataset.busy = 'run';
       setButtonLoading(btnRun, true);
       setButtonLoading(btnSubmit, true);
       switchToTestResultTab();
 
       const container = document.getElementById('test-result-content');
-      if (container) container.innerHTML = skeletonHTML();
+      startJudgeScene(container, 'run');
 
       try {
         const res = await fetch('/submissions/run/' + PROBLEM_SLUG + '/', {
@@ -1053,7 +1538,9 @@
           }
           return;
         }
-        renderRunResult(data);
+        var allPassed = (data.test_case_results || []).length > 0 &&
+          (data.test_case_results || []).every(function (r) { return isPass(r.status); });
+        finishJudgeScene(container, allPassed, function () { renderRunResult(data); });
       } catch (err) {
         if (container) {
           container.innerHTML = '<div class="empty-state">Network error: ' + escapeHtml(err.message || err) + '</div>';
@@ -1061,6 +1548,7 @@
       } finally {
         setButtonLoading(btnRun, false);
         setButtonLoading(btnSubmit, false);
+        delete document.body.dataset.busy;
       }
     });
   }
@@ -1074,6 +1562,7 @@
       const code = getEditorCode().trim();
       if (!code) { alert('Please write some code first.'); return; }
 
+      document.body.dataset.busy = 'submit';
       setButtonLoading(btnRun, true);
       setButtonLoading(btnSubmit, true);
       renderSubmissionPending();
@@ -1112,6 +1601,7 @@
           if (subTab) subTab.classList.remove('loaded');
           return;
         }
+        data._fresh = true;
         renderSubmissionStatus(data);
 
         // Reset timer once the solution passes every test case
@@ -1127,6 +1617,7 @@
       } finally {
         setButtonLoading(btnRun, false);
         setButtonLoading(btnSubmit, false);
+        delete document.body.dataset.busy;
       }
     });
   }
@@ -1234,55 +1725,87 @@
     require(['vs/editor/editor.main'], function () {
       // Define Premium Futuristic Black + Neon Green Theme (Dark Mode)
       // Typing code is crisp white/green, standard tokens have clear standard syntax colors
+      // BashaByte dark theme (name kept for compatibility)
       monaco.editor.defineTheme('neonMatrix', {
         base: 'vs-dark',
         inherit: true,
         rules: [
-          // Typing identifiers, plain text and variables: white (#FFFFFF)
-          { token: '', foreground: 'FFFFFF' },
-          { token: 'identifier', foreground: 'FFFFFF' },
-          { token: 'variable', foreground: 'FFFFFF' },
-          { token: 'variable.parameter', foreground: 'FFFFFF' },
-
-          // Regular syntax colors:
-          { token: 'keyword', foreground: '00FF88', fontStyle: 'bold' },
-          { token: 'keyword.control', foreground: '00FF88', fontStyle: 'bold' },
-          { token: 'keyword.operator', foreground: '22FFA0' },
-          { token: 'operator', foreground: '00FF88' },
-          { token: 'string', foreground: 'FDE047' },
-          { token: 'string.escape', foreground: '38BDF8' },
-          { token: 'comment', foreground: '64748B', fontStyle: 'italic' },
-          { token: 'number', foreground: '38BDF8' },
-          { token: 'type', foreground: '34D399', fontStyle: 'bold' },
-          { token: 'type.identifier', foreground: '34D399' },
-          { token: 'function', foreground: '2DD4BF' },
-          { token: 'delimiter', foreground: '94A3B8' },
-          { token: 'tag', foreground: '00FF88' },
-          { token: 'attribute.name', foreground: '34D399' },
-          { token: 'attribute.value', foreground: 'FDE047' },
+          { token: '', foreground: 'E6EFE9' },
+          { token: 'identifier', foreground: 'E6EFE9' },
+          { token: 'variable', foreground: 'E6EFE9' },
+          { token: 'variable.parameter', foreground: 'E6EFE9' },
+          { token: 'keyword', foreground: 'C3A6FF' },
+          { token: 'keyword.control', foreground: 'C3A6FF' },
+          { token: 'keyword.operator', foreground: '9CADA3' },
+          { token: 'operator', foreground: '9CADA3' },
+          { token: 'string', foreground: 'FFB45C' },
+          { token: 'string.escape', foreground: '79C0FF' },
+          { token: 'comment', foreground: '5F6F66', fontStyle: 'italic' },
+          { token: 'number', foreground: '79C0FF' },
+          { token: 'type', foreground: '8DE0A3' },
+          { token: 'type.identifier', foreground: '8DE0A3' },
+          { token: 'function', foreground: '8DE0A3' },
+          { token: 'delimiter', foreground: '7D8D84' },
+          { token: 'tag', foreground: '8DE0A3' },
+          { token: 'attribute.name', foreground: '8DE0A3' },
+          { token: 'attribute.value', foreground: 'FFB45C' },
         ],
         colors: {
-          'editor.background':                '#070B09',
-          'editor.foreground':                '#FFFFFF',
-          'editor.lineHighlightBackground':   '#0E1712',
-          'editor.lineHighlightBorder':       '#00FF8815',
-          'editorLineNumber.foreground':      '#274233',
-          'editorLineNumber.activeForeground':'#00FF88',
-          'editorCursor.foreground':          '#00FF88',
-          'editor.selectionBackground':       '#00FF8828',
-          'editor.inactiveSelectionBackground':'#00FF8814',
-          'editor.selectionHighlightBackground':'#00FF8818',
-          'editor.findMatchBackground':       '#00FF8844',
-          'editor.findMatchHighlightBackground':'#00FF8822',
-          'editorGutter.background':          '#070B09',
-          'editorIndentGuide.background':     '#13231B',
-          'editorIndentGuide.activeBackground':'#00FF8835',
-          'editorBracketMatch.background':    '#00FF8820',
-          'editorBracketMatch.border':        '#00FF8866',
+          'editor.background':                '#0B110E',
+          'editor.foreground':                '#E6EFE9',
+          'editor.lineHighlightBackground':   '#121B16',
+          'editor.lineHighlightBorder':       '#00000000',
+          'editorLineNumber.foreground':      '#3A4A41',
+          'editorLineNumber.activeForeground':'#8DE0A3',
+          'editorCursor.foreground':          '#8DE0A3',
+          'editor.selectionBackground':       '#8DE0A333',
+          'editor.inactiveSelectionBackground':'#8DE0A31A',
+          'editor.selectionHighlightBackground':'#8DE0A31F',
+          'editor.findMatchBackground':       '#FFA11644',
+          'editor.findMatchHighlightBackground':'#FFA11622',
+          'editorGutter.background':          '#0B110E',
+          'editorIndentGuide.background':     '#18231D',
+          'editorIndentGuide.activeBackground':'#2C3D33',
+          'editorBracketMatch.background':    '#8DE0A322',
+          'editorBracketMatch.border':        '#8DE0A366',
           'editorOverviewRuler.border':       '#00000000',
-          'scrollbarSlider.background':       '#00FF8815',
-          'scrollbarSlider.hoverBackground':  '#00FF8830',
-          'scrollbarSlider.activeBackground': '#00FF8850',
+          'editorWidget.background':          '#121A16',
+          'editorSuggestWidget.background':   '#121A16',
+          'editorSuggestWidget.border':       '#24312A',
+          'editorSuggestWidget.selectedBackground': '#1C2A22',
+          'scrollbarSlider.background':       '#8DE0A31A',
+          'scrollbarSlider.hoverBackground':  '#8DE0A333',
+          'scrollbarSlider.activeBackground': '#8DE0A355',
+        },
+      });
+
+      monaco.editor.defineTheme('bbLight', {
+        base: 'vs',
+        inherit: true,
+        rules: [
+          { token: '', foreground: '1B241E' },
+          { token: 'keyword', foreground: '7A4FD6' },
+          { token: 'keyword.control', foreground: '7A4FD6' },
+          { token: 'string', foreground: 'B4610A' },
+          { token: 'number', foreground: '0B69C7' },
+          { token: 'comment', foreground: '8A968E', fontStyle: 'italic' },
+          { token: 'type', foreground: '1D8A4B' },
+          { token: 'type.identifier', foreground: '1D8A4B' },
+          { token: 'function', foreground: '1D8A4B' },
+          { token: 'delimiter', foreground: '66746B' },
+        ],
+        colors: {
+          'editor.background':                '#FFFFFF',
+          'editor.lineHighlightBackground':   '#F4F2EB',
+          'editor.lineHighlightBorder':       '#00000000',
+          'editorLineNumber.foreground':      '#B9C0B9',
+          'editorLineNumber.activeForeground':'#1D8A4B',
+          'editorCursor.foreground':          '#1D8A4B',
+          'editor.selectionBackground':       '#1D8A4B26',
+          'editorGutter.background':          '#FFFFFF',
+          'editorIndentGuide.background':     '#ECEAE2',
+          'scrollbarSlider.background':       '#1D8A4B1A',
+          'scrollbarSlider.hoverBackground':  '#1D8A4B33',
         },
       });
 
@@ -1310,8 +1833,9 @@
         {
           value: savedCode,
           language: langMapInit[savedLang] || 'python',
-          theme: currentTheme === 'dark' ? 'neonMatrix' : 'vs',
+          theme: currentTheme === 'dark' ? 'neonMatrix' : 'bbLight',
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          fontLigatures: true,
           fontSize: editorFontSize,
           lineHeight: 22,
           minimap: { enabled: false },
@@ -1429,7 +1953,8 @@
   function loadHistoricalSubmission(row) {
     const url = row && row.dataset.detailUrl;
     if (!url) return;
-    renderSubmissionPending();
+    document.querySelectorAll('#tab-submissions .submission-row').forEach(function (r) { r.classList.toggle('is-active', r === row); });
+    renderSubmissionPending('history');
     fetch(url)
       .then(function (response) {
         if (!response.ok) throw new Error('Could not load this submission.');

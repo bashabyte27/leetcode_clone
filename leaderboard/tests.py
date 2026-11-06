@@ -194,10 +194,12 @@ class ViewTests(LeaderboardTestBase):
 
     def test_query_count_does_not_grow_with_users(self):
         self._make_many(PAGE_SIZE)
-        with self.assertNumQueries(2):          # total count + one page of rows
+        # total count + one page of rows + 3 fixed extras
+        # (rank movement, per-user activity/streaks, "coding today")
+        with self.assertNumQueries(5):
             self.client.get(self.url)
         self._make_many(PAGE_SIZE * 3, start=PAGE_SIZE)
-        with self.assertNumQueries(2):          # unchanged with 4x the users
+        with self.assertNumQueries(5):          # unchanged with 4x the users
             self.client.get(self.url)
 
     def test_username_search_is_case_insensitive_and_supports_clear(self):
@@ -234,3 +236,40 @@ class ViewTests(LeaderboardTestBase):
         self.assertNotContains(week_view, 'old_user')
         self.assertContains(month_view, 'recent_user')
         self.assertNotContains(month_view, 'old_user')
+
+class PresentationTests(LeaderboardTestBase):
+    url = property(lambda self: reverse('leaderboard:leaderboard'))
+
+    def test_tier_thresholds(self):
+        self.assertEqual(services.tier_for(0)['name'], 'Newbie')
+        self.assertEqual(services.tier_for(49)['name'], 'Newbie')
+        self.assertEqual(services.tier_for(50)['name'], 'Apprentice')
+        t = services.tier_for(100)
+        self.assertEqual((t['next_name'], t['to_next'], t['progress']), ('Specialist', 50, 50))
+        self.assertIsNone(services.tier_for(5000)['next_name'])
+
+    def test_rank_movement_against_last_week(self):
+        old, new = self.make_user('veteran'), self.make_user('rookie')
+        self.submit(old, self.make_problem('easy'))
+        Submission.objects.filter(user=old).update(submitted_at=timezone.now() - timedelta(days=10))
+        self.solve(new, hard=1)  # rookie overtakes veteran this week
+        rows = {r['username']: r for r in self.client.get(self.url).context['rows']}
+        self.assertTrue(rows['rookie']['is_new'])
+        self.assertEqual(rows['veteran']['move'], -1)  # was #1, now #2
+
+    def test_rival_gap_shown_to_signed_in_user(self):
+        top, me = self.make_user('top'), self.make_user('me2')
+        self.solve(top, hard=1)
+        self.solve(me, easy=1)
+        self.client.force_login(me)
+        r = self.client.get(self.url)
+        self.assertEqual(r.context['rival'], {'username': 'top', 'rank': 1, 'gap': 40})
+        self.assertContains(r, '40 pts to pass')
+
+    def test_streak_and_sparkline_from_activity(self):
+        u = self.make_user('streaky')
+        self.solve(u, easy=1)
+        row = self.client.get(self.url).context['rows'][0]
+        self.assertEqual(row['streak'], 1)
+        self.assertEqual(len(row['spark']), services.ACTIVITY_DAYS)
+        self.assertEqual(row['spark'][-1]['n'], 1)

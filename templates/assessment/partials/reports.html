@@ -1,0 +1,218 @@
+{% with k=report.kpis %}
+<section class="asx-report" id="assessment-report">
+  <header class="asx-report-head">
+    <div>
+      <h2>Assessment report</h2>
+      <p class="assessment-muted">Generated {{ report.generated_at|date:"M j, Y · H:i" }} from {{ k.ranked }} finalized result{{ k.ranked|pluralize }} and {{ k.signups }} signup{{ k.signups|pluralize }}.</p>
+    </div>
+    <div class="assessment-inline-actions">
+      <a class="assessment-button-secondary" href="?tab=reports&amp;export=xlsx"><i class="bi bi-file-earmark-spreadsheet"></i> Download Excel</a>
+      <a class="assessment-button" href="?tab=reports&amp;export=pdf"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
+    </div>
+  </header>
+
+  <!-- KPIs -->
+  <div class="asx-rkpis">
+    <article><span>Signups</span><strong data-count="{{ k.signups }}">{{ k.signups }}</strong><small>{{ k.started }} started · {{ k.submitted }} submitted</small></article>
+    <article><span>Completion rate</span><strong>{{ k.completion_rate }}<em>%</em></strong><i class="asx-meter"><b style="--w: {{ k.completion_rate|stringformat:'s' }}%"></b></i></article>
+    <article><span>Average score</span><strong>{{ k.avg_pct }}<em>%</em></strong><small>Median {{ k.median_pct }}% · SD {{ k.stdev_pct }}</small></article>
+    <article><span>Pass rate</span><strong>{{ k.pass_rate }}<em>%</em></strong><small>{{ k.passed }} of {{ k.ranked }} at pass mark {{ k.pass_mark|floatformat:"-2" }}</small></article>
+    <article><span>Score range</span><strong class="sm">{{ k.min_pct }}<em>% – </em>{{ k.max_pct }}<em>%</em></strong><small>Middle 50%: {{ k.p25 }}–{{ k.p75 }}%</small></article>
+    <article><span>Average time</span><strong class="sm">{{ k.avg_time }}</strong><small>per finalized attempt</small></article>
+    <article><span>Coding acceptance</span><strong>{{ k.acceptance_rate }}<em>%</em></strong><small>{{ k.total_submissions }} code submission{{ k.total_submissions|pluralize }}</small></article>
+    <article class="{% if k.flagged_candidates %}is-alert{% endif %}"><span>Integrity</span><strong data-count="{{ k.violations }}">{{ k.violations }}</strong><small>{{ k.flagged_candidates }} candidate{{ k.flagged_candidates|pluralize }} with 3+ events</small></article>
+  </div>
+
+  <!-- Insights -->
+  {% if report.insights %}
+  <section class="asx-insights">
+    <h3><i class="bi bi-lightbulb"></i> Key insights</h3>
+    <ul>
+      {% for ins in report.insights %}
+        <li class="tone-{{ ins.tone }}">
+          <span class="asx-tone-icon">{% if ins.tone == "good" %}<i class="bi bi-check-circle-fill"></i>{% elif ins.tone == "warning" %}<i class="bi bi-exclamation-triangle-fill"></i>{% elif ins.tone == "serious" %}<i class="bi bi-exclamation-circle-fill"></i>{% elif ins.tone == "critical" %}<i class="bi bi-shield-exclamation"></i>{% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}</span>
+          <span>{{ ins.text }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <!-- Charts row 1 -->
+  <div class="asx-chart-grid">
+    <article class="asx-chart-card">
+      <header><h3>Candidate funnel</h3><p>How many people moved through each stage.</p></header>
+      <div class="asx-funnel">
+        {% for stage in report.funnel %}
+          <div class="asx-funnel-row" style="--i: {{ forloop.counter0 }}">
+            <span class="lbl">{{ stage.label }}</span>
+            <i><b class="s{{ forloop.counter }}" style="--w: {% widthratio stage.count k.signups 100 %}%" title="{{ stage.label }}: {{ stage.count }}"></b></i>
+            <strong>{{ stage.count }}</strong>
+            <small>{% if k.signups %}{% widthratio stage.count k.signups 100 %}%{% else %}—{% endif %}</small>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+    <article class="asx-chart-card">
+      <header><h3>Score distribution</h3><p>Ranked candidates per 10-point band.</p></header>
+      {% if k.ranked %}<div class="asx-canvas"><canvas id="chartDistribution" aria-label="Score distribution histogram" role="img"></canvas></div>
+      <footer class="asx-chart-stats"><span>Mean <b>{{ k.avg_pct }}%</b></span><span>Median <b>{{ k.median_pct }}%</b></span><span>P25 <b>{{ k.p25 }}%</b></span><span>P75 <b>{{ k.p75 }}%</b></span><span>SD <b>{{ k.stdev_pct }}</b></span></footer>
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-bar-chart"></i>No finalized results yet.</div>{% endif %}
+    </article>
+  </div>
+
+  <!-- Charts row 2 -->
+  <div class="asx-chart-grid">
+    <article class="asx-chart-card">
+      <header><h3>Section performance</h3><p>Average score as a share of each section's maximum.</p></header>
+      {% if report.sections %}
+        <div class="asx-hbars">
+          {% for s in report.sections %}
+            <div class="asx-hbar" style="--i: {{ forloop.counter0 }}">
+              <span class="lbl">{{ s.title }}</span>
+              <i><b style="--w: {{ s.avg_pct|stringformat:'s' }}%" title="{{ s.title }}: {{ s.avg_pct }}%"></b></i>
+              <strong>{{ s.avg_pct }}%</strong>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-layers"></i>Section results appear once attempts are finalized.</div>{% endif %}
+    </article>
+    <article class="asx-chart-card">
+      <header><h3>Coding verdicts</h3><p>Share of all code submissions by judge verdict.</p></header>
+      {% if report.verdicts %}
+        <div class="asx-stack-bar" role="img" aria-label="Coding verdict breakdown">
+          {% for v in report.verdicts %}<b class="tone-{{ v.tone }}" style="flex: {{ v.count }}" title="{{ v.label }}: {{ v.count }} ({{ v.pct }}%)"></b>{% endfor %}
+        </div>
+        <ul class="asx-legend">
+          {% for v in report.verdicts %}
+            <li><i class="tone-{{ v.tone }}"></i><span>{{ v.label }}</span><b>{{ v.count }}</b><small>{{ v.pct }}%</small></li>
+          {% endfor %}
+        </ul>
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-code-slash"></i>No code submissions yet.</div>{% endif %}
+    </article>
+  </div>
+
+  <!-- Item analysis -->
+  <article class="asx-chart-card asx-items">
+    <header>
+      <h3>Item analysis</h3>
+      <p>Difficulty <b>p</b> is the share of ranked candidates who answered correctly. Discrimination <b>D</b> compares the top 27% with the bottom 27%; below 0.2 means the question does not separate strong from weak candidates.</p>
+    </header>
+    {% if report.items %}
+      <div class="asx-items-grid">
+        <div class="asx-canvas tall"><canvas id="chartItems" role="img" aria-label="Difficulty versus discrimination for each question"></canvas></div>
+        <div class="assessment-table-wrap">
+          <table class="assessment-table asx-items-table">
+            <thead><tr><th>Q</th><th>Question</th><th class="asx-num">Attempted</th><th class="asx-num">p</th><th class="asx-num">D</th><th class="asx-num">Avg</th><th>Flags</th></tr></thead>
+            <tbody>
+              {% for i in report.items %}
+                <tr>
+                  <td class="asx-mono-muted">Q{{ i.no }}</td>
+                  <td><strong class="asx-clip">{{ i.title }}</strong><small class="assessment-muted">{{ i.kind }} · {{ i.section }}</small></td>
+                  <td class="asx-num">{{ i.attempt_rate }}%</td>
+                  <td class="asx-num"><span class="asx-p" style="--p: {{ i.p|stringformat:'s' }}">{{ i.p }}</span></td>
+                  <td class="asx-num">{% if i.d != None %}{{ i.d }}{% else %}<span class="assessment-muted">—</span>{% endif %}</td>
+                  <td class="asx-num asx-mono">{{ i.avg_score }}/{{ i.max_score|floatformat:"-2" }}</td>
+                  <td>{% for f in i.flags %}<span class="asx-flag tone-{{ f.1 }}">{{ f.0 }}</span>{% empty %}<span class="asx-flag tone-good"><i class="bi bi-check2"></i> OK</span>{% endfor %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% if k.ranked < 5 %}<p class="asx-note"><i class="bi bi-info-circle"></i> With fewer than 5 ranked candidates these statistics are indicative only.</p>{% endif %}
+    {% else %}<div class="asx-chart-empty"><i class="bi bi-ui-checks"></i>Question statistics appear once candidates finish.</div>{% endif %}
+  </article>
+
+  <!-- Charts row 3 -->
+  <div class="asx-chart-grid">
+    <article class="asx-chart-card">
+      <header><h3>Time vs score</h3><p>Each dot is one ranked candidate.</p></header>
+      {% if report.scatter %}<div class="asx-canvas"><canvas id="chartScatter" role="img" aria-label="Time taken versus score"></canvas></div>
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-dot"></i>No finalized results yet.</div>{% endif %}
+    </article>
+    <article class="asx-chart-card">
+      <header><h3>Activity over time</h3><p>Submissions and answers recorded per {% if report.timeline|length and report.timeline.0.label|length > 6 %}hour{% else %}day{% endif %}.</p></header>
+      {% if report.timeline %}<div class="asx-canvas"><canvas id="chartTimeline" role="img" aria-label="Submissions over time"></canvas></div>
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-activity"></i>No activity recorded yet.</div>{% endif %}
+    </article>
+  </div>
+
+  <!-- Charts row 4 -->
+  <div class="asx-chart-grid">
+    <article class="asx-chart-card">
+      <header><h3>Languages used</h3><p>Code submissions by language.</p></header>
+      {% if report.languages %}
+        <div class="asx-hbars">
+          {% for l in report.languages %}
+            <div class="asx-hbar" style="--i: {{ forloop.counter0 }}"><span class="lbl">{{ l.label }}</span><i><b style="--w: {% widthratio l.count k.total_submissions 100 %}%" title="{{ l.label }}: {{ l.count }}"></b></i><strong>{{ l.count }}</strong></div>
+          {% endfor %}
+        </div>
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-code"></i>No code submissions yet.</div>{% endif %}
+    </article>
+    <article class="asx-chart-card">
+      <header><h3>Proctoring events</h3><p>Integrity signals captured during attempts.</p></header>
+      {% if report.violation_types %}
+        <div class="asx-hbars">
+          {% for v in report.violation_types %}
+            <div class="asx-hbar" style="--i: {{ forloop.counter0 }}"><span class="lbl">{{ v.label }}</span><i><b class="alt" style="--w: {% widthratio v.count k.violations 100 %}%" title="{{ v.label }}: {{ v.count }}"></b></i><strong>{{ v.count }}</strong></div>
+          {% endfor %}
+        </div>
+        {% if report.flagged %}
+          <div class="asx-flagged"><span>Most flagged:</span>{% for f in report.flagged %}<span class="asx-flag {% if f.count >= 3 %}tone-critical{% else %}tone-warning{% endif %}">{{ f.username }} · {{ f.count }}</span>{% endfor %}</div>
+        {% endif %}
+      {% else %}<div class="asx-chart-empty"><i class="bi bi-shield-check"></i>No proctoring events recorded.</div>{% endif %}
+    </article>
+  </div>
+
+  <!-- Candidate sheet -->
+  <article class="asx-chart-card asx-sheet-card">
+    <header class="asx-sheet-head">
+      <div><h3><i class="bi bi-table"></i> Candidate sheet</h3><p>Every signup with their result. Click a column header to sort.</p></div>
+      <div class="assessment-inline-actions">
+        <label class="asx-sheet-filter"><i class="bi bi-funnel"></i><input type="search" placeholder="Filter rows" data-sheet-filter aria-label="Filter candidate rows"></label>
+        <a class="assessment-button-secondary asx-btn-sm" href="?tab=reports&amp;export=xlsx"><i class="bi bi-download"></i> .xlsx</a>
+        <a class="assessment-button-secondary asx-btn-sm" href="?tab=reports&amp;export=pdf"><i class="bi bi-download"></i> .pdf</a>
+      </div>
+    </header>
+    <div class="asx-sheet-wrap">
+      <table class="asx-sheet" data-sheet>
+        <thead>
+          <tr class="cols"><th class="corner"></th>{% for c in "ABCDEFGHIJKLMN" %}<th>{{ c }}</th>{% endfor %}</tr>
+          <tr class="heads">
+            <th class="rn">1</th>
+            <th data-sort="num">Rank</th><th data-sort="text">Name</th><th data-sort="text">Email</th><th data-sort="text">Status</th>
+            <th data-sort="num">Score</th><th data-sort="num">Score %</th><th data-sort="num">Correct</th><th data-sort="num">Incorrect</th>
+            <th data-sort="num">Unanswered</th><th data-sort="num">Time</th><th data-sort="num">Attempts</th><th data-sort="num">Events</th>
+            <th data-sort="text">Result</th><th data-sort="text">Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in report.sheet %}
+            <tr>
+              <th class="rn">{{ forloop.counter|add:1 }}</th>
+              <td class="n" data-v="{{ s.rank|default_if_none:'9999' }}">{{ s.rank|default_if_none:"" }}</td>
+              <td>{{ s.username }}</td>
+              <td class="muted">{{ s.email }}</td>
+              <td>{{ s.status }}</td>
+              <td class="n" data-v="{{ s.score|default_if_none:'-1' }}">{% if s.score != None %}{{ s.score|floatformat:"-2" }} / {{ s.max|floatformat:"-2" }}{% endif %}</td>
+              <td class="n" data-v="{{ s.pct|default_if_none:'-1' }}">{% if s.pct != None %}{{ s.pct }}%{% endif %}</td>
+              <td class="n">{{ s.correct|default_if_none:"" }}</td>
+              <td class="n">{{ s.incorrect|default_if_none:"" }}</td>
+              <td class="n">{{ s.unanswered|default_if_none:"" }}</td>
+              <td class="n" data-v="{{ s.seconds|default_if_none:'-1' }}">{{ s.time }}</td>
+              <td class="n">{{ s.attempts }}</td>
+              <td class="n {% if s.violations >= 3 %}warn{% endif %}">{{ s.violations }}</td>
+              <td class="{% if s.result == 'Pass' %}pass{% elif s.result == 'Fail' %}fail{% endif %}">{{ s.result }}</td>
+              <td class="muted" data-v="{{ s.submitted_at|date:'U' }}">{{ s.submitted_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr><th class="rn">2</th><td colspan="14" class="muted">No signups yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <footer class="asx-sheet-foot"><span data-sheet-count>{{ report.sheet|length }} row{{ report.sheet|length|pluralize }}</span><span>Sheet: Candidates</span></footer>
+  </article>
+</section>
+{% endwith %}

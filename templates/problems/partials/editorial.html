@@ -1,17 +1,31 @@
 {% load static %}
 {% if editorial and editorial.is_published %}
-
-  <div class="editorial-author-row">
-    <div class="editorial-logo-circle">LC</div>
+<article class="editorial">
+  <header class="editorial-author-row">
+    <img class="editorial-logo-circle" src="{% static 'images/logo.png' %}" alt="" width="36" height="36" />
     <div>
-      <div class="editorial-author-name">
-        LeetCode <span class="editorial-verified">✓</span>
-      </div>
-      <div class="editorial-date">{{ editorial.created_at|date:"M d, Y" }}</div>
+      <div class="editorial-author-name">BashaByte Team <span class="editorial-verified"><i class="bi bi-patch-check-fill"></i></span></div>
+      <div class="editorial-date">Published {{ editorial.created_at|date:"M j, Y" }}{% if editorial.updated_at|date:"Ymd" != editorial.created_at|date:"Ymd" %} · updated {{ editorial.updated_at|date:"M j, Y" }}{% endif %}</div>
     </div>
-  </div>
+    <span class="editorial-green-tag"><i class="bi bi-book"></i> Official editorial</span>
+  </header>
 
-  <div class="editorial-green-tag">EDITORIAL</div>
+  {% if editorial.time_complexity or editorial.space_complexity %}
+  <div class="complexity-box">
+    {% if editorial.time_complexity %}
+    <div class="cbx">
+      <span class="cbx-icon"><i class="bi bi-stopwatch"></i></span>
+      <div><span class="cbx-label">Time complexity</span><code>{{ editorial.time_complexity }}</code></div>
+    </div>
+    {% endif %}
+    {% if editorial.space_complexity %}
+    <div class="cbx">
+      <span class="cbx-icon space"><i class="bi bi-memory"></i></span>
+      <div><span class="cbx-label">Space complexity</span><code>{{ editorial.space_complexity }}</code></div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
 
   {% if editorial.video_url %}
   <div class="video-card">
@@ -27,18 +41,11 @@
   <div class="editorial-content">
     {{ editorial.content|safe }}
   </div>
-
-  {% if editorial.time_complexity or editorial.space_complexity %}
-  <div class="complexity-box">
-    {% if editorial.time_complexity %}
-      <div>⏱ Time Complexity: <code>{{ editorial.time_complexity }}</code></div>
-    {% endif %}
-    {% if editorial.space_complexity %}
-      <div> Space Complexity: <code>{{ editorial.space_complexity }}</code></div>
-    {% endif %}
-  </div>
-  {% endif %}
-
+</article>
 {% else %}
-  <div class="empty-state">No editorial available for this problem yet.</div>
+<div class="empty-state empty-rich">
+  <span class="er-icon"><i class="bi bi-book"></i></span>
+  <strong>No editorial yet</strong>
+  <span>The official walkthrough for this problem hasn't been published. Try the Discussion tab to see how others approached it.</span>
+</div>
 {% endif %}

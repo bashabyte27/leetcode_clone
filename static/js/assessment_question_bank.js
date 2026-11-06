@@ -40,9 +40,10 @@
         link.textContent = question.title;
         titleCell.append(link);
         row.append(titleCell);
-        [question.question_type, question.topic, question.subtopic || "—"].forEach((value) => {
+        [question.question_type, question.topic, question.subtopic || "—"].forEach((value, index) => {
           const cell = document.createElement("td");
           cell.textContent = value;
+          if (index === 0) cell.dataset.type = value;
           row.append(cell);
         });
         return row;
@@ -77,6 +78,11 @@
       setOptions(topics, payload.topics);
       setOptions(subtopics, payload.subtopics);
       count.textContent = `${payload.count} question${payload.count === 1 ? "" : "s"}`;
+      const countNum = document.querySelector("[data-question-count-num]");
+      if (countNum) countNum.textContent = payload.count;
+      results.classList.remove("is-refreshed");
+      void results.offsetWidth;
+      results.classList.add("is-refreshed");
       const pageUrl = new URL(window.location.href);
       pageUrl.search = new URLSearchParams({
         tab: "questions",

@@ -256,9 +256,22 @@ def submission_list(request, problem_slug):
         problem=problem,
     ).select_related('language').order_by('-submitted_at')
 
+    submissions = list(submissions)
+    accepted_runs = [s for s in submissions if s.status == SubmissionStatusChoices.ACCEPTED]
+    runtimes = [s.runtime_ms for s in accepted_runs if s.runtime_ms is not None]
+    memories = [s.memory_kb for s in accepted_runs if s.memory_kb is not None]
+    summary = {
+        'total': len(submissions),
+        'accepted': len(accepted_runs),
+        'rate': round(len(accepted_runs) * 100 / len(submissions)) if submissions else 0,
+        'best_runtime': min(runtimes) if runtimes else None,
+        'best_memory': min(memories) if memories else None,
+    }
+
     return render(request, 'submissions/submission_list.html', {
         'problem': problem,
         'submissions': submissions,
+        'summary': summary,
     })
 
 

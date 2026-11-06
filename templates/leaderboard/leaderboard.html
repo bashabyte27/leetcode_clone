@@ -1,247 +1,272 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Leaderboard | BashaByte{% endblock %}
+{% block title %}Leaderboard · BashaByte{% endblock %}
+{% block body_class %}page-lb{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/profile.css' %}">
-<link rel="stylesheet" href="{% static 'css/leaderboard.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/leaderboard.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
-<div class="profile-page leaderboard-page">
-  <div class="container-xl px-3 px-md-4">
+<div class="lb">
+  <div class="lb-ambient" aria-hidden="true"><i></i><i></i><i></i></div>
 
-    {# ── Hero ── #}
-    <header class="lb-hero">
-      <div class="lb-hero-main">
-        <p class="lb-eyebrow">Compete · Improve · Grow</p>
-        <h1 class="lb-title">Leaderboard</h1>
-        <p class="lb-sub">See how you compare with other BashaByte developers.</p>
+  <div class="lb-wrap">
+
+    {# ═════════ HERO ═════════ #}
+    <header class="lb-hero lb-in">
+      <div>
+        <span class="lb-kicker"><span class="lb-live-dot"></span>Live global rankings</span>
+        <h1>The <span class="lb-grad">Leaderboard</span></h1>
+        <p>Every unique problem you solve earns points. Climb tiers, keep your streak alive and chase the developer just above you.</p>
       </div>
-
       <div class="lb-scoring" aria-label="Points per solved problem">
-        <span class="lb-scoring-label">Scoring</span>
         {% for item in scoring %}
-          <span class="lb-score-chip lb-score-{{ item.css }}">
-            {{ item.label }} <strong>+{{ item.points }}</strong>
-          </span>
+          <span class="lb-score lb-score-{{ item.css }}"><b>+{{ item.points }}</b>{{ item.label }}</span>
         {% endfor %}
-        <span class="lb-scoring-note">Counted once per problem</span>
+        <button type="button" class="lb-tier-btn" id="lbTierBtn" aria-expanded="false" aria-controls="lbTierPop"><i class="bi bi-gem"></i> Tiers</button>
+        <div class="lb-tier-pop" id="lbTierPop" role="dialog" aria-label="Tier thresholds" hidden>
+          <strong>Tiers by points</strong>
+          {% for t in tiers %}
+            <span class="lb-tier-line"><span class="lb-tier tier-{{ t.css }}">{{ t.name }}</span><em>{{ t.floor }}+ pts</em></span>
+          {% endfor %}
+          <small>Scoring counts each problem once, no matter how many times you solve it.</small>
+        </div>
       </div>
     </header>
 
-    {# ── Period tabs — real links, backend filters via ?period= ── #}
-    <nav class="lb-tabs" role="tablist" aria-label="Leaderboard period">
-      <a href="?period=all"
-         class="lb-tab {% if not period or period == 'all' %}is-active{% endif %}"
-         role="tab"
-         {% if not period or period == 'all' %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
-        All Time
-      </a>
-      <a href="?period=week"
-         class="lb-tab {% if period == 'week' %}is-active{% endif %}"
-         role="tab"
-         {% if period == 'week' %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
-        This Week
-      </a>
-      <a href="?period=month"
-         class="lb-tab {% if period == 'month' %}is-active{% endif %}"
-         role="tab"
-         {% if period == 'month' %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
-        This Month
-      </a>
-    </nav>
+    {# ═════════ STATS STRIP ═════════ #}
+    <section class="lb-stats lb-in" style="--i: 1" aria-label="Leaderboard summary">
+      <div class="lb-stat">
+        <span class="lb-stat-icon"><i class="bi bi-people"></i></span>
+        <div><strong data-count="{{ paginator.count }}">{{ paginator.count }}</strong><span>Ranked developers</span></div>
+      </div>
+      <div class="lb-stat">
+        <span class="lb-stat-icon ic-fire"><i class="bi bi-lightning-charge"></i></span>
+        <div><strong data-count="{{ active_today }}">{{ active_today }}</strong><span>Coding today</span></div>
+      </div>
+      <div class="lb-stat">
+        <span class="lb-stat-icon ic-gold"><i class="bi bi-trophy"></i></span>
+        <div>
+          {% if podium %}<strong>{{ podium.0.points }}<small> pts</small></strong><span>Leader · {{ podium.0.username }}</span>
+          {% else %}<strong>&mdash;</strong><span>Leader score</span>{% endif %}
+        </div>
+      </div>
+      <div class="lb-stat">
+        <span class="lb-stat-icon ic-you"><i class="bi bi-person"></i></span>
+        <div>
+          {% if me_row %}<strong>#{{ me_row.rank }}</strong><span>Your rank</span>
+          {% elif my_standing.rank %}<strong>#{{ my_standing.rank }}</strong><span>Your rank</span>
+          {% elif user.is_authenticated %}<strong>&mdash;</strong><span>Not ranked yet</span>
+          {% else %}<strong><a href="{% url 'users:register' %}">Join</a></strong><span>to get ranked</span>{% endif %}
+        </div>
+      </div>
+    </section>
 
-    {# ── Your standing ── #}
-    {% if my_standing %}
-      <section class="lb-me" aria-label="Your standing">
-        {% if my_standing.rank %}
-          <div class="lb-me-main">
-            <span class="lb-me-label">Your rank</span>
-            <strong class="lb-me-rank">#{{ my_standing.rank }}</strong>
+    {# ═════════ CONTROLS ═════════ #}
+    <div class="lb-controls lb-in" style="--i: 2">
+      <nav class="lb-seg" role="tablist" aria-label="Leaderboard period">
+        <span class="lb-seg-pill" aria-hidden="true"></span>
+        <a href="?period=all{% if query %}&q={{ query|urlencode }}{% endif %}" class="lb-tab {% if period == 'all' %}is-active{% endif %}" role="tab" aria-selected="{% if period == 'all' %}true{% else %}false{% endif %}">All Time</a>
+        <a href="?period=week{% if query %}&q={{ query|urlencode }}{% endif %}" class="lb-tab {% if period == 'week' %}is-active{% endif %}" role="tab" aria-selected="{% if period == 'week' %}true{% else %}false{% endif %}">This Week</a>
+        <a href="?period=month{% if query %}&q={{ query|urlencode }}{% endif %}" class="lb-tab {% if period == 'month' %}is-active{% endif %}" role="tab" aria-selected="{% if period == 'month' %}true{% else %}false{% endif %}">This Month</a>
+      </nav>
+
+      <form class="lb-search" method="get" role="search" id="lbSearch">
+        <input type="hidden" name="period" value="{{ period }}">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label for="lbQ" class="visually-hidden">Search developers</label>
+        <input type="search" id="lbQ" name="q" value="{{ query }}" placeholder="Find a developer" autocomplete="off" spellcheck="false">
+        {% if query %}<a class="lb-search-clear" href="?period={{ period }}" aria-label="Clear search"><i class="bi bi-x-lg"></i></a>{% else %}<kbd aria-hidden="true">/</kbd>{% endif %}
+      </form>
+    </div>
+
+    {# ═════════ YOUR STANDING ═════════ #}
+    {% if user.is_authenticated %}
+      {% if me_row or my_standing %}
+      <section class="lb-me lb-in" style="--i: 3" aria-label="Your standing">
+        {% if me_row %}
+          <div class="lb-me-rank"><span>Your rank</span><strong>#{{ me_row.rank }}</strong></div>
+          <div class="lb-me-body">
+            <div class="lb-me-line">
+              <span class="lb-tier tier-{{ me_row.tier.css }}">{{ me_row.tier.name }}</span>
+              <b>{{ me_row.points }} pts</b> · {{ me_row.solved }} solved
+              {% if me_row.streak %}<span class="lb-flame"><i class="bi bi-fire"></i>{{ me_row.streak }}-day streak</span>{% endif %}
+            </div>
+            {% if me_row.tier.next_name %}
+              <div class="lb-progress" title="{{ me_row.tier.progress }}% to {{ me_row.tier.next_name }}"><i style="--w: {{ me_row.tier.progress }}%"></i></div>
+              <small>{{ me_row.tier.to_next }} pts to <b>{{ me_row.tier.next_name }}</b>{% if rival %} · {% if rival.gap %}{{ rival.gap }} pts to pass{% else %}tied with{% endif %} <b>{{ rival.username }}</b> (#{{ rival.rank }}){% if not rival.gap %}, one more solve passes them{% endif %}{% endif %}</small>
+            {% else %}
+              <small>Top tier reached.{% if rival %} {% if rival.gap %}{{ rival.gap }} pts to pass{% else %}Tied with{% endif %} <b>{{ rival.username }}</b> (#{{ rival.rank }}){% endif %}</small>
+            {% endif %}
           </div>
-          <div class="lb-me-stats">
-            <span><strong>{{ my_standing.solved }}</strong> solved</span>
-            <span><strong>{{ my_standing.points }}</strong> pts</span>
+          <a class="lb-btn lb-btn-ghost" href="#lb-me" data-scroll-me><i class="bi bi-crosshair"></i> Jump to me</a>
+        {% elif my_standing.rank %}
+          <div class="lb-me-rank"><span>Your rank</span><strong>#{{ my_standing.rank }}</strong></div>
+          <div class="lb-me-body">
+            <div class="lb-me-line">
+              <span class="lb-tier tier-{{ my_standing.tier.css }}">{{ my_standing.tier.name }}</span>
+              <b>{{ my_standing.points }} pts</b> · {{ my_standing.solved }} solved
+            </div>
+            {% if my_standing.tier.next_name %}
+              <div class="lb-progress"><i style="--w: {{ my_standing.tier.progress }}%"></i></div>
+            {% endif %}
+            <small>{% if my_standing.tier.next_name %}{{ my_standing.tier.to_next }} pts to <b>{{ my_standing.tier.next_name }}</b>{% endif %}{% if rival %} · {% if rival.gap %}{{ rival.gap }} pts to pass{% else %}tied with{% endif %} <b>{{ rival.username }}</b> (#{{ rival.rank }}){% if not rival.gap %}, one more solve passes them{% endif %}{% endif %}</small>
           </div>
-          <a class="page-link-btn" href="?page={{ my_standing.page }}{% if period %}&period={{ period }}{% endif %}#lb-me">Go to my position</a>
+          <a class="lb-btn lb-btn-primary" href="?page={{ my_standing.page }}{% if period %}&period={{ period }}{% endif %}#lb-me">Go to my position <i class="bi bi-arrow-down"></i></a>
         {% else %}
-          <div class="lb-me-main">
-            <span class="lb-me-label">Your rank</span>
-            <strong class="lb-me-rank">Unranked</strong>
+          <div class="lb-me-rank"><span>Your rank</span><strong class="is-muted">Unranked</strong></div>
+          <div class="lb-me-body">
+            <div class="lb-me-line">Solve a problem to earn your first points and enter the board.</div>
+            <small>Easy +10 · Medium +25 · Hard +50</small>
           </div>
-          <div class="lb-me-stats">
-            <span>Solve a problem to earn your first points.</span>
-          </div>
-          <a class="page-link-btn" href="/problems/">Explore problems</a>
+          <a class="lb-btn lb-btn-primary" href="/problems/">Explore problems <i class="bi bi-arrow-right"></i></a>
         {% endif %}
       </section>
+      {% endif %}
     {% endif %}
 
-    {# ── Podium — marathon stairs, page 1 only ── #}
-    {% if rows and page_obj.number == 1 %}
-      <section class="lb-podium" aria-label="Top ranked developers">
-        {% for row in rows|slice:":3" %}
-          <article{% if row.is_me %} id="lb-me"{% endif %} class="lb-podium-card lb-podium-{{ row.rank }}{% if row.is_me %} is-me lb-row-me{% endif %}">
-            <span class="lb-medal lb-medal-{{ row.rank }}" aria-label="Rank {{ row.rank }}">{{ row.rank }}</span>
-
-            {% if row.avatar_url %}
-              <img src="{{ row.avatar_url }}" alt="" class="lb-podium-avatar" loading="lazy">
-            {% else %}
-              <span class="lb-podium-avatar lb-avatar-fallback" aria-hidden="true">{{ row.username|slice:":1"|upper }}</span>
-            {% endif %}
-
-            <h3 class="lb-podium-name">
-              {% if request.user.is_authenticated %}
-                <a href="{% url 'users:profile_legacy' row.username %}">{{ row.username }}</a>
-              {% else %}
-                <span>{{ row.username }}</span>
-              {% endif %}
+    {# ═════════ PODIUM ═════════ #}
+    {% if podium %}
+    <section class="lb-podium lb-podium-n{{ podium|length }}" aria-label="Top ranked developers">
+      {% for row in podium %}
+        <article{% if row.is_me %} id="lb-me"{% endif %} class="lb-pod lb-pod-{{ row.rank }}{% if row.is_me %} is-me lb-row-me{% endif %}" style="--i: {{ row.rank }}">
+          <div class="lb-pod-top">
+            {% if row.rank == 1 %}<span class="lb-crown" aria-hidden="true"><i class="bi bi-trophy-fill"></i></span>{% endif %}
+            <div class="lb-pod-avatar tier-ring-{{ row.tier.css }}">
+              {% if row.avatar_url %}<img src="{{ row.avatar_url }}" alt="" loading="lazy">{% else %}<span aria-hidden="true">{{ row.username|slice:":1"|upper }}</span>{% endif %}
+              <b class="lb-medal" aria-label="Rank {{ row.rank }}">{{ row.rank }}</b>
+            </div>
+            <h3 class="lb-pod-name">
+              {% if request.user.is_authenticated %}<a href="{% url 'users:profile_legacy' row.username %}">{{ row.username }}</a>{% else %}<span>{{ row.username }}</span>{% endif %}
               {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
             </h3>
-
-            <div class="lb-podium-points">
-              <strong>{{ row.points }}</strong><span>pts</span>
+            <span class="lb-tier tier-{{ row.tier.css }}">{{ row.tier.name }}</span>
+            <div class="lb-pod-points"><strong data-count="{{ row.points }}">{{ row.points }}</strong><span>pts</span></div>
+            <div class="lb-pod-meta">
+              <span>{{ row.solved }} solved</span>
+              {% if row.streak %}<span class="lb-flame"><i class="bi bi-fire"></i>{{ row.streak }}d</span>{% endif %}
+              {% if row.move and row.move > 0 %}<span class="lb-move up"><i class="bi bi-caret-up-fill"></i>{{ row.move }}</span>{% elif row.move and row.move < 0 %}<span class="lb-move down"><i class="bi bi-caret-down-fill"></i>{% widthratio row.move 1 -1 %}</span>{% endif %}
             </div>
-            <div class="lb-podium-solved">{{ row.solved }} solved</div>
-
-            <div class="lb-podium-breakdown">
-              <span class="lb-mini-stat lb-mini-easy">{{ row.easy_solved }}<em>Easy</em></span>
-              <span class="lb-mini-stat lb-mini-medium">{{ row.medium_solved }}<em>Medium</em></span>
-              <span class="lb-mini-stat lb-mini-hard">{{ row.hard_solved }}<em>Hard</em></span>
+            <div class="lb-mix" aria-label="{{ row.easy_solved }} easy, {{ row.medium_solved }} medium, {{ row.hard_solved }} hard">
+              {% if row.easy_solved %}<i class="easy" style="flex: {{ row.easy_solved }}"></i>{% endif %}{% if row.medium_solved %}<i class="medium" style="flex: {{ row.medium_solved }}"></i>{% endif %}{% if row.hard_solved %}<i class="hard" style="flex: {{ row.hard_solved }}"></i>{% endif %}
             </div>
-          </article>
-        {% endfor %}
-      </section>
+            <div class="lb-pod-split"><span class="e">{{ row.easy_solved }} E</span><span class="m">{{ row.medium_solved }} M</span><span class="h">{{ row.hard_solved }} H</span></div>
+          </div>
+          <div class="lb-pod-step"><span>{{ row.rank }}</span></div>
+        </article>
+      {% endfor %}
+    </section>
     {% endif %}
 
-    {# ── Table (top 3 omitted on page 1) ── #}
-    <div class="history-card lb-card">
-      <div class="history-header">
-        <h2 class="history-title">
-          {% if period == 'week' %}This week's rankings
-          {% elif period == 'month' %}This month's rankings
-          {% else %}All-time rankings{% endif %}
-        </h2>
-        <span class="history-total-pill">{{ paginator.count }} ranked</span>
-      </div>
+    {# ═════════ RANKING LIST ═════════ #}
+    <section class="lb-board lb-in" style="--i: 4">
+      <header class="lb-board-head">
+        <h2>{% if period == 'week' %}This week's rankings{% elif period == 'month' %}This month's rankings{% else %}All-time rankings{% endif %}</h2>
+        <span class="lb-pill">{{ paginator.count }} ranked</span>
+        {% if rows %}<span class="lb-legend"><i class="bi bi-caret-up-fill up"></i><i class="bi bi-caret-down-fill down"></i> vs {{ movement_days }} days ago</span>{% endif %}
+      </header>
 
-      {% if rows %}
-        <div class="table-responsive">
-          <table class="history-table lb-table">
-            <caption class="visually-hidden">Leaderboard, ranked by total points</caption>
-            <thead>
-              <tr>
-                <th scope="col" class="lb-col-rank">Rank</th>
-                <th scope="col">Developer</th>
-                <th scope="col" class="lb-num">Solved</th>
-                <th scope="col" class="lb-num d-none d-md-table-cell">Easy</th>
-                <th scope="col" class="lb-num d-none d-md-table-cell">Medium</th>
-                <th scope="col" class="lb-num d-none d-md-table-cell">Hard</th>
-                <th scope="col" class="lb-num">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in rows %}
-                {% if page_obj.number != 1 or row.rank > 3 %}
-                  <tr{% if row.is_me %} id="lb-me" class="lb-row-me" aria-current="true"{% endif %}>
-                    <td class="lb-col-rank">
-                      <span class="lb-rank">{{ row.rank }}</span>
-                    </td>
-                    <td class="lb-cell-user">
-                      <div class="lb-user">
-                        {% if row.avatar_url %}
-                          <img src="{{ row.avatar_url }}" alt="" class="lb-avatar" loading="lazy">
-                        {% else %}
-                          <span class="lb-avatar lb-avatar-fallback" aria-hidden="true">{{ row.username|slice:":1"|upper }}</span>
-                        {% endif %}
-                        <div class="lb-user-text">
-                          <div class="lb-name-line">
-                            {% if request.user.is_authenticated %}
-                              <a href="{% url 'users:profile_legacy' row.username %}" class="problem-link lb-name">{{ row.username }}</a>
-                            {% else %}
-                              <span class="lb-name lb-name-plain">{{ row.username }}</span>
-                            {% endif %}
-                            {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
-                          </div>
-                          <div class="lb-mini d-md-none">
-                            <span class="text-easy">{{ row.easy_solved }}<span class="visually-hidden"> easy</span></span>
-                            <span class="text-medium">{{ row.medium_solved }}<span class="visually-hidden"> medium</span></span>
-                            <span class="text-hard">{{ row.hard_solved }}<span class="visually-hidden"> hard</span></span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="lb-num">{{ row.solved }}</td>
-                    <td class="lb-num d-none d-md-table-cell text-easy">{{ row.easy_solved }}</td>
-                    <td class="lb-num d-none d-md-table-cell text-medium">{{ row.medium_solved }}</td>
-                    <td class="lb-num d-none d-md-table-cell text-hard">{{ row.hard_solved }}</td>
-                    <td class="lb-num lb-points">{{ row.points }}</td>
-                  </tr>
-                {% endif %}
-              {% endfor %}
-            </tbody>
-          </table>
+      {% if rows and podium and rows|length <= 3 %}
+        <p class="lb-all-podium"><i class="bi bi-stars"></i> Everyone ranked {% if period == 'week' %}this week{% elif period == 'month' %}this month{% else %}so far{% endif %} is on the podium above. Solve a problem to join them.</p>
+      {% elif rows %}
+        <div class="lb-cols" aria-hidden="true">
+          <span>Rank</span><span>Developer</span><span>Difficulty mix</span><span>Last 14 days</span><span class="num">Solved</span><span class="num">Points</span>
+        </div>
+        <div class="lb-list" role="list">
+          {% for row in rows %}
+            {% if not podium or row.rank > 3 %}
+            <div role="listitem"{% if row.is_me %} id="lb-me" aria-current="true"{% endif %} class="lb-row{% if row.is_me %} lb-row-me{% endif %}" style="--i: {{ forloop.counter0 }}">
+              <div class="lb-rank-cell">
+                <span class="lb-rank">{{ row.rank }}</span>
+                {% if row.is_new %}<span class="lb-move new" title="New on the board this week">NEW</span>
+                {% elif row.move > 0 %}<span class="lb-move up" title="Up {{ row.move }} since {{ movement_days }} days ago"><i class="bi bi-caret-up-fill"></i>{{ row.move }}</span>
+                {% elif row.move < 0 %}<span class="lb-move down" title="Down since {{ movement_days }} days ago"><i class="bi bi-caret-down-fill"></i>{% widthratio row.move 1 -1 %}</span>
+                {% else %}<span class="lb-move flat" title="No change"><i class="bi bi-dash"></i></span>{% endif %}
+              </div>
+
+              <div class="lb-user">
+                <span class="lb-avatar tier-ring-{{ row.tier.css }}">
+                  {% if row.avatar_url %}<img src="{{ row.avatar_url }}" alt="" loading="lazy">{% else %}<span aria-hidden="true">{{ row.username|slice:":1"|upper }}</span>{% endif %}
+                </span>
+                <div class="lb-user-text">
+                  <div class="lb-name-line">
+                    {% if request.user.is_authenticated %}<a href="{% url 'users:profile_legacy' row.username %}" class="lb-name">{{ row.username }}</a>{% else %}<span class="lb-name">{{ row.username }}</span>{% endif %}
+                    {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
+                  </div>
+                  <div class="lb-sub-line">
+                    <span class="lb-tier tier-{{ row.tier.css }}">{{ row.tier.name }}</span>
+                    {% if row.streak %}<span class="lb-flame" title="{{ row.streak }}-day practice streak"><i class="bi bi-fire"></i>{{ row.streak }}</span>{% endif %}
+                    {% if row.last_active_days == 0 %}<span class="lb-active"><i></i>active today</span>{% elif row.last_active_days != None %}<span class="lb-seen">{{ row.last_active_days }}d ago</span>{% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="lb-mix-cell">
+                <div class="lb-mix">
+                  {% if row.easy_solved %}<i class="easy" style="flex: {{ row.easy_solved }}"></i>{% endif %}{% if row.medium_solved %}<i class="medium" style="flex: {{ row.medium_solved }}"></i>{% endif %}{% if row.hard_solved %}<i class="hard" style="flex: {{ row.hard_solved }}"></i>{% endif %}
+                </div>
+                <div class="lb-mix-nums"><span class="e">{{ row.easy_solved }}</span><span class="m">{{ row.medium_solved }}</span><span class="h">{{ row.hard_solved }}</span></div>
+              </div>
+
+              <div class="lb-spark" title="{{ row.active_days }} active day{{ row.active_days|pluralize }} in the last 14">
+                {% for d in row.spark %}<i class="{% if d.n %}on{% endif %}" style="--h: {{ d.h }}%" title="{{ d.date|date:'M j' }}: {{ d.n }} submission{{ d.n|pluralize }}"></i>{% endfor %}
+              </div>
+
+              <div class="num lb-solved">{{ row.solved }}</div>
+              <div class="num lb-points"><strong>{{ row.points }}</strong><small>pts</small></div>
+            </div>
+            {% endif %}
+          {% endfor %}
         </div>
 
         {% if paginator.num_pages > 1 %}
-          <nav class="pagination-footer" aria-label="Leaderboard pages">
-            <div class="profile-pagination">
-              {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if period %}&period={{ period }}{% endif %}" class="page-link-btn" rel="prev" aria-label="Previous page">
-                  <i class="bi bi-chevron-left me-1" aria-hidden="true"></i><span>Previous</span>
-                </a>
-              {% else %}
-                <span class="page-link-btn disabled" aria-disabled="true">
-                  <i class="bi bi-chevron-left me-1" aria-hidden="true"></i><span>Previous</span>
-                </span>
-              {% endif %}
-
-              <div class="page-numbers-wrap">
-                {% for num in elided_page_range %}
-                  {% if num == page_obj.number %}
-                    <span class="page-num active" aria-current="page">{{ num }}</span>
-                  {% elif num == paginator.ELLIPSIS %}
-                    <span class="page-num-ellipsis" aria-hidden="true">…</span>
-                  {% else %}
-                    <a href="?page={{ num }}{% if period %}&period={{ period }}{% endif %}" class="page-num" aria-label="Page {{ num }}">{{ num }}</a>
-                  {% endif %}
-                {% endfor %}
-              </div>
-
-              {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if period %}&period={{ period }}{% endif %}" class="page-link-btn" rel="next" aria-label="Next page">
-                  <span>Next</span><i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
-                </a>
-              {% else %}
-                <span class="page-link-btn disabled" aria-disabled="true">
-                  <span>Next</span><i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
-                </span>
-              {% endif %}
-            </div>
-          </nav>
+        <nav class="lb-pager" aria-label="Leaderboard pages">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&period={{ period }}{% if query %}&q={{ query|urlencode }}{% endif %}" class="lb-page-btn" rel="prev" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+          {% else %}<span class="lb-page-btn is-disabled" aria-disabled="true"><i class="bi bi-chevron-left"></i></span>{% endif %}
+          {% for num in elided_page_range %}
+            {% if num == page_obj.number %}<span class="lb-page is-active" aria-current="page">{{ num }}</span>
+            {% elif num == paginator.ELLIPSIS %}<span class="lb-page-gap" aria-hidden="true">…</span>
+            {% else %}<a href="?page={{ num }}&period={{ period }}{% if query %}&q={{ query|urlencode }}{% endif %}" class="lb-page" aria-label="Page {{ num }}">{{ num }}</a>{% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&period={{ period }}{% if query %}&q={{ query|urlencode }}{% endif %}" class="lb-page-btn" rel="next" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+          {% else %}<span class="lb-page-btn is-disabled" aria-disabled="true"><i class="bi bi-chevron-right"></i></span>{% endif %}
+        </nav>
         {% endif %}
 
       {% else %}
-        <div class="history-empty-box">
-          <div class="empty-icon-circle">
-            <i class="bi bi-trophy" aria-hidden="true"></i>
-          </div>
-          <h3 class="empty-heading">{% if query %}User not found{% else %}No one is ranked yet{% endif %}</h3>
-          <p class="empty-subtext">
-            {% if query %}No users match "{{ query }}".
-            {% elif period == 'week' %}No solved problems in the last 7 days.
+        <div class="lb-empty">
+          <span class="lb-empty-icon"><i class="bi {% if query %}bi-search{% else %}bi-trophy{% endif %}"></i></span>
+          <h3>{% if query %}User not found{% else %}No one is ranked yet{% endif %}</h3>
+          <p>
+            {% if query %}No developers match "{{ query }}".
+            {% elif period == 'week' %}No solved problems in the last 7 days. Be the first this week.
             {% elif period == 'month' %}No solved problems in the last 30 days.
             {% else %}Solve a problem to be the first on the leaderboard.{% endif %}
           </p>
-          <a href="/problems/" class="btn-explore-problems mt-2">
-            <i class="bi bi-play-circle me-1" aria-hidden="true"></i> Explore Problems
-          </a>
+          <a href="{% if query %}?period={{ period }}{% else %}/problems/{% endif %}" class="lb-btn lb-btn-primary">{% if query %}Clear search{% else %}Explore problems <i class="bi bi-arrow-right"></i>{% endif %}</a>
         </div>
       {% endif %}
-    </div>
-
+    </section>
   </div>
+
+  {# Floating "you" bar — appears when your row is scrolled out of view #}
+  {% if me_row and me_row.rank > 3 or me_row and not podium %}
+  <a class="lb-dock" id="lbDock" href="#lb-me" data-scroll-me hidden>
+    <span class="lb-dock-rank">#{{ me_row.rank }}</span>
+    <span class="lb-avatar tier-ring-{{ me_row.tier.css }}"><span>{{ me_row.username|slice:":1"|upper }}</span></span>
+    <span class="lb-dock-name">You <small>{{ me_row.points }} pts</small></span>
+    {% if rival %}<span class="lb-dock-gap">{% if rival.gap %}{{ rival.gap }} pts to #{{ rival.rank }}{% else %}Tied with #{{ rival.rank }}{% endif %}</span>{% endif %}
+    <i class="bi bi-arrow-up-short lb-dock-arrow"></i>
+  </a>
+  {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/leaderboard.js' %}?v=1" defer></script>
 {% endblock %}

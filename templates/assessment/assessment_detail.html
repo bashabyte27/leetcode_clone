@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{{ assessment.name }} | Assessments | BashaByte{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/assessment.css' %}?v=4">{% endblock %}
 {% block content %}
-<main class="assessment-shell">
+<main class="assessment-shell asx-detail">
   {% include "assessment/_messages.html" %}
-  
+
   <!-- Header -->
   <header class="assessment-header">
     <div>
@@ -13,32 +13,38 @@
         <a class="assessment-link" href="{% url 'assessment:dashboard' %}">Assessments</a> / Manage
       </div>
       <h1>{{ assessment.name }}</h1>
+      <div class="asx-facts">
+        <span class="assessment-pill" data-status="{{ assessment.status }}">{{ assessment.get_status_display }}</span>
+        <span><i class="bi bi-stopwatch"></i> {{ assessment.duration_minutes }} min</span>
+        <span><i class="bi bi-question-square"></i> {{ question_count }} question{{ question_count|pluralize }}</span>
+        <span><i class="bi bi-calendar3"></i> {% if assessment.start_time %}{{ assessment.start_time|date:"M j, g:i A" }}{% else %}No start date{% endif %}{% if assessment.end_time %} → {{ assessment.end_time|date:"M j, g:i A" }}{% endif %}</span>
+      </div>
     </div>
     <div class="assessment-inline-actions">
-      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_edit' assessment.pk %}">Full settings</a>
+      <a class="assessment-button-secondary" href="{% url 'assessment:assessment_edit' assessment.pk %}"><i class="bi bi-sliders"></i> Full settings</a>
       {% if can_publish and assessment.status != "archived" %}
         <form method="post" action="{% url 'assessment:assessment_publish' assessment.pk %}">
           {% csrf_token %}
-          <button class="assessment-button" type="submit">{% if assessment.status == "draft" %}Publish assessment{% else %}Publish changes{% endif %}</button>
+          <button class="assessment-button" type="submit"><i class="bi bi-send"></i> {% if assessment.status == "draft" %}Publish assessment{% else %}Publish changes{% endif %}</button>
         </form>
       {% endif %}
       <form method="post" action="{% url 'assessment:assessment_delete' assessment.pk %}" onsubmit="return confirm('Delete this assessment and its sections?');">
         {% csrf_token %}
-        <button class="assessment-button-danger" type="submit">Delete</button>
+        <button class="assessment-button-danger" type="submit"><i class="bi bi-trash3"></i> Delete</button>
       </form>
     </div>
   </header>
 
-  <!-- Tabs Navigation -->
+  <!-- Tabs -->
   <nav class="assessment-detail-tabs" aria-label="Assessment management tabs">
-    <a class="{% if active_tab == 'details' %}active{% endif %}" href="?tab=details">Details</a>
-    <a class="{% if active_tab == 'sections' %}active{% endif %}" href="?tab=sections">Sections</a>
-    <a class="{% if active_tab == 'questions' %}active{% endif %}" href="?tab=questions">Questions</a>
-    <a class="{% if active_tab == 'moderators' %}active{% endif %}" href="?tab=moderators">Moderators</a>
-    <a class="{% if active_tab == 'participants' %}active{% endif %}" href="?tab=participants">Signups</a>
-    <a class="{% if active_tab == 'leaderboard' %}active{% endif %}" href="?tab=leaderboard">Leaderboard</a>
-    <a class="{% if active_tab == 'submissions' %}active{% endif %}" href="?tab=submissions">Submissions</a>
-    <a class="{% if active_tab == 'reports' %}active{% endif %}" href="?tab=reports">Reports</a>
+    <a class="{% if active_tab == 'details' %}active{% endif %}" href="?tab=details"><i class="bi bi-info-circle"></i> Details</a>
+    <a class="{% if active_tab == 'sections' %}active{% endif %}" href="?tab=sections"><i class="bi bi-layers"></i> Sections</a>
+    <a class="{% if active_tab == 'questions' %}active{% endif %}" href="?tab=questions"><i class="bi bi-question-square"></i> Questions</a>
+    <a class="{% if active_tab == 'moderators' %}active{% endif %}" href="?tab=moderators"><i class="bi bi-person-gear"></i> Moderators</a>
+    <a class="{% if active_tab == 'participants' %}active{% endif %}" href="?tab=participants"><i class="bi bi-people"></i> Signups</a>
+    <a class="{% if active_tab == 'leaderboard' %}active{% endif %}" href="?tab=leaderboard"><i class="bi bi-trophy"></i> Leaderboard</a>
+    <a class="{% if active_tab == 'submissions' %}active{% endif %}" href="?tab=submissions"><i class="bi bi-code-square"></i> Submissions</a>
+    <a class="{% if active_tab == 'reports' %}active{% endif %}" href="?tab=reports"><i class="bi bi-graph-up"></i> Reports</a>
   </nav>
 
   {% if active_tab == "details" %}
@@ -57,27 +63,22 @@
           <div class="assessment-field {% if field.name == 'description' %}assessment-field-full{% endif %}">
             <label for="{{ field.id_for_label }}">{% if field.name == "slug" %}Assessment URL{% else %}{{ field.label }}{% endif %}</label>
             {% if field.name == "slug" %}
-              <div class="assessment-url-input">
-                <span>/assessments/</span>{{ field }}<span>/</span>
-              </div>
+              <div class="assessment-url-input"><span>/assessments/</span>{{ field }}<span>/</span></div>
             {% else %}
               {{ field }}
             {% endif %}
             {% if field.help_text %}<small class="assessment-muted">{{ field.help_text }}</small>{% endif %}
-            {% for error in field.errors %}<div class="assessment-errors" style="color:var(--ab-danger);font-size:12px;margin-top:4px;">{{ error }}</div>{% endfor %}
+            {% for error in field.errors %}<div class="assessment-errors">{{ error }}</div>{% endfor %}
           </div>
         {% endfor %}
-        <div class="assessment-field-full assessment-inline-actions" style="justify-content: flex-end; margin-top: 10px;">
+        <div class="assessment-field-full assessment-inline-actions asx-form-actions">
           <button class="assessment-button" type="submit">Save changes</button>
         </div>
       </form>
-      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--ab-border);">
-        <p class="assessment-muted" style="font-size: 13px;">
-          Hosted assessment URL: 
-          <a href="{% url 'assessment:assessment_view' assessment.slug %}" target="_blank" style="color: var(--ab-accent); font-family: var(--ab-mono); margin-left: 8px;">
-            {{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}
-          </a>
-        </p>
+      <div class="asx-hosted">
+        <span class="asx-hosted-label"><i class="bi bi-broadcast"></i> Hosted assessment:</span>
+        <a href="{% url 'assessment:assessment_view' assessment.slug %}" target="_blank" rel="noopener">{{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}</a>
+        <button type="button" class="asx-copy" data-copy="{{ request.scheme }}://{{ request.get_host }}{% url 'assessment:assessment_view' assessment.slug %}" title="Copy student link" aria-label="Copy student link"><i class="bi bi-clipboard"></i></button>
       </div>
     </section>
 
@@ -88,10 +89,10 @@
           <h2>Sections</h2>
           <p class="assessment-muted">Organize questions into logical groups.</p>
         </div>
-        <a class="assessment-button" href="{% url 'assessment:section_create' assessment.pk %}">Add section</a>
+        <a class="assessment-button" href="{% url 'assessment:section_create' assessment.pk %}"><i class="bi bi-plus-lg"></i> Add section</a>
       </div>
 
-      <div style="margin-top: 20px;">
+      <div class="asx-stack">
         {% for section in sections %}
           <article class="assessment-section-card" id="section-{{ section.pk }}">
             <details class="assessment-section-collapse" {% if forloop.first %}open{% endif %}>
@@ -102,18 +103,14 @@
                 </span>
                 <span class="assessment-question-chevron" aria-hidden="true"></span>
               </summary>
-              
-              {% if section.instructions %}
-                <p class="assessment-section-instructions">{{ section.instructions }}</p>
-              {% endif %}
-              
+              {% if section.instructions %}<p class="assessment-section-instructions">{{ section.instructions }}</p>{% endif %}
               <div class="assessment-section-question-list">
                 {% for assignment in section.questions.all %}
                   <article class="assessment-assigned-question">
                     <div class="assessment-assigned-question-heading">
                       <div>
                         <strong>{% if assignment.mcq_question %}{{ assignment.mcq_question.title }}{% else %}{{ assignment.coding_question.title }}{% endif %}</strong>
-                        <span class="assessment-muted" style="font-size: 12px;">
+                        <span class="assessment-muted asx-small">
                           {% if assignment.mcq_question %}
                             {% if assignment.mcq_question.question_type == "programming" or assignment.mcq_question.category == "programming" %}Programming MCQ{% else %}{{ assignment.mcq_question.get_category_display }}{% endif %}
                           {% else %}Coding{% endif %} · {{ assignment.max_score }} pts
@@ -121,33 +118,30 @@
                       </div>
                       <div class="assessment-inline-actions">
                         <details class="assessment-question-preview">
-                          <summary class="assessment-button-secondary" style="min-height: 30px; padding: 0 12px; font-size: 12px;">Preview</summary>
-                          <div class="assessment-question-preview-content" style="position: absolute; z-index: 10; background: var(--ab-surface); border: 1px solid var(--ab-border); border-radius: 8px; padding: 16px; box-shadow: var(--ab-shadow-lg); max-width: 400px; margin-top: 8px;">
+                          <summary class="assessment-button-secondary asx-btn-sm">Preview</summary>
+                          <div class="assessment-question-preview-content">
                             {% if assignment.mcq_question %}
-                              <p style="font-size: 13px;">{{ assignment.mcq_question.statement|linebreaksbr }}</p>
-                              <ol style="font-size: 13px; padding-left: 20px;">
-                                {% for option in assignment.mcq_question.options.all %}<li>{{ option.text|linebreaksbr }}</li>{% endfor %}
-                              </ol>
+                              <p>{{ assignment.mcq_question.statement|linebreaksbr }}</p>
+                              <ol>{% for option in assignment.mcq_question.options.all %}<li>{{ option.text|linebreaksbr }}</li>{% endfor %}</ol>
                             {% else %}
-                              <p style="font-size: 13px;">{{ assignment.coding_question.statement|linebreaksbr }}</p>
+                              <p>{{ assignment.coding_question.statement|linebreaksbr }}</p>
                             {% endif %}
                           </div>
                         </details>
                         <form method="post" action="{% url 'assessment:section_question_remove' assessment.pk section.pk assignment.pk %}" onsubmit="return confirm('Remove this question?');">
                           {% csrf_token %}
-                          <button class="assessment-button-danger" type="submit" style="min-height: 30px; padding: 0 12px; font-size: 12px;">Remove</button>
+                          <button class="assessment-button-danger asx-btn-sm" type="submit">Remove</button>
                         </form>
                       </div>
                     </div>
                   </article>
                 {% empty %}
-                  <p class="assessment-empty" style="padding: 20px;">No questions in this section yet.</p>
+                  <p class="assessment-empty">No questions in this section yet.</p>
                 {% endfor %}
               </div>
-              
-              <div class="assessment-inline-actions" style="padding: 16px; border-top: 1px solid var(--ab-border); background: var(--ab-surface-2); justify-content: flex-end;">
-                <a class="assessment-button-secondary" href="{% url 'assessment:question_import_options' %}?assessment={{ assessment.pk }}&amp;section={{ section.pk }}">Import</a>
-                <a class="assessment-button" href="{% url 'assessment:section_question_add' assessment.pk section.pk %}">Add Question</a>
+              <div class="assessment-inline-actions asx-section-foot">
+                <a class="assessment-button-secondary" href="{% url 'assessment:question_import_options' %}?assessment={{ assessment.pk }}&amp;section={{ section.pk }}"><i class="bi bi-file-earmark-arrow-up"></i> Import</a>
+                <a class="assessment-button" href="{% url 'assessment:section_question_add' assessment.pk section.pk %}"><i class="bi bi-plus-lg"></i> Add Question</a>
                 <a class="assessment-button-secondary" href="{% url 'assessment:section_edit' assessment.pk section.pk %}">Edit Section</a>
                 <form method="post" action="{% url 'assessment:section_delete' assessment.pk section.pk %}" onsubmit="return confirm('Delete this section and all its questions?');">
                   {% csrf_token %}
@@ -163,37 +157,27 @@
     </section>
 
   {% elif active_tab == "questions" %}
-    <section class="assessment-panel">
+    <section class="assessment-panel has-table">
       <div class="assessment-card-head">
         <div>
           <h2>Questions</h2>
           <p class="assessment-muted">All questions assigned to this assessment and their activity.</p>
         </div>
-        <a class="assessment-button" href="{% url 'assessment:question_create_options' assessment.pk %}">Add question</a>
+        <div class="assessment-inline-actions">
+          <a class="assessment-button-secondary" href="{% url 'assessment:question_import_options' %}?assessment={{ assessment.pk }}"><i class="bi bi-file-earmark-arrow-up"></i> Import questions</a>
+          <a class="assessment-button" href="{% url 'assessment:question_create_options' assessment.pk %}"><i class="bi bi-plus-lg"></i> Add question</a>
+        </div>
       </div>
       <div class="assessment-table-wrap">
         <table class="assessment-table">
-          <thead>
-            <tr>
-              <th style="width: 80px;">No.</th>
-              <th>Question Name</th>
-              <th style="width: 120px; text-align: right;">Signups</th>
-              <th style="width: 150px; text-align: right;">Submissions</th>
-            </tr>
-          </thead>
+          <thead><tr><th class="asx-col-no">No.</th><th>Question Name</th><th class="asx-num">Signups</th><th class="asx-num">Submissions</th></tr></thead>
           <tbody>
             {% for row in question_rows %}
               <tr>
-                <td><span class="assessment-muted" style="font-family: var(--ab-mono);">{{ row.number|stringformat:"02d" }}</span></td>
-                <td>
-                  <a href="{% url 'assessment:assessment_question_detail' assessment.pk row.assignment.pk %}">
-                    {{ row.title }}
-                  </a>
-                </td>
-                <td style="text-align: right;">{{ row.signups }}</td>
-                <td style="text-align: right;">
-                  <span class="assessment-pill" style="background: var(--ab-surface-3);">{{ row.submissions }} attempts</span>
-                </td>
+                <td><span class="asx-mono-muted">{{ row.number|stringformat:"02d" }}</span></td>
+                <td><a href="{% url 'assessment:assessment_question_detail' assessment.pk row.assignment.pk %}">{{ row.title }}</a></td>
+                <td class="asx-num">{{ row.signups }}</td>
+                <td class="asx-num"><span class="asx-count-chip">{{ row.submissions }} attempts</span></td>
               </tr>
             {% empty %}
               <tr><td class="assessment-empty" colspan="4">No questions have been added to this assessment yet.</td></tr>
@@ -204,82 +188,198 @@
     </section>
 
   {% elif active_tab == "leaderboard" %}
-    <section class="assessment-panel">
-      <div class="assessment-card-head">
-        <div>
-          <h2>Leaderboard</h2>
-          <p class="assessment-muted">Ranked by best finalized score, then fastest completion time.</p>
+    <div class="asx-lb {% if selected_participant %}has-detail{% endif %}">
+      <section class="assessment-panel has-table">
+        <div class="assessment-card-head">
+          <div>
+            <h2>Leaderboard</h2>
+            <p class="assessment-muted">Ranked by best finalized score, then fastest completion time. Select a name for that candidate's breakdown.</p>
+          </div>
+          <span class="asx-count-chip">{{ leaderboard|length }} ranked</span>
         </div>
-      </div>
-      <div class="assessment-table-wrap">
-        <table class="assessment-table">
-          <thead>
-            <tr>
-              <th class="rank-col">Rank</th>
-              <th>Name</th>
-              <th>Solved</th>
-              <th>Time Taken</th>
-              <th>Marks</th>
-              <th style="text-align: right;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in leaderboard %}
-              <tr>
-                <td class="rank-col">#{{ row.rank }}</td>
-                <td><a href="{{ row.profile_url }}">{{ row.user.user_name }}</a></td>
-                <td style="font-family: var(--ab-mono);">{{ row.result.correct_count }}</td>
-                <td style="font-family: var(--ab-mono); color: var(--ab-text-muted);">{{ row.time_taken }}</td>
-                <td>
-                  <strong style="color: var(--ab-accent);">{{ row.result.total_score }}</strong> 
-                  <span class="assessment-muted">/ {{ row.result.max_score }}</span>
-                </td>
-                <td style="text-align: right;">
-                  <a class="assessment-button-secondary" href="{{ row.details_url }}" style="min-height: 32px; padding: 0 12px; font-size: 12px;">Details</a>
-                </td>
-              </tr>
-            {% empty %}
-              <tr><td class="assessment-empty" colspan="6">No finalized assessment results are available yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <div class="assessment-table-wrap">
+          <table class="assessment-table asx-lb-table">
+            <thead><tr><th class="rank-col">Rank</th><th>Name</th><th>Solved</th><th>Time Taken</th><th>Marks</th><th class="asx-num">Action</th></tr></thead>
+            <tbody>
+              {% for row in leaderboard %}
+                <tr class="{% if selected_participant.user.pk == row.user.pk %}assessment-submission-selected{% endif %}">
+                  <td class="rank-col">{% if row.rank <= 3 %}<span class="asx-medal m{{ row.rank }}">{{ row.rank }}</span>{% else %}#{{ row.rank }}{% endif %}</td>
+                  <td>
+                    <span class="asx-user">
+                      <span class="asx-avatar">{{ row.user.user_name|slice:":1"|upper }}</span>
+                      <a href="{{ row.details_url }}" class="asx-user-link">{{ row.user.user_name }}</a>
+                      <a href="{{ row.profile_url }}" class="asx-profile-link" title="Open public profile" aria-label="Open {{ row.user.user_name }}'s profile"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </span>
+                  </td>
+                  <td class="asx-mono">{{ row.result.correct_count }}</td>
+                  <td class="asx-mono-muted">{{ row.time_taken }}</td>
+                  <td>
+                    <div class="asx-marks">
+                      <strong>{{ row.result.total_score }}</strong><span>/ {{ row.result.max_score }}</span>
+                      <i class="asx-marks-bar"><b style="--w: {% widthratio row.result.total_score row.result.max_score 100 %}%"></b></i>
+                    </div>
+                  </td>
+                  <td class="asx-num"><a class="assessment-button-secondary asx-btn-sm" href="{{ row.details_url }}">Details</a></td>
+                </tr>
+              {% empty %}
+                <tr><td class="assessment-empty" colspan="6">No finalized assessment results are available yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {% if selected_participant %}
+        <section class="assessment-panel asx-candidate" id="participant-details">
+          <div class="asx-candidate-head">
+            <span class="asx-avatar lg">{{ selected_participant.user.user_name|slice:":1"|upper }}</span>
+            <div>
+              <h2>{{ selected_participant.user.user_name }}</h2>
+              <p class="assessment-muted">Results for {{ assessment.name }} only</p>
+            </div>
+            <span class="asx-rank-badge">Rank #{{ selected_participant.rank }}</span>
+            <a class="asx-close" href="?tab=leaderboard" aria-label="Close candidate details"><i class="bi bi-x-lg"></i></a>
+          </div>
+
+          <div class="asx-candidate-kpis">
+            <div class="asx-ring-wrap">
+              <svg viewBox="0 0 64 64" class="asx-ring" aria-hidden="true"><circle cx="32" cy="32" r="26" class="t"/><circle cx="32" cy="32" r="26" class="f" pathLength="100" style="--p: {{ participant_percent|stringformat:'s' }}"/></svg>
+              <div><strong>{{ participant_percent }}%</strong><span>{{ selected_participant.result.total_score }} / {{ selected_participant.result.max_score }}</span></div>
+            </div>
+            <dl>
+              <div><dt>Correct</dt><dd class="good">{{ selected_participant.result.correct_count }}</dd></div>
+              <div><dt>Partial</dt><dd class="warn">{{ selected_participant.result.partially_correct_count }}</dd></div>
+              <div><dt>Incorrect</dt><dd class="bad">{{ selected_participant.result.incorrect_count }}</dd></div>
+              <div><dt>Unanswered</dt><dd>{{ selected_participant.result.unanswered_count }}</dd></div>
+              <div><dt>Time taken</dt><dd>{{ selected_participant.time_taken }}</dd></div>
+              <div><dt>Submissions</dt><dd>{{ participant_history|length }}</dd></div>
+              <div><dt>Attempts used</dt><dd>{{ participant_attempts }}</dd></div>
+              <div><dt title="Events recorded during the ranked attempt">Events (attempt)</dt><dd class="{% if participant_violations >= 3 %}bad{% endif %}">{{ participant_violations }}</dd></div>
+            </dl>
+          </div>
+
+          <nav class="assessment-participant-tabs">
+            <a class="{% if participant_tab == 'summary' %}active{% endif %}" href="?tab=leaderboard&amp;user={{ selected_participant.user.pk }}#participant-details">Summary</a>
+            <a class="{% if participant_tab == 'submissions' %}active{% endif %}" href="?tab=leaderboard&amp;user={{ selected_participant.user.pk }}&amp;participant_tab=submissions#participant-details">Submissions <b class="asx-tab-count">{{ participant_history|length }}</b></a>
+          </nav>
+
+          {% if participant_tab == "summary" %}
+            {% if participant_sections %}
+              <h3 class="asx-subhead">Section scores</h3>
+              <div class="asx-bars">
+                {% for sr in participant_sections %}
+                  <div class="asx-bar-row">
+                    <span>{{ sr.section_snapshot.title }}</span>
+                    <i><b style="--w: {% widthratio sr.score sr.max_score 100 %}%"></b></i>
+                    <strong>{{ sr.score }} / {{ sr.max_score }}</strong>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            <h3 class="asx-subhead">Question breakdown</h3>
+            <div class="asx-qgrid">
+              {% for q in participant_breakdown %}
+                <div class="asx-q state-{{ q.state }}">
+                  <span class="asx-q-no">Q{{ q.number }}</span>
+                  <div class="asx-q-main"><strong>{{ q.title }}</strong><small>{{ q.kind }} · {{ q.section }}</small></div>
+                  <span class="asx-q-state">{% if q.state == "correct" %}<i class="bi bi-check-circle-fill"></i> Correct{% elif q.state == "partial" %}<i class="bi bi-circle-half"></i> Partial{% elif q.state == "incorrect" %}<i class="bi bi-x-circle-fill"></i> Incorrect{% elif q.state == "submitted" %}<i class="bi bi-hourglass-split"></i> Submitted{% else %}<i class="bi bi-dash-circle"></i> Not attempted{% endif %}</span>
+                  <span class="asx-q-score">{{ q.score }} / {{ q.max_score }}</span>
+                </div>
+              {% empty %}
+                <p class="assessment-empty">No question data is available for this attempt.</p>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="asx-history">
+              <div class="asx-history-list">
+                {% for row in participant_history %}
+                  <a class="asx-history-row {% if participant_selected.key == row.key %}is-active{% endif %}" href="?tab=leaderboard&amp;user={{ selected_participant.user.pk }}&amp;participant_tab=submissions&amp;submission={{ row.key }}#participant-details">
+                    <span class="asx-kind {{ row.kind }}">{{ row.submission_type }}</span>
+                    <span class="asx-history-main"><strong>{{ row.question_title }}</strong><small>{{ row.submitted_at|date:"M j, H:i:s" }}</small></span>
+                    <span class="asx-verdict {% if 'Accepted' in row.status %}ok{% elif row.status == 'Submitted' %}neutral{% else %}bad{% endif %}">{{ row.status }}</span>
+                  </a>
+                {% empty %}
+                  <p class="assessment-empty">No submissions were made in this attempt.</p>
+                {% endfor %}
+              </div>
+              <div class="asx-history-detail">
+                {% if participant_selected and participant_detail %}
+                  <div class="asx-detail-head">
+                    <div>
+                      <span class="asx-kind {{ participant_selected.kind }}">{{ participant_selected.submission_type }}</span>
+                      <h3>{{ participant_detail.question.title }}</h3>
+                      <small class="assessment-muted">Submitted {{ participant_selected.submitted_at|date:"M j, Y · H:i:s" }}</small>
+                    </div>
+                    <span class="asx-verdict {% if 'Accepted' in participant_selected.status %}ok{% elif participant_selected.status == 'Submitted' %}neutral{% else %}bad{% endif %}">{{ participant_selected.status }}</span>
+                  </div>
+                  <details class="asx-question-box" open>
+                    <summary>Question</summary>
+                    <div class="asx-statement">{{ participant_detail.question.statement|linebreaksbr }}</div>
+                  </details>
+                  {% if participant_selected.kind == "coding" %}
+                    {% with sub=participant_selected.item %}
+                      <div class="asx-sub-meta">
+                        <span>Language <b>{{ sub.language.name }}</b></span>
+                        <span>Score <b>{{ sub.score }}</b></span>
+                        <span>Runtime <b>{% if sub.execution_time_ms != None %}{{ sub.execution_time_ms }} ms{% else %}—{% endif %}</b></span>
+                        <span>Memory <b>{% if sub.memory_used_kb != None %}{{ sub.memory_used_kb }} KB{% else %}—{% endif %}</b></span>
+                      </div>
+                      <h4 class="asx-subhead">Submitted code</h4>
+                      <pre class="assessment-code-block">{{ sub.source_code }}</pre>
+                    {% endwith %}
+                    {% if participant_detail.test_results %}
+                      <h4 class="asx-subhead">Test cases</h4>
+                      <div class="asx-tests">
+                        {% for t in participant_detail.test_results %}
+                          <span class="asx-test {% if t.is_passed %}ok{% else %}bad{% endif %}" title="{% if t.error_message %}{{ t.error_message }}{% elif t.execution_time_ms %}{{ t.execution_time_ms }} ms{% endif %}"><i class="bi {% if t.is_passed %}bi-check-lg{% else %}bi-x-lg{% endif %}"></i> Case {{ forloop.counter }}</span>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  {% else %}
+                    <h4 class="asx-subhead">Options</h4>
+                    <ul class="asx-options">
+                      {% for o in participant_detail.options %}
+                        <li class="{% if o.option.is_correct %}is-correct{% endif %} {% if o.chosen %}is-chosen{% endif %}">
+                          <span class="asx-opt-mark">{% if o.chosen and o.option.is_correct %}<i class="bi bi-check-circle-fill"></i>{% elif o.chosen %}<i class="bi bi-x-circle-fill"></i>{% elif o.option.is_correct %}<i class="bi bi-check-circle"></i>{% else %}<i class="bi bi-circle"></i>{% endif %}</span>
+                          <span>{{ o.option.text|linebreaksbr }}</span>
+                          {% if o.chosen %}<em>Selected</em>{% elif o.option.is_correct %}<em>Correct answer</em>{% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                    {% if participant_selected.item.text_answer %}<h4 class="asx-subhead">Written answer</h4><pre class="assessment-code-block">{{ participant_selected.item.text_answer }}</pre>{% endif %}
+                    {% if participant_selected.item.code_answer %}<h4 class="asx-subhead">Submitted code</h4><pre class="assessment-code-block">{{ participant_selected.item.code_answer }}</pre>{% endif %}
+                  {% endif %}
+                {% else %}
+                  <div class="asx-detail-empty"><i class="bi bi-cursor"></i><span>Select a submission to see the question and the submitted answer.</span></div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
 
   {% elif active_tab == "submissions" %}
-    <section class="assessment-panel">
+    <section class="assessment-panel has-table">
       <div class="assessment-card-head">
         <div>
           <h2>Submissions</h2>
           <p class="assessment-muted">Review coding submissions and MCQ answers. Click a row to view details.</p>
         </div>
+        <span class="asx-count-chip">{{ submission_rows|length }} total</span>
       </div>
-      
       <div class="assessment-table-wrap">
-        <table class="assessment-table">
-          <thead>
-            <tr>
-              <th style="width: 60px;">#</th>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Question</th>
-              <th>Status</th>
-              <th>Timestamp</th>
-            </tr>
-          </thead>
+        <table class="assessment-table assessment-submissions-table">
+          <thead><tr><th class="asx-col-no">#</th><th>Name</th><th>Type</th><th>Question</th><th>Status</th><th>Timestamp</th></tr></thead>
           <tbody>
             {% for row in submission_rows %}
-              <tr class="{% if selected_submission.key == row.key %}assessment-submission-selected{% endif %}" style="cursor: pointer;" onclick="window.location='?tab=submissions&amp;submission={{ row.key }}'">
-                <td><span class="assessment-muted" style="font-family: var(--ab-mono);">{{ forloop.counter|stringformat:"02d" }}</span></td>
-                <td><strong>{{ row.username }}</strong></td>
-                <td><span class="assessment-pill" style="font-size: 11px;">{{ row.submission_type }}</span></td>
+              <tr class="{% if selected_submission.key == row.key %}assessment-submission-selected{% endif %}" onclick="window.location='?tab=submissions&amp;submission={{ row.key }}#submission-detail'">
+                <td><span class="asx-mono-muted">{{ forloop.counter|stringformat:"02d" }}</span></td>
+                <td><span class="asx-user"><span class="asx-avatar sm">{{ row.username|slice:":1"|upper }}</span><strong>{{ row.username }}</strong></span></td>
+                <td><span class="asx-kind {{ row.kind }}">{{ row.submission_type }}</span></td>
                 <td>{{ row.question_title }}</td>
-                <td>
-                  <span class="assessment-pill" {% if 'Accepted' in row.status %}data-status="active"{% elif 'Wrong' in row.status %}style="background: var(--ab-danger-bg); color: var(--ab-danger);"{% endif %}>
-                    {{ row.status }}
-                  </span>
-                </td>
-                <td style="color: var(--ab-text-muted); font-size: 13px;">{{ row.submitted_at|date:"M j, H:i" }}</td>
+                <td><span class="asx-verdict {% if 'Accepted' in row.status %}ok{% elif row.status == 'Submitted' %}neutral{% else %}bad{% endif %}">{{ row.status }}</span></td>
+                <td class="asx-mono-muted">{{ row.submitted_at|date:"M j, H:i" }}</td>
               </tr>
             {% empty %}
               <tr><td class="assessment-empty" colspan="6">There are no submissions for this assessment yet.</td></tr>
@@ -287,147 +387,120 @@
           </tbody>
         </table>
       </div>
+    </section>
 
-      {% if selected_submission %}
-        <section class="assessment-submission-detail">
-          <div class="assessment-card-head">
-            <div>
-              <p class="assessment-eyebrow" style="margin-bottom: 8px;">Submission Report</p>
-              <h3 style="font-size: 18px;">{{ selected_submission.question_title }}</h3>
-              <p class="assessment-muted">Submitted by <strong>{{ selected_submission.username }}</strong></p>
-            </div>
-            <span class="assessment-pill" {% if 'Accepted' in selected_submission.status %}data-status="active"{% endif %}>{{ selected_submission.status }}</span>
+    {% if selected_submission %}
+      <section class="assessment-submission-detail" id="submission-detail">
+        <div class="assessment-card-head">
+          <div>
+            <p class="assessment-eyebrow">Submission Report</p>
+            <h3>{{ selected_submission.question_title }}</h3>
+            <p class="assessment-muted">Submitted by <strong>{{ selected_submission.username }}</strong></p>
           </div>
-
-          {% if selected_submission.kind == "coding" %}
-            <div style="margin-top: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h4 style="margin: 0; font-size: 14px; color: var(--ab-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Submitted Code</h4>
-                <span class="assessment-muted" style="font-size: 12px;">Language: {{ selected_submission.item.language.name }}</span>
-              </div>
-              <pre class="assessment-code-block">{{ selected_submission.item.source_code }}</pre>
-            </div>
-          {% else %}
-            {% if selected_submission.item.selected_options.exists %}
-              <h4 style="font-size: 14px; margin-top: 24px; color: var(--ab-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Selected Answers</h4>
-              <ul style="margin-top: 8px; padding-left: 20px;">
-                {% for selected_option in selected_submission.item.selected_options.all %}
-                  <li style="margin-bottom: 8px; font-size: 14px;">{{ selected_option.option.text }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-            {% if selected_submission.item.text_answer %}
-              <h4 style="font-size: 14px; margin-top: 24px; color: var(--ab-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Written Answer</h4>
-              <pre class="assessment-code-block" style="font-family: inherit; white-space: pre-wrap;">{{ selected_submission.item.text_answer }}</pre>
-            {% endif %}
-            {% if selected_submission.item.code_answer %}
-              <h4 style="font-size: 14px; margin-top: 24px; color: var(--ab-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Submitted Code</h4>
-              <pre class="assessment-code-block">{{ selected_submission.item.code_answer }}</pre>
-            {% endif %}
+          <span class="asx-verdict {% if 'Accepted' in selected_submission.status %}ok{% elif selected_submission.status == 'Submitted' %}neutral{% else %}bad{% endif %}">{{ selected_submission.status }}</span>
+        </div>
+        {% if selected_submission.kind == "coding" %}
+          <div class="asx-sub-meta"><span>Language <b>{{ selected_submission.item.language.name }}</b></span></div>
+          <h4>Submitted Code</h4>
+          <pre class="assessment-code-block">{{ selected_submission.item.source_code }}</pre>
+        {% else %}
+          {% if selected_submission.item.selected_options.exists %}
+            <h4>Selected Answers</h4>
+            <ul class="asx-options">{% for selected_option in selected_submission.item.selected_options.all %}<li class="is-chosen"><span class="asx-opt-mark"><i class="bi bi-record-circle"></i></span><span>{{ selected_option.option.text }}</span></li>{% endfor %}</ul>
           {% endif %}
-
-          <div style="margin-top: 32px; border-top: 1px solid var(--ab-border); padding-top: 20px;">
-            <h4 style="font-size: 14px; margin-bottom: 16px;">Submission History for this Question</h4>
-            <div class="assessment-table-wrap">
-              <table class="assessment-table">
-                <thead><tr><th>#</th><th>Type</th><th>Status</th><th>Timestamp</th></tr></thead>
-                <tbody>
-                  {% for history in submission_history %}
-                    <tr>
-                      <td><span class="assessment-muted">{{ forloop.counter }}</span></td>
-                      <td>{{ history.submission_type }}</td>
-                      <td><span class="assessment-pill" style="font-size: 11px;">{{ history.status }}</span></td>
-                      <td style="color: var(--ab-text-muted); font-size: 13px;">{{ history.submitted_at|date:"M j, Y H:i" }}</td>
-                    </tr>
-                  {% empty %}
-                    <tr><td class="assessment-empty" colspan="4" style="padding: 20px;">No submission history is available.</td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      {% endif %}
+          {% if selected_submission.item.text_answer %}<h4>Written Answer</h4><pre class="assessment-code-block">{{ selected_submission.item.text_answer }}</pre>{% endif %}
+          {% if selected_submission.item.code_answer %}<h4>Submitted Code</h4><pre class="assessment-code-block">{{ selected_submission.item.code_answer }}</pre>{% endif %}
+        {% endif %}
+        <h4>Submission History for this Question</h4>
+        <div class="assessment-table-wrap">
+          <table class="assessment-table">
+            <thead><tr><th>#</th><th>Type</th><th>Status</th><th>Timestamp</th></tr></thead>
+            <tbody>
+              {% for history in submission_history %}
+                <tr><td class="asx-mono-muted">{{ forloop.counter }}</td><td>{{ history.submission_type }}</td><td><span class="asx-verdict {% if 'Accepted' in history.status %}ok{% elif history.status == 'Submitted' %}neutral{% else %}bad{% endif %}">{{ history.status }}</span></td><td class="asx-mono-muted">{{ history.submitted_at|date:"M j, Y H:i" }}</td></tr>
+              {% empty %}
+                <tr><td class="assessment-empty" colspan="4">No submission history is available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
 
   {% elif active_tab == "participants" %}
-    <section class="assessment-panel">
+    <section class="assessment-panel has-table">
       <div class="assessment-card-head">
         <div>
           <h2>Signups</h2>
           <p class="assessment-muted">Users enrolled in this assessment. Manage their access and attempts here.</p>
         </div>
+        <form method="get" class="asx-inline-search">
+          <input type="hidden" name="tab" value="participants">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="signup-search" name="q" value="{{ signup_search }}" placeholder="Search name or email..." aria-label="Search signups">
+          <button class="assessment-button-secondary asx-btn-sm" type="submit">Search</button>
+        </form>
       </div>
-      
-      <form method="get" class="assessment-inline-actions" style="margin-bottom: 24px; max-width: 400px;">
-        <input type="hidden" name="tab" value="participants">
-        <div style="position: relative; flex: 1;">
-          <input id="signup-search" name="q" value="{{ signup_search }}" placeholder="Search name or email..." style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--ab-border-strong); background: var(--ab-input); color: var(--ab-text-main); outline: none;">
-        </div>
-        <button class="assessment-button-secondary" type="submit">Search</button>
-      </form>
-
       <div class="assessment-table-wrap">
         <table class="assessment-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th>Attempts</th>
-              <th>Latest Activity</th>
-              <th style="text-align: right;">Actions</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Attempts</th><th>Latest Activity</th><th class="asx-num">Actions</th></tr></thead>
           <tbody>
             {% for participant in participants %}
               <tr>
-                <td><strong>{{ participant.user.user_name }}</strong></td>
-                <td style="color: var(--ab-text-muted);">{{ participant.user.email }}</td>
-                <td><span class="assessment-pill">{{ participant.get_status_display }}</span></td>
-                <td><span style="font-family: var(--ab-mono);">{{ participant.attempt_count }}</span> / {{ participant.allowed_attempts }}</td>
+                <td><span class="asx-user"><span class="asx-avatar sm">{{ participant.user.user_name|slice:":1"|upper }}</span><strong>{{ participant.user.user_name }}</strong></span></td>
+                <td class="asx-muted-cell">{{ participant.user.email }}</td>
+                <td><span class="assessment-pill" data-status="{{ participant.status }}">{{ participant.get_status_display }}</span></td>
+                <td class="asx-mono">{{ participant.attempt_count }} / {{ participant.allowed_attempts }}</td>
                 <td>
                   {% with latest_attempt=participant.signup_attempts.0 %}
                     {% if latest_attempt %}
-                      <span class="assessment-pill" style="font-size: 11px; margin-right: 8px;">{{ latest_attempt.get_status_display }}</span>
-                      <span style="font-size: 13px; color: var(--ab-text-muted);">{{ latest_attempt.started_at|date:"M j, H:i" }}</span>
-                    {% else %}
-                      <span class="assessment-muted">Not started</span>
-                    {% endif %}
+                      <span class="asx-verdict neutral">{{ latest_attempt.get_status_display }}</span>
+                      <span class="asx-mono-muted">{{ latest_attempt.started_at|date:"M j, H:i" }}</span>
+                    {% else %}<span class="assessment-muted">Not started</span>{% endif %}
                   {% endwith %}
                 </td>
-                <td style="text-align: right;">
+                <td class="asx-num">
                   {% if can_manage_participants %}
-                    <details style="position: relative; display: inline-block;">
-                      <summary class="assessment-button-secondary" style="list-style: none; min-height: 32px; padding: 0 12px; font-size: 12px; cursor: pointer;">Manage</summary>
-                      <div style="position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--ab-surface); border: 1px solid var(--ab-border); border-radius: 8px; box-shadow: var(--ab-shadow-lg); padding: 12px; z-index: 10; min-width: 220px; text-align: left;">
-                        {% if participant.status == "disqualified" or participant.status == "removed" %}
-                          <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'restore' %}">
-                            {% csrf_token %}
-                            <button class="assessment-button-secondary" type="submit" style="width: 100%; margin-bottom: 8px;">Restore access</button>
-                          </form>
-                        {% else %}
-                          <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'block' %}" onsubmit="return confirm('Block this user?');" style="margin-bottom: 8px;">
-                            {% csrf_token %}
-                            <button class="assessment-button-secondary" type="submit" style="width: 100%;">Block</button>
-                          </form>
-                          <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'remove' %}" onsubmit="return confirm('Remove this user?');" style="margin-bottom: 8px;">
-                            {% csrf_token %}
-                            <button class="assessment-button-danger" type="submit" style="width: 100%;">Remove</button>
-                          </form>
-                        {% endif %}
-                        
-                        <div style="border-top: 1px solid var(--ab-border); margin: 12px 0; padding-top: 12px;">
-                          <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'grant_attempts' %}">
-                            {% csrf_token %}
-                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--ab-text-muted);">Extra Attempts</label>
-                            <input type="number" name="extra_attempts" min="1" max="10" value="1" required style="width: 100%; margin-bottom: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--ab-border); background: var(--ab-input); color: var(--ab-text-main);">
-                            <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--ab-text-muted);">Reason</label>
-                            <input type="text" name="reason" required style="width: 100%; margin-bottom: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--ab-border); background: var(--ab-input); color: var(--ab-text-main);">
-                            <button class="assessment-button" type="submit" style="width: 100%; min-height: 28px; font-size: 12px;">Grant</button>
-                          </form>
+                    <button type="button" class="assessment-button-secondary asx-btn-sm" data-open-dialog="manage-{{ participant.pk }}"><i class="bi bi-gear"></i> Manage</button>
+                    <dialog class="asx-dialog" id="manage-{{ participant.pk }}" aria-labelledby="manage-title-{{ participant.pk }}">
+                      <div class="asx-dialog-head">
+                        <span class="asx-avatar">{{ participant.user.user_name|slice:":1"|upper }}</span>
+                        <div>
+                          <h3 id="manage-title-{{ participant.pk }}">{{ participant.user.user_name }}</h3>
+                          <small>{{ participant.user.email }} · {{ participant.attempt_count }} of {{ participant.allowed_attempts }} attempts used</small>
+                        </div>
+                        <button type="button" class="asx-close" data-close-dialog aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                      </div>
+                      <div class="asx-dialog-section">
+                        <span class="asx-dialog-label">Access</span>
+                        <div class="asx-dialog-actions">
+                          {% if participant.status == "disqualified" or participant.status == "removed" %}
+                            <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'restore' %}">
+                              {% csrf_token %}
+                              <button class="assessment-button-secondary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restore access</button>
+                            </form>
+                          {% else %}
+                            <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'block' %}" onsubmit="return confirm('Block this user?');">
+                              {% csrf_token %}
+                              <button class="assessment-button-secondary" type="submit"><i class="bi bi-slash-circle"></i> Block</button>
+                            </form>
+                            <form method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'remove' %}" onsubmit="return confirm('Remove this user?');">
+                              {% csrf_token %}
+                              <button class="assessment-button-danger" type="submit"><i class="bi bi-person-x"></i> Remove</button>
+                            </form>
+                          {% endif %}
                         </div>
                       </div>
-                    </details>
+                      <form class="asx-dialog-section" method="post" action="{% url 'assessment:assessment_participant_action' assessment.pk participant.pk 'grant_attempts' %}">
+                        {% csrf_token %}
+                        <span class="asx-dialog-label">Grant extra attempts</span>
+                        <div class="asx-dialog-grid">
+                          <label class="assessment-field"><span>Extra attempts</span><input type="number" name="extra_attempts" min="1" max="10" value="1" required></label>
+                          <label class="assessment-field"><span>Reason</span><input type="text" name="reason" required placeholder="e.g. Network outage during exam"></label>
+                        </div>
+                        <button class="assessment-button" type="submit"><i class="bi bi-plus-circle"></i> Grant</button>
+                      </form>
+                    </dialog>
                   {% endif %}
                 </td>
               </tr>
@@ -446,44 +519,38 @@
           <h2>Moderators</h2>
           <p class="assessment-muted">Moderators have full access to edit this assessment and manage questions.</p>
         </div>
+        <span class="asx-count-chip">{{ moderators|length }} moderator{{ moderators|length|pluralize }}</span>
       </div>
-      
       {% if can_manage_moderators %}
         <form class="assessment-moderator-form" method="post" action="{% url 'assessment:moderator_add' assessment.pk %}" data-search-url="{% url 'assessment:moderator_search' assessment.pk %}">
           {% csrf_token %}
           <div class="assessment-field">
-            <label>Search Username</label>
-            <input type="search" data-moderator-search placeholder="Type to search..." autocomplete="off">
+            <label for="moderator-search">Search username</label>
+            <input id="moderator-search" type="search" data-moderator-search placeholder="Type at least 2 characters..." autocomplete="off">
           </div>
           <div class="assessment-field">
-            <label>Select User</label>
-            <select name="user_id" data-moderator-results required>
+            <label for="moderator-select">Select user</label>
+            <select id="moderator-select" name="user_id" data-moderator-results required>
               <option value="">Search for a user first</option>
             </select>
           </div>
-          <button class="assessment-button" type="submit">Add Moderator</button>
+          <button class="assessment-button" type="submit"><i class="bi bi-person-plus"></i> Add Moderator</button>
+          <p class="asx-mod-status" data-moderator-status aria-live="polite">Type at least 2 characters to search.</p>
         </form>
       {% endif %}
-
       <div class="assessment-table-wrap">
         <table class="assessment-table">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Date Added</th>
-              {% if can_manage_moderators %}<th style="text-align: right;">Action</th>{% endif %}
-            </tr>
-          </thead>
+          <thead><tr><th>Username</th><th>Date Added</th>{% if can_manage_moderators %}<th class="asx-num">Action</th>{% endif %}</tr></thead>
           <tbody>
             {% for moderator in moderators %}
               <tr>
-                <td><strong>{{ moderator.user.user_name }}</strong></td>
-                <td style="color: var(--ab-text-muted);">{{ moderator.assigned_at|date:"M j, Y" }}</td>
+                <td><span class="asx-user"><span class="asx-avatar sm">{{ moderator.user.user_name|slice:":1"|upper }}</span><strong>{{ moderator.user.user_name }}</strong></span></td>
+                <td class="asx-muted-cell">{{ moderator.assigned_at|date:"M j, Y" }}</td>
                 {% if can_manage_moderators %}
-                  <td style="text-align: right;">
+                  <td class="asx-num">
                     <form method="post" action="{% url 'assessment:moderator_remove' assessment.pk moderator.user_id %}" onsubmit="return confirm('Remove this moderator?');">
                       {% csrf_token %}
-                      <button class="assessment-button-danger" type="submit" style="min-height: 30px; padding: 0 12px; font-size: 12px;">Remove</button>
+                      <button class="assessment-button-danger asx-btn-sm" type="submit">Remove</button>
                     </form>
                   </td>
                 {% endif %}
@@ -497,17 +564,20 @@
     </section>
 
   {% elif active_tab == "reports" %}
-    <section class="assessment-panel">
-      <h2>Reports</h2>
-      <p class="assessment-muted">This section is currently under development.</p>
-      <div class="assessment-empty" style="margin-top: 20px;">Advanced analytics and reporting will be available in a future update.</div>
-    </section>
+    {% include "assessment/partials/reports.html" %}
   {% endif %}
+
+  <div class="asx-toast" id="asxToast" role="status" aria-live="polite" hidden></div>
 </main>
 {% endblock %}
 
 {% block extra_js %}
   {% if active_tab == "moderators" and can_manage_moderators %}
-    <script src="{% static 'js/assessment_moderators.js' %}" defer></script>
+    <script src="{% static 'js/assessment_moderators.js' %}?v=2" defer></script>
   {% endif %}
+  {% if active_tab == "reports" %}
+    {{ report.chart_data|json_script:"report-data" }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+  {% endif %}
+  <script src="{% static 'js/assessment_detail.js' %}?v=2" defer></script>
 {% endblock %}
