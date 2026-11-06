@@ -2380,8 +2380,19 @@ def log_violation(request, assessment_slug):
 
 def _participant_drilldown(selected_participant, submission_key):
     """Per-candidate detail for the leaderboard: question breakdown and history."""
-    attempt = selected_participant["attempt"]
-    result = selected_participant["result"]
+    attempt = selected_participant.get("attempt")
+    result = selected_participant.get("result")
+    if attempt is None:
+        return {
+            "participant_history": [],
+            "participant_breakdown": [],
+            "participant_sections": [],
+            "participant_violations": 0,
+            "participant_attempts": 0,
+            "participant_percent": 0,
+            "participant_selected": None,
+            "participant_detail": None,
+        }
     coding = list(
         AssessmentSubmission.objects.filter(attempt=attempt).select_related(
             "language",
@@ -2484,7 +2495,7 @@ def _participant_drilldown(selected_participant, submission_key):
                 ],
             }
 
-    total = float(result.max_score or 0)
+    total = float(result.max_score or 0) if result else 0
     return {
         "participant_history": history,
         "participant_breakdown": breakdown,
@@ -2492,13 +2503,47 @@ def _participant_drilldown(selected_participant, submission_key):
             result.section_results.select_related("section_snapshot").order_by(
                 "section_snapshot__position"
             )
-        ),
+        ) if result else [],
         "participant_violations": attempt.violations.count(),
         "participant_attempts": attempt.participant.attempts.count(),
         "participant_percent": round(float(result.total_score) * 100 / total, 1) if total else 0,
         "participant_selected": selected,
         "participant_detail": detail,
     }
+
+
+def _signup_drilldown(assessment, participant_rows, selected_user_id, participant_tab, submission_key):
+    """The leaderboard's student panel, for any signup (ranked or not)."""
+    participant = next(
+        (p for p in participant_rows if str(p.user_id) == selected_user_id), None
+    )
+    if participant is None:
+        return {}
+    row = next(
+        (r for r in _assessment_leaderboard(assessment) if r["user"].pk == participant.user_id),
+        None,
+    )
+    if row is None:
+        attempt = participant.signup_attempts[0] if participant.signup_attempts else None
+        result = None
+        if attempt is not None:
+            result = AssessmentResult.objects.filter(attempt=attempt).first()
+        row = {
+            "user": participant.user,
+            "attempt": attempt,
+            "result": result,
+            "rank": None,
+            "time_taken": (
+                _format_duration(_attempt_duration_seconds(attempt))
+                if attempt and attempt.submitted_at
+                else "—"
+            ),
+        }
+    if participant_tab not in {"summary", "submissions"}:
+        participant_tab = "summary"
+    context = {"selected_participant": row, "participant_tab": participant_tab}
+    context.update(_participant_drilldown(row, submission_key))
+    return context
 
 
 def _assessment_detail_page(request, assessment):
@@ -2648,6 +2693,17 @@ def _assessment_detail_page(request, assessment):
                 for authorization in participant.signup_authorizations
             )
         context["participants"] = participant_rows
+        selected_user_id = request.GET.get("user", "")
+        if selected_user_id:
+            context.update(
+                _signup_drilldown(
+                    assessment,
+                    participant_rows,
+                    selected_user_id,
+                    request.GET.get("participant_tab", "summary"),
+                    request.GET.get("submission", ""),
+                )
+            )
     context.update(
         {
             "active_tab": active_tab,

@@ -985,3 +985,15 @@ b.tone-neutral, i.tone-neutral { background: var(--viz-neutral); }
     .lc-navbar, .assessment-detail-tabs, .asx-report-head .assessment-inline-actions, .asx-sheet-head .assessment-inline-actions { display: none !important; }
     .asx-sheet-wrap { max-height: none; overflow: visible; }
 }
+
+/* Signups drill-down (shares the leaderboard candidate panel) */
+.asx-signups.has-detail .asx-signups-table th:nth-child(2), .asx-signups.has-detail .asx-signups-table td:nth-child(2),
+.asx-signups.has-detail .asx-signups-table th:nth-child(5), .asx-signups.has-detail .asx-signups-table td:nth-child(5) { display: none; }
+.asx-signups.has-detail .assessment-card-head { flex-wrap: wrap; }
+.asx-signups.has-detail .asx-inline-search, .asx-signups.has-detail .asx-inline-search input { width: 100%; }
+.asx-rank-badge.is-muted { background: var(--ab-surface-3); color: var(--ab-text-muted); }
+.asx-no-result { display: grid; justify-items: center; gap: 4px; width: 150px; padding: 10px; text-align: center; color: var(--ab-text-muted); font-size: 12px; }
+.asx-no-result i { color: var(--ab-amber); font-size: 22px; }
+.asx-no-result strong { color: var(--ab-text-main); font-size: 13px; }
+.asx-signups.has-detail .asx-signups-table th, .asx-signups.has-detail .asx-signups-table td { padding-left: 14px; padding-right: 14px; }
+.asx-signups.has-detail .asx-signups-table td:last-child, .asx-signups.has-detail .asx-signups-table th:last-child { padding-right: 18px; }
