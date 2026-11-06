@@ -42,3 +42,36 @@ class LoginTests(TestCase):
 		self.assertNotIn('_auth_user_id', self.client.session)
 
 # Create your tests here.
+
+
+class AdminUserCreationTests(TestCase):
+	def setUp(self):
+		self.admin = Users.objects.create_superuser('admin@example.com', 'site_admin', 'AdminPass123!')
+		self.client.force_login(self.admin)
+
+	def test_admin_created_user_has_hashed_password_and_can_log_in(self):
+		response = self.client.post(reverse('admin:users_users_add'), {
+			'email': 'newbie@example.com',
+			'user_name': 'newbie',
+			'password1': 'Str0ngPass!42',
+			'password2': 'Str0ngPass!42',
+			'role': 'user',
+			'is_active': 'on',
+		})
+		self.assertEqual(response.status_code, 302, getattr(response, 'context', None) and response.context['adminform'].form.errors)
+		user = Users.objects.get(email='newbie@example.com')
+		self.assertNotEqual(user.password, 'Str0ngPass!42')
+		self.assertTrue(user.check_password('Str0ngPass!42'))
+
+		self.client.logout()
+		response = self.client.post(reverse('users:login'), {
+			'username_or_email': 'newbie',
+			'password': 'Str0ngPass!42',
+		})
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(str(self.client.session['_auth_user_id']), str(user.pk))
+
+	def test_admin_change_page_does_not_expose_editable_password(self):
+		response = self.client.get(reverse('admin:users_users_change', args=[self.admin.pk]))
+		self.assertEqual(response.status_code, 200)
+		self.assertNotContains(response, 'name="password"')
