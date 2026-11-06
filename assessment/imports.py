@@ -608,7 +608,7 @@ def _coding_formset_data(question, question_data):
         case_data[f"test-cases-{index}-input_data"] = row["input_data"]
         case_data[f"test-cases-{index}-expected_output"] = row["expected_output"]
         case_data[f"test-cases-{index}-is_sample"] = (
-            "on" if row["is_sample"].lower() in {"1", "true", "yes", "y"} else ""
+            "on" if _is_truthy(row["is_sample"]) else ""
         )
         case_data[f"test-cases-{index}-weight"] = row["weight"] or "1"
         case_data[f"test-cases-{index}-position"] = str(index + 1)
@@ -782,3 +782,14 @@ def import_question_candidates(
             )
         imported.append(question)
     return imported, skipped
+
+
+def _is_truthy(value):
+    """Accept 1 / 1.0 / true / yes / y / on (Excel stores a 1-or-blank column as floats)."""
+    text = str(value or "").strip().lower()
+    if text in {"true", "yes", "y", "on", "t"}:
+        return True
+    try:
+        return float(text) != 0
+    except ValueError:
+        return False

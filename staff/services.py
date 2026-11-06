@@ -23,6 +23,23 @@ def _clean(value):
     return str(value).strip()
 
 
+TRUE_WORDS = {'true', 'yes', 'y', 'on', 't'}
+
+
+def _truthy(value):
+    """Read a spreadsheet yes/no cell. Handles 1, 1.0, True, "TRUE", "yes" (Excel turns
+    a 1/blank column into floats, so a sample row arrives as 1.0, not "1")."""
+    if isinstance(value, bool):
+        return value
+    text = _clean(value).lower()
+    if text in TRUE_WORDS:
+        return True
+    try:
+        return float(text) != 0
+    except ValueError:
+        return False
+
+
 def _read_table(source, sheet_name=None):
     name = getattr(source, 'name', str(source)).lower()
     if name.endswith('.csv') and sheet_name is None:
@@ -108,7 +125,7 @@ def import_problems(source, actor=None):
                         defaults={
                             'input_data': _clean(row['input_data']).replace('\\n', '\n'),
                             'expected_output': _clean(row['expected_output']).replace('\\n', '\n'),
-                            'is_sample': _clean(row['is_sample']).lower() in {'true', '1', 'yes'},
+                            'is_sample': _truthy(row['is_sample']),
                             'explanation': _clean(row.get('explanation')) or None,
                         },
                     )

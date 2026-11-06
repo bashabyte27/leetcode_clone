@@ -12,7 +12,7 @@ python manage.py collectstatic --no-input
 python manage.py migrate
 
 # Create admin user
-python manage.py create_admin
+# python manage.py create_admin
 
 # Import problems
 python manage.py import_problems
