@@ -1,0 +1,21 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}New course | Staff | BashaByte{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">Courses / new</div>
+    <h2>Create a course</h2>
+    <p>Start with the essentials. Modules, lessons and outcomes are added on the next screen.</p>
+  </div>
+</div>
+<section class="staff-panel staff-form-panel">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "courses/builder/_course_fields.html" %}
+    <div class="form-footer">
+      <a class="staff-button secondary" href="{% url 'course_builder:course_list' %}">Cancel</a>
+      <button class="staff-button" type="submit"><i class="bi bi-check2"></i>Create course</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

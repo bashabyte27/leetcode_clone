@@ -1,0 +1,89 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}{{ lesson }} | {{ course.title }} | Staff{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">{{ course.title }} · Module {{ module.position }} · Lesson {{ lesson.position }}</div>
+    <h2>{{ lesson.title }}</h2>
+    <p>{{ lesson.summary|default:"A lesson moves through a hook, video, notes, practice and coding tasks." }}</p>
+  </div>
+  <div class="staff-actions">
+    <a class="staff-button secondary" href="{% url 'course_builder:lesson_preview' lesson.pk %}"><i class="bi bi-eye"></i>Preview as student</a>
+    <form method="post" action="{% url 'course_builder:lesson_delete' lesson.pk %}" onsubmit="return confirm('Delete this lesson and all its steps?');">
+      {% csrf_token %}<button class="staff-button danger" type="submit"><i class="bi bi-trash"></i>Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="cb-rhythm" aria-label="Lesson rhythm">
+  {% for t in step_types %}
+    <span class="cb-rhythm-step{% if t.code in present_types %} is-done{% endif %}" title="{{ t.summary }}">
+      <i class="bi bi-{{ t.icon }}"></i><span>{{ t.label }}</span>
+    </span>
+  {% endfor %}
+</div>
+
+<div class="cb-columns">
+  <div>
+    <section class="staff-panel">
+      <div class="staff-panel-head">
+        <h3>Steps <span class="cb-count">{{ steps|length }}</span></h3>
+        <span class="form-note"><i class="bi bi-grip-vertical"></i> Drag to reorder</span>
+      </div>
+      <ol class="cb-outline" data-sortable data-reorder-url="{% url 'course_builder:reorder' 'steps' lesson.pk %}">
+        {% for step in steps %}
+          <li class="cb-row" data-id="{{ step.pk }}">
+            <span class="cb-handle" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+            <span class="cb-type-icon" title="{{ step.spec.label }}"><i class="bi bi-{{ step.spec.icon }}"></i></span>
+            <a class="cb-row-main" href="{% url 'course_builder:step' step.pk %}">
+              <b>{{ step.title }}</b>
+              <small>{{ step.spec.label }}{% if not step.required %} · Optional{% endif %}</small>
+            </a>
+            <span class="cb-meta">
+              {% if step.problems %}
+                <span class="cb-pill is-warn" title="{{ step.problems|join:' ' }}"><i class="bi bi-exclamation-circle"></i>{{ step.problems|length }} to finish</span>
+              {% else %}
+                <span class="cb-pill is-ok"><i class="bi bi-check2"></i>Ready</span>
+              {% endif %}
+            </span>
+            <a class="icon-link" href="{% url 'course_builder:step' step.pk %}" aria-label="Edit step {{ step.position }}"><i class="bi bi-pencil"></i></a>
+          </li>
+        {% empty %}
+          <li class="cb-empty">No steps yet. Pick a step type below. Most lessons follow the rhythm above, left to right.</li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <section class="staff-panel">
+      <div class="staff-panel-head"><h3>Add a step</h3></div>
+      <div class="cb-type-grid">
+        {% for t in step_types %}
+          <form method="post" action="{% url 'course_builder:step_create' lesson.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="step_type" value="{{ t.code }}">
+            <button type="submit" class="cb-type-card">
+              <i class="bi bi-{{ t.icon }}"></i>
+              <b>{{ t.label }}</b>
+              <small>{{ t.summary }}</small>
+            </button>
+          </form>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <aside>
+    <section class="staff-panel staff-form-panel">
+      <h3 class="cb-side-title">Lesson settings</h3>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "courses/builder/_field.html" with field=form.title %}
+        {% include "courses/builder/_field.html" with field=form.summary %}
+        {% include "courses/builder/_field.html" with field=form.est_minutes %}
+        {% include "courses/builder/_field.html" with field=form.is_free_preview %}
+        <div class="form-footer"><button class="staff-button" type="submit"><i class="bi bi-check2"></i>Save lesson</button></div>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

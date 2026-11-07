@@ -186,3 +186,9 @@ JUDGE0_TIMEOUT = int(os.getenv('JUDGE0_TIMEOUT', '10'))  # seconds
 import sys as _sys
 JUDGE_ASYNC = os.getenv("JUDGE_ASYNC", "True") == "True" and "test" not in _sys.argv[1:2]
 JUDGE_WORKERS = int(os.getenv("JUDGE_WORKERS", "4"))
+
+# ── Courses ────────────────────────────────────────────────────────
+# Premium gating can be switched off for college pilots; catalog and
+# syllabus pages are cached for COURSES_CACHE_SECONDS (0 disables).
+COURSES_PREMIUM_GATING = os.getenv("COURSES_PREMIUM_GATING", "True") == "True"
+COURSES_CACHE_SECONDS = int(os.getenv("COURSES_CACHE_SECONDS", "300"))

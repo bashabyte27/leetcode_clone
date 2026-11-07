@@ -1,0 +1,96 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}{{ module }} | {{ course.title }} | Staff{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">{{ course.title }} · Module {{ module.position }}</div>
+    <h2>{{ module.title }}</h2>
+    <p>{{ module.summary|default:"Add a one-line summary in module settings." }}</p>
+  </div>
+  <div class="staff-actions">
+    <form method="post" action="{% url 'course_builder:module_delete' module.pk %}" onsubmit="return confirm('Delete this module, its lessons and steps? This cannot be undone.');">
+      {% csrf_token %}<button class="staff-button danger" type="submit"><i class="bi bi-trash"></i>Delete module</button>
+    </form>
+  </div>
+</div>
+
+<div class="cb-columns">
+  <div>
+    <section class="staff-panel">
+      <div class="staff-panel-head">
+        <h3>Lessons <span class="cb-count{% if lessons|length != lesson_target %} is-warn{% endif %}">{{ lessons|length }} / {{ lesson_target }}</span></h3>
+        <span class="form-note"><i class="bi bi-grip-vertical"></i> Drag to reorder</span>
+      </div>
+      <ol class="cb-outline" data-sortable data-reorder-url="{% url 'course_builder:reorder' 'lessons' module.pk %}">
+        {% for lesson in lessons %}
+          <li class="cb-row" data-id="{{ lesson.pk }}">
+            <span class="cb-handle" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+            <span class="cb-index">L{{ lesson.position }}</span>
+            <a class="cb-row-main" href="{% url 'course_builder:lesson' lesson.pk %}">
+              <b>{{ lesson.title }}</b>
+              <small>{{ lesson.est_minutes }} min{% if lesson.is_free_preview %} · Free preview{% endif %}</small>
+            </a>
+            <span class="cb-meta"><span class="cb-pill{% if not lesson.step_count %} is-warn{% endif %}">{{ lesson.step_count }} step{{ lesson.step_count|pluralize }}</span></span>
+            <a class="icon-link" href="{% url 'course_builder:lesson' lesson.pk %}" aria-label="Open lesson {{ lesson.position }}"><i class="bi bi-chevron-right"></i></a>
+          </li>
+        {% empty %}
+          <li class="cb-empty">No lessons yet. Modules are designed for {{ lesson_target }} lessons.</li>
+        {% endfor %}
+      </ol>
+      <form class="cb-quick-add" method="post" action="{% url 'course_builder:lesson_create' module.pk %}">
+        {% csrf_token %}
+        <label class="visually-hidden" for="new-lesson">New lesson title</label>
+        <input id="new-lesson" name="title" placeholder="New lesson title" required maxlength="200">
+        <button class="staff-button secondary" type="submit"><i class="bi bi-plus-lg"></i>Add lesson</button>
+      </form>
+    </section>
+
+    <section class="staff-panel" id="outcomes">
+      <div class="staff-panel-head">
+        <h3>Learning outcomes <span class="cb-count">{{ outcomes|length }}</span></h3>
+        <span class="form-note">Every quiz question and coding task is tagged to one of these.</span>
+      </div>
+      <ul class="cb-outcomes">
+        {% for outcome in outcomes %}
+          <li>
+            <code>{{ outcome.code }}</code>
+            <span>{{ outcome.text }}<small>{% if outcome.lesson %}L{{ outcome.lesson.position }} · {{ outcome.lesson.title }}{% else %}Whole module{% endif %}</small></span>
+            <form method="post" action="{% url 'course_builder:outcome_delete' outcome.pk %}" onsubmit="return confirm('Remove this outcome? Items tagged with it become untagged.');">
+              {% csrf_token %}<button class="icon-link danger" type="submit" aria-label="Remove outcome {{ outcome.code }}"><i class="bi bi-x-lg"></i></button>
+            </form>
+          </li>
+        {% empty %}
+          <li class="cb-empty">No outcomes yet.</li>
+        {% endfor %}
+      </ul>
+      <form class="cb-outcome-form staff-form-panel" method="post" action="{% url 'course_builder:outcome_create' module.pk %}">
+        {% csrf_token %}
+        <div class="cb-outcome-grid">
+          {% include "courses/builder/_field.html" with field=outcome_form.code %}
+          {% include "courses/builder/_field.html" with field=outcome_form.lesson %}
+          {% include "courses/builder/_field.html" with field=outcome_form.text wide=True %}
+        </div>
+        <div class="form-footer"><button class="staff-button secondary" type="submit"><i class="bi bi-plus-lg"></i>Add outcome</button></div>
+      </form>
+    </section>
+  </div>
+
+  <aside>
+    <section class="staff-panel staff-form-panel">
+      <h3 class="cb-side-title">Module settings</h3>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "courses/builder/_field.html" with field=form.title %}
+        {% include "courses/builder/_field.html" with field=form.summary %}
+        <div class="cb-inline-pair">
+          {% include "courses/builder/_field.html" with field=form.video_provider %}
+          {% include "courses/builder/_field.html" with field=form.video_id %}
+        </div>
+        {% include "courses/builder/_field.html" with field=form.mini_project_brief %}
+        {% include "courses/builder/_field.html" with field=form.is_free_preview %}
+        <div class="form-footer"><button class="staff-button" type="submit"><i class="bi bi-check2"></i>Save module</button></div>
+      </form>
+    </section>
+  </aside>
+</div>
+{% endblock %}

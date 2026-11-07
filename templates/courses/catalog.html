@@ -1,0 +1,74 @@
+{% extends "courses/_layout.html" %}
+{% load course_tags %}
+{% block title %}Courses · BashaByte{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{% url 'courses:catalog' %}" />{% endblock %}
+
+{% block content %}
+<header class="shell cx-head">
+  <span class="kicker">Courses</span>
+  <h1 class="cx-title">Learn to code, one clear lesson at a time.</h1>
+  <p class="cx-lede">Every lesson moves the same way: a short video, notes worth keeping, questions that check you understood, and real coding tasks to finish it off.</p>
+  {% if data.course_count %}
+    <p class="cx-head-meta">{{ data.course_count }} course{{ data.course_count|pluralize }} · start free</p>
+  {% endif %}
+</header>
+
+{% if data.paths %}
+<nav class="shell cx-paths" aria-label="Career paths">
+  <span class="mono-label">I want to go into</span>
+  <ul>
+    <li><a href="{% url 'courses:catalog' %}" class="cx-chip{% if not path %} is-on{% endif %}"{% if not path %} aria-current="true"{% endif %}>Everything</a></li>
+    {% for p in data.paths %}
+      <li><a href="?path={{ p.slug }}" class="cx-chip{% if path.slug == p.slug %} is-on{% endif %}"{% if path.slug == p.slug %} aria-current="true"{% endif %}>{{ p.goal_label }}</a></li>
+    {% endfor %}
+  </ul>
+  {% if path %}
+    <p class="cx-path-note"><b>{{ path.title }}.</b> {% if path.description %}{{ path.description }} {% endif %}Take these in order: {% for c in path.courses %}<a href="{% url 'courses:course' c.slug %}">{{ c.title }}</a>{% if not forloop.last %} → {% endif %}{% endfor %}.</p>
+  {% endif %}
+</nav>
+{% endif %}
+
+<div class="shell cx-catalog">
+  {% for category in data.categories %}
+    <section class="cx-cat" aria-labelledby="cat-{{ category.slug }}">
+      <div class="cx-cat-head">
+        <h2 id="cat-{{ category.slug }}">{{ category.title }}</h2>
+        {% if category.description %}<p>{{ category.description }}</p>{% endif %}
+      </div>
+      <ol class="cx-list">
+        {% for course in category.courses %}
+          <li class="{% if path and course.slug not in in_path %}is-dim{% endif %}">
+            <a class="cx-item" href="{{ course.url }}">
+              <span class="cx-item-no" aria-hidden="true">{% if path and course.slug in in_path %}{{ in_path|get_item:course.slug|two_digits }}{% else %}{{ forloop.counter|two_digits }}{% endif %}</span>
+              <span class="cx-item-body">
+                <span class="cx-item-title">{{ course.title }}</span>
+                {% if course.subtitle %}<span class="cx-item-sub">{{ course.subtitle }}</span>{% endif %}
+                <span class="cx-item-meta">
+                  <span>{{ course.level }}</span>
+                  <span>{{ course.est_weeks }} week{{ course.est_weeks|pluralize }}</span>
+                  {% if course.module_count %}<span>{{ course.module_count }} module{{ course.module_count|pluralize }}</span>{% endif %}
+                  <span>{{ course.lesson_count }} lesson{{ course.lesson_count|pluralize }}</span>
+                </span>
+              </span>
+              <span class="cx-item-tags">
+                {% if course.is_draft %}<span class="cx-tag is-draft">Draft</span>{% endif %}
+                {% if course.slug in enrolled %}<span class="cx-tag is-on">Enrolled</span>
+                {% elif course.access == 'premium' %}<span class="cx-tag">Premium</span>
+                {% else %}<span class="cx-tag is-free">Free</span>{% endif %}
+              </span>
+              <i class="bi bi-arrow-right cx-item-go" aria-hidden="true"></i>
+            </a>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% empty %}
+    <section class="cx-empty">
+      <i class="bi bi-journal-code" aria-hidden="true"></i>
+      <h2>Courses are on their way</h2>
+      <p>We're writing them lesson by lesson. Meanwhile, sharpen up on the problem set.</p>
+      <a class="btn btn-ghost" href="{% url 'problems:problem_list' %}">Browse problems <i class="bi bi-arrow-right"></i></a>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

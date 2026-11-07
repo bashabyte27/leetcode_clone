@@ -1,0 +1,42 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}Courses | Staff | BashaByte{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">Learning</div>
+    <h2>Courses</h2>
+    <p>Build courses as modules, lessons and steps. Nothing is visible to students until a course is published.</p>
+  </div>
+  <div class="staff-actions">
+    <a class="staff-button secondary" href="{% url 'course_builder:sheet_import' %}"><i class="bi bi-file-earmark-spreadsheet"></i>Import from sheet</a>
+    <a class="staff-button" href="{% url 'course_builder:course_create' %}"><i class="bi bi-plus-lg"></i>New course</a>
+  </div>
+</div>
+
+<section class="staff-panel">
+  <div class="staff-panel-head"><h3>{{ courses|length }} course{{ courses|length|pluralize }}</h3></div>
+  <div class="staff-table-wrap">
+    <table class="staff-table">
+      <thead><tr><th>Course</th><th>Category</th><th>Level</th><th class="cb-num">Modules</th><th class="cb-num">Lessons</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for course in courses %}
+          <tr>
+            <td>
+              <a class="staff-identity" href="{% url 'course_builder:course' course.pk %}">
+                <span><b>{{ course.title }}</b><small>{{ course.slug }} · v{{ course.version }}{% if course.access == 'premium' %} · Premium{% endif %}</small></span>
+              </a>
+            </td>
+            <td>{{ course.category.title }}</td>
+            <td>{{ course.get_level_display }}</td>
+            <td class="cb-num">{{ course.module_count }}</td>
+            <td class="cb-num">{{ course.lesson_count }}</td>
+            <td>{% include "courses/builder/_status.html" %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="staff-empty">No courses yet. Create one, or run <code>python manage.py seed_core_python</code>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

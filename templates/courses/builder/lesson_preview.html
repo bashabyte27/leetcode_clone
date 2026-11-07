@@ -1,0 +1,77 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}Preview · {{ lesson.title }} | Staff{% endblock %}
+{% block builder %}
+<div class="cb-preview-banner">
+  <i class="bi bi-eye"></i> Student preview. Read-only; answers aren't checked here. The interactive player arrives in Phase 3.
+  <a class="staff-link" href="{% url 'course_builder:lesson' lesson.pk %}">Back to editor</a>
+</div>
+
+<article class="cb-preview">
+  <header class="cb-preview-head">
+    <div class="staff-eyebrow">{{ course.title }} · Module {{ module.position }}: {{ module.title }}</div>
+    <h1>{{ lesson.title }}</h1>
+    <p>{{ lesson.est_minutes }} min · {{ steps|length }} step{{ steps|length|pluralize }}</p>
+  </header>
+
+  {% for step in steps %}
+  <section class="cb-pv-step" id="step-{{ step.pk }}">
+    <div class="cb-pv-label"><span class="cb-type-icon"><i class="bi bi-{{ step.spec.icon }}"></i></span>{{ step.position }} · {{ step.spec.label }}{% if not step.required %} · optional{% endif %}</div>
+    <h2>{{ step.title }}</h2>
+
+    {% if step.step_type == 'VIDEO' %}
+      {% if step.content.video_id %}
+        <div class="cb-pv-video">
+          {% if step.content.provider == 'youtube' %}
+            <iframe src="https://www.youtube-nocookie.com/embed/{{ step.content.video_id|urlencode }}" title="{{ step.title }}" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+          {% else %}
+            <div class="cb-pv-placeholder"><i class="bi bi-camera-video"></i> Bunny Stream video {{ step.content.video_id }} (embedded in the player)</div>
+          {% endif %}
+        </div>
+      {% else %}<div class="cb-pv-placeholder"><i class="bi bi-camera-video-off"></i> No video id yet</div>{% endif %}
+      {% if step.chapter_rows %}<ol class="cb-pv-chapters">{% for stamp, title in step.chapter_rows %}<li><code>{{ stamp }}</code> {{ title }}</li>{% endfor %}</ol>{% endif %}
+      {% if step.content.script %}<details class="cb-pv-hints"><summary>Production script (staff only)</summary><pre class="cb-pv-script">{{ step.content.script }}</pre></details>{% endif %}
+
+    {% elif step.step_type == 'TEXT' %}
+      <div class="cb-prose">{{ step.html|safe }}</div>
+      {% for kind, html in step.callout_html %}<div class="cb-callout is-{{ kind }}"><b>{% if kind == 'mistake' %}Common mistakes{% elif kind == 'tip' %}Tip{% else %}Note{% endif %}</b>{{ html|safe }}</div>{% endfor %}
+
+    {% elif step.step_type == 'PLAYGROUND' %}
+      {% if step.content.instructions %}<p>{{ step.content.instructions }}</p>{% endif %}
+      <pre class="cb-pv-code"><code>{{ step.content.starter_code }}</code></pre>
+      <p class="hint">Runs in the compiler in the student player ({{ step.content.language }}).</p>
+
+    {% elif step.step_type == 'PARSONS' %}
+      {% if step.content.instructions %}<p>{{ step.content.instructions }}</p>{% endif %}
+      <ul class="cb-pv-parsons">
+        {% for line in step.parsons_lines %}<li{% if line.distractor %} class="is-distractor"{% endif %} style="--indent: {{ line.indent }}"><code>{{ line.text }}</code>{% if line.distractor %}<small>distractor</small>{% endif %}</li>{% endfor %}
+      </ul>
+      <p class="hint">Shown in the correct order here; students get them shuffled{% if not step.content.use_indentation %} (order only, no indentation){% endif %}.</p>
+      {% if step.content.explanation %}<div class="cb-callout is-tip"><b>After solving</b><p>{{ step.content.explanation }}</p></div>{% endif %}
+
+    {% elif step.spec.uses_mcqs %}
+      {% if step.content.intro %}<p>{{ step.content.intro }}</p>{% endif %}
+      {% for sq, statement_html in step.mcq_items %}
+        <div class="cb-pv-mcq">
+          <div class="cb-pv-mcq-q"><span>Q{{ sq.position }}</span><div class="cb-prose">{{ statement_html|safe }}</div></div>
+          {% if sq.mcq.code_snippet %}<pre class="cb-pv-code"><code>{{ sq.mcq.code_snippet }}</code></pre>{% endif %}
+          <ul>{% for opt in sq.mcq.options.all %}<li class="{% if opt.is_correct %}is-correct{% endif %}">{{ opt.text }}{% if opt.explanation %}<small>{{ opt.explanation }}</small>{% endif %}</li>{% endfor %}</ul>
+          {% if sq.mcq.explanation %}<p class="cb-pv-explain"><b>Why:</b> {{ sq.mcq.explanation }}</p>{% endif %}
+        </div>
+      {% empty %}<div class="cb-pv-placeholder">No questions attached yet</div>{% endfor %}
+      {% if step.step_type == 'QUIZ' %}<p class="hint">{% if step.content.pass_percent %}Pass mark {{ step.content.pass_percent }}%.{% else %}Practice only; doesn't count toward completion.{% endif %}</p>{% endif %}
+
+    {% elif step.spec.uses_coding_question %}
+      {% if step.content.instructions %}<p>{{ step.content.instructions }}</p>{% endif %}
+      {% if step.coding_question %}
+        <div class="cb-pv-task"><b>{{ step.coding_question.title }}</b><div class="cb-prose">{{ step.statement_html|safe }}</div>
+          {% for language, code in step.code_variants %}{% if code %}<div class="cb-pv-code-label">{% if step.step_type == 'FIX_BUG' %}Buggy program{% else %}Starter code{% endif %} · {{ language }}</div><pre class="cb-pv-code"><code>{{ code }}</code></pre>{% endif %}{% endfor %}
+        </div>
+      {% else %}<div class="cb-pv-placeholder">No coding question attached yet</div>{% endif %}
+      {% if step.hints.all %}<details class="cb-pv-hints"><summary>{{ step.hints.all|length }} hint{{ step.hints.all|length|pluralize }}</summary><ol>{% for h in step.hints.all %}<li>{{ h.text }}</li>{% endfor %}</ol></details>{% endif %}
+    {% endif %}
+  </section>
+  {% empty %}
+    <div class="cb-pv-placeholder">This lesson has no steps yet.</div>
+  {% endfor %}
+</article>
+{% endblock %}

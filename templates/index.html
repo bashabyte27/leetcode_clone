@@ -33,61 +33,7 @@
     <a class="skip-link" href="#main">Skip to content</a>
 
     <!-- ═══════════════ NAV ═══════════════ -->
-    <header class="nav" id="nav">
-      <div class="shell nav-inner">
-        <a class="brand" href="{% url 'home' %}" aria-label="BashaByte home">
-          <img src="{% static 'images/logo.png' %}" alt="" width="28" height="28" />
-          <span>Basha<b>Byte</b></span>
-        </a>
-
-        {% if user.is_authenticated %}
-        <nav class="nav-links" id="navLinks" aria-label="Primary">
-          <a href="{% url 'problems:problem_list' %}">Problems</a>
-          <a href="#platform">Platform</a>
-          <a href="#tracks">Tracks</a>
-          <a href="#faculty">For faculty</a>
-          <a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a>
-
-          <div class="nav-mobile-actions">
-            {% if user.is_authenticated %}
-              {% if is_faculty %}<a href="{% url 'assessment:dashboard' %}">Assessments</a>{% endif %}
-              <a href="{% url 'users:profile' user.user_name %}">Your profile</a>
-              <a href="{% url 'users:logout' %}">Log out</a>
-            {% else %}
-              <a href="{% url 'users:login' %}">Log in</a>
-            {% endif %}
-          </div>
-        </nav>
-        {% endif %}
-
-        <div class="nav-actions">
-          <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch theme">
-            <i class="bi bi-sun" id="themeIcon"></i>
-          </button>
-          {% if user.is_authenticated %}
-            {% if is_faculty %}
-              <a href="{% url 'assessment:dashboard' %}" class="nav-text hide-sm">Assessments</a>
-            {% endif %}
-            <a href="{% url 'users:profile' user.user_name %}" class="avatar hide-sm" title="{{ user.user_name }}">
-              {{ user.user_name|first|upper }}
-            </a>
-            <a href="{% url 'problems:problem_list' %}" class="btn btn-primary btn-sm">
-              Continue <i class="bi bi-arrow-right"></i>
-            </a>
-          {% else %}
-            <a href="{% url 'users:login' %}" class="nav-text">Log in</a>
-            <a href="{% url 'users:register' %}" class="btn btn-primary btn-sm">
-              Start free <i class="bi bi-arrow-right"></i>
-            </a>
-          {% endif %}
-          {% if user.is_authenticated %}
-          <button class="icon-btn nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
-            <i class="bi bi-list"></i>
-          </button>
-          {% endif %}
-        </div>
-      </div>
-    </header>
+    {% include "partials/site_nav.html" with home_page=True %}
 
     <main id="main">
       <!-- ═══════════════ HERO ═══════════════ -->
@@ -493,49 +439,7 @@
     </main>
 
     <!-- ═══════════════ FOOTER ═══════════════ -->
-    <footer class="footer">
-      <div class="shell footer-inner">
-        <div class="footer-brand">
-          <a class="brand" href="{% url 'home' %}">
-            <img src="{% static 'images/logo.png' %}" alt="" width="24" height="24" />
-            <span>Basha<b>Byte</b></span>
-          </a>
-          <p>The coding workspace for students who practice and faculty who assess.</p>
-        </div>
-        <div class="footer-cols">
-          <div>
-            <span class="mono-label">Practice</span>
-            <a href="{% url 'problems:problem_list' %}">Problems</a>
-            <a href="{% url 'problems:shuffle_problem' %}">Random problem</a>
-            <a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a>
-          </div>
-          <div>
-            <span class="mono-label">Learn</span>
-            <a href="#platform">Platform</a>
-            <a href="#tracks">Learning tracks</a>
-          </div>
-          <div>
-            <span class="mono-label">Faculty</span>
-            <a href="#faculty">Assessments</a>
-            {% if is_faculty %}<a href="{% url 'assessment:dashboard' %}">Dashboard</a>{% endif %}
-          </div>
-          <div>
-            <span class="mono-label">Account</span>
-            {% if user.is_authenticated %}
-              <a href="{% url 'users:profile' user.user_name %}">Profile</a>
-              <a href="{% url 'users:logout' %}">Log out</a>
-            {% else %}
-              <a href="{% url 'users:login' %}">Log in</a>
-              <a href="{% url 'users:register' %}">Register</a>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="shell footer-bottom">
-        <span>© {% now "Y" %} BashaByte. All rights reserved.</span>
-        <span class="mono-label">Made for the next commit</span>
-      </div>
-    </footer>
+    {% include "partials/site_footer.html" %}
 
     <script src="{% static 'js/home.js' %}?v=3" defer></script>
   </body>

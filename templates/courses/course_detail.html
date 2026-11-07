@@ -1,0 +1,158 @@
+{% extends "courses/_layout.html" %}
+{% load course_tags %}
+{% block title %}{{ course.title }} · BashaByte Courses{% endblock %}
+{% block description %}{{ meta_description }}{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ canonical }}" />{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ course.title }} · BashaByte{% endblock %}
+{% block og_description %}{{ meta_description }}{% endblock %}
+{% block body_class %}has-mbar{% endblock %}
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "{{ course.title|escapejs }}",
+  "description": "{{ meta_description|escapejs }}",
+  "url": "{{ canonical|escapejs }}",
+  "educationalLevel": "{{ course.get_level_display|escapejs }}",
+  "isAccessibleForFree": {% if course.access == 'free' %}true{% else %}false{% endif %},
+  "provider": {"@type": "Organization", "name": "BashaByte"},
+  "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "online", "courseWorkload": "PT{{ stats.hours }}H"}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+{% if not course.is_published %}
+  <div class="cx-draft" role="note">
+    <div class="shell">
+      <i class="bi bi-eye-slash" aria-hidden="true"></i>
+      <span><b>Draft.</b> Only staff can see this page. Students see it once the course is published.</span>
+      <a href="{% url 'course_builder:course_publish' course.pk %}">Open publishing checks <i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+{% endif %}
+
+<header class="shell cx-hero">
+  <nav class="cx-crumbs" aria-label="Breadcrumb">
+    <ol><li><a href="{% url 'courses:catalog' %}">Courses</a></li><li aria-current="page">{{ course.category.title }}</li></ol>
+  </nav>
+  <p class="cx-eyebrow"><span>{{ course.category.title }}</span><span>{{ course.get_level_display }}</span><span>Version {{ course.version }}</span></p>
+  <h1 class="cx-title">{{ course.title }}</h1>
+  {% if course.subtitle %}<p class="cx-lede">{{ course.subtitle }}</p>{% endif %}
+  <dl class="cx-facts">
+    <div><dt>Duration</dt><dd>{{ course.est_weeks }} week{{ course.est_weeks|pluralize }}</dd></div>
+    <div><dt>Lessons</dt><dd>{{ stats.lessons }}</dd></div>
+    <div><dt>Study time</dt><dd>{{ stats.minutes|duration }}</dd></div>
+    <div><dt>Price</dt><dd>{% if course.access == 'free' %}Free{% else %}Premium{% endif %}</dd></div>
+  </dl>
+</header>
+
+<div class="shell cx-layout">
+  <div class="cx-col">
+    {% if course.description %}
+    <section class="cx-section" aria-labelledby="about">
+      <h2 id="about" class="cx-h2">About this course</h2>
+      <div class="cx-prose">{{ course.description|linebreaks }}</div>
+    </section>
+    {% endif %}
+
+    {% if data.outcomes %}
+    <section class="cx-section" aria-labelledby="outcomes">
+      <h2 id="outcomes" class="cx-h2">What you'll be able to do</h2>
+      <ol class="cx-outcomes">
+        {% for o in data.outcomes %}
+          <li><span class="cx-outcome-no" aria-hidden="true">{{ forloop.counter|two_digits }}</span><div><b>{{ o.title|default:o.code }}</b><p>{{ o.text }}</p></div></li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endif %}
+
+    <section class="cx-section" aria-labelledby="syllabus" id="syllabus-section">
+      <div class="cx-section-head">
+        <div>
+          <h2 id="syllabus" class="cx-h2">Syllabus</h2>
+          <p class="cx-section-sub">{% if stats.modules %}{{ stats.modules }} module{{ stats.modules|pluralize }}{% for m in data.modules %}{% if m.is_introduction %} and an introduction{% endif %}{% endfor %} · {% endif %}{{ stats.lessons }} lesson{{ stats.lessons|pluralize }} · {{ stats.minutes|duration }}</p>
+        </div>
+        {% if data.modules|length > 1 %}<button class="cx-textbtn" type="button" data-syllabus-toggle aria-controls="syllabus-list">Expand all</button>{% endif %}
+      </div>
+
+      {% if data.modules %}
+      <ol class="cx-syllabus" id="syllabus-list">
+        {% for m in data.modules %}
+          <li class="cx-mod" id="module-{{ m.pk }}">
+            <details{% if m.pk == open_module %} open{% endif %}>
+              <summary>
+                <span class="cx-mod-no" aria-hidden="true">{{ m.position|two_digits }}</span>
+                <span class="cx-mod-body">
+                  <span class="cx-mod-label">{{ m.label }}</span>
+                  <span class="cx-mod-title">{{ m.title }}</span>
+                  {% if m.summary %}<span class="cx-mod-sum">{{ m.summary }}</span>{% endif %}
+                </span>
+                <span class="cx-mod-meta">{{ m.lessons|length }} lesson{{ m.lessons|length|pluralize }}<span aria-hidden="true"> · </span>{{ m.minutes|duration }}</span>
+                <i class="bi bi-chevron-down cx-mod-chev" aria-hidden="true"></i>
+              </summary>
+              <ol class="cx-lessons">
+                {% for l in m.lessons %}
+                  <li id="lesson-{{ l.pk }}" class="cx-lesson{% if l.pk == continue_pk %} is-current{% endif %}">
+                    <span class="cx-lesson-no">{{ l.number }}</span>
+                    <span class="cx-lesson-body">
+                      {% if l.preview %}<a class="cx-lesson-title" href="{{ l.preview_url }}">{{ l.title }}</a>{% else %}<span class="cx-lesson-title">{{ l.title }}</span>{% endif %}
+                      {% if l.summary %}<span class="cx-lesson-sum">{{ l.summary }}</span>{% endif %}
+                    </span>
+                    <span class="cx-lesson-side">
+                      {% if l.pk == continue_pk %}<span class="cx-tag is-on">Up next</span>{% endif %}
+                      {% if l.preview %}<a class="cx-tag is-free" href="{{ l.preview_url }}" aria-label="Preview lesson {{ l.number }}">Preview</a>{% endif %}
+                      <span class="cx-lesson-min">{{ l.est_minutes }} min</span>
+                    </span>
+                  </li>
+                {% endfor %}
+              </ol>
+              {% if m.has_project %}<p class="cx-mod-project"><i class="bi bi-tools" aria-hidden="true"></i> Ends with a hands-on mini-project</p>{% endif %}
+            </details>
+          </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+        <p class="cx-muted">The syllabus is being written.</p>
+      {% endif %}
+    </section>
+
+    {% if course.capstone_brief %}
+    <section class="cx-section" aria-labelledby="capstone">
+      <h2 id="capstone" class="cx-h2">Capstone project</h2>
+      <div class="cx-prose">{{ course.capstone_brief|linebreaks }}</div>
+    </section>
+    {% endif %}
+
+    <section class="cx-section" aria-labelledby="before">
+      <h2 id="before" class="cx-h2">Before you start</h2>
+      {% if data.prerequisites %}
+        <p class="cx-muted">Finish these first:</p>
+        <ul class="cx-prereqs">{% for p in data.prerequisites %}<li><a href="{{ p.url }}">{{ p.title }} <i class="bi bi-arrow-right" aria-hidden="true"></i></a></li>{% endfor %}</ul>
+      {% else %}
+        <p class="cx-muted">No prior experience needed.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="cx-aside" aria-label="Enroll">
+    <div class="cx-card">
+      {% include "courses/_enroll_actions.html" %}
+      <dl class="cx-includes">
+        {% if stats.videos %}<div><dt><i class="bi bi-play-circle" aria-hidden="true"></i>Concept videos</dt><dd>{{ stats.videos }}</dd></div>{% endif %}
+        {% if stats.coding %}<div><dt><i class="bi bi-code-slash" aria-hidden="true"></i>Coding tasks</dt><dd>{{ stats.coding }}</dd></div>{% endif %}
+        {% if stats.mcqs %}<div><dt><i class="bi bi-ui-checks" aria-hidden="true"></i>Practice questions</dt><dd>{{ stats.mcqs }}</dd></div>{% endif %}
+        {% if stats.parsons %}<div><dt><i class="bi bi-list-ol" aria-hidden="true"></i>Code puzzles</dt><dd>{{ stats.parsons }}</dd></div>{% endif %}
+        <div><dt><i class="bi bi-clock" aria-hidden="true"></i>Study time</dt><dd>{{ stats.minutes|duration }}</dd></div>
+      </dl>
+    </div>
+  </aside>
+</div>
+
+<div class="cx-mbar" aria-label="Enroll">
+  <div class="cx-mbar-price"><b>{% if course.access == 'free' %}Free{% else %}Premium{% endif %}</b><span>{{ stats.lessons }} lessons · {{ stats.minutes|duration }}</span></div>
+  {% include "courses/_enroll_actions.html" with compact=True %}
+</div>
+{% endblock %}

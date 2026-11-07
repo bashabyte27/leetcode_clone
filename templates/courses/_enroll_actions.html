@@ -1,0 +1,28 @@
+{% comment %}Enroll / continue actions, shared by the sticky card and the phone bottom bar. `compact` = bottom bar.{% endcomment %}
+{% if not compact %}
+  <p class="cx-card-price">{% if course.access == 'free' %}Free{% else %}Premium{% endif %}</p>
+  <p class="cx-card-note">
+    {% if enrollment %}Enrolled {{ enrollment.started_at|date:"j M Y" }}.
+    {% elif course.access == 'free' %}Everything in this course is free.
+    {% elif premium_locked %}The introduction and first module are free. Premium unlocks the rest.
+    {% else %}Included with your Premium plan.{% endif %}
+  </p>
+{% endif %}
+<div class="cx-actions{% if compact %} is-compact{% endif %}">
+  {% if enrollment %}
+    <a class="btn btn-primary{% if not compact %} btn-lg{% endif %}" href="#lesson-{{ continue_pk }}" data-continue>Continue <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+  {% elif user.is_authenticated %}
+    <form method="post" action="{% url 'courses:enroll' course.slug %}">
+      {% csrf_token %}
+      <button class="btn btn-orange{% if not compact %} btn-lg{% endif %}" type="submit">{% if course.access == 'free' %}Enroll for free{% else %}Enroll{% endif %}</button>
+    </form>
+  {% else %}
+    <a class="btn btn-orange{% if not compact %} btn-lg{% endif %}" href="{% url 'users:login' %}?next={{ request.path|urlencode }}">Log in to enroll</a>
+  {% endif %}
+  {% if not compact and data.first_preview %}
+    <a class="btn btn-ghost" href="{{ data.first_preview.preview_url }}">Preview a free lesson</a>
+  {% endif %}
+</div>
+{% if not compact and not user.is_authenticated %}
+  <p class="cx-card-fine">New here? <a href="{% url 'users:register' %}">Create a free account</a> in a minute.</p>
+{% endif %}

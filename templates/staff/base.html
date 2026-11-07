@@ -6,7 +6,8 @@
 <ul class="navbar-nav me-auto gap-1 align-items-lg-center">
   <li class="nav-item"><a class="nav-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}" href="{% url 'staff:dashboard' %}">Staff desk</a></li>
   <li class="nav-item"><a class="nav-link{% if 'user' in request.resolver_match.url_name %} active{% endif %}" href="{% url 'staff:user_list' %}">Users</a></li>
-  <li class="nav-item"><a class="nav-link{% if 'problem' in request.resolver_match.url_name %} active{% endif %}" href="{% url 'staff:problem_list' %}">Problems</a></li>
+  <li class="nav-item"><a class="nav-link{% if 'problem' in request.resolver_match.url_name and request.resolver_match.namespace == 'staff' %} active{% endif %}" href="{% url 'staff:problem_list' %}">Problems</a></li>
+  <li class="nav-item"><a class="nav-link{% if request.resolver_match.namespace == 'course_builder' %} active{% endif %}" href="{% url 'course_builder:course_list' %}">Courses</a></li>
 </ul>
 {% endblock %}
 {% block content %}
@@ -26,8 +27,11 @@
       <a href="{% url 'staff:user_list' %}" class="{% if 'user' in request.resolver_match.url_name %}is-active{% endif %}">
         <i class="bi bi-people"></i><span>Users</span>
       </a>
-      <a href="{% url 'staff:problem_list' %}" class="{% if 'problem' in request.resolver_match.url_name %}is-active{% endif %}">
+      <a href="{% url 'staff:problem_list' %}" class="{% if 'problem' in request.resolver_match.url_name and request.resolver_match.namespace == 'staff' %}is-active{% endif %}">
         <i class="bi bi-code-square"></i><span>Problems</span>
+      </a>
+      <a href="{% url 'course_builder:course_list' %}" class="{% if request.resolver_match.namespace == 'course_builder' %}is-active{% endif %}">
+        <i class="bi bi-mortarboard"></i><span>Courses</span>
       </a>
     </nav>
 

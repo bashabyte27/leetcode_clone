@@ -1,0 +1,135 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}{{ step.title }} | {{ lesson.title }} | Staff{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow"><i class="bi bi-{{ spec.icon }}"></i> {{ spec.label }} · Step {{ step.position }} of “{{ lesson.title }}”</div>
+    <h2>{{ step.title }}</h2>
+    <p>{{ spec.summary }}</p>
+  </div>
+  <div class="staff-actions">
+    <a class="staff-button secondary" href="{% url 'course_builder:lesson_preview' lesson.pk %}#step-{{ step.pk }}"><i class="bi bi-eye"></i>Preview</a>
+    <form method="post" action="{% url 'course_builder:step_delete' step.pk %}" onsubmit="return confirm('Delete this step?');">
+      {% csrf_token %}<button class="staff-button danger" type="submit"><i class="bi bi-trash"></i>Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="cb-columns">
+  <div>
+    <form method="post" class="staff-panel staff-form-panel cb-step-form" novalidate id="step-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="staff-message error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+      <div class="form-section-heading">
+        <span class="form-section-number">01</span>
+        <div><h3>Basics</h3><p>How this step appears in the lesson's step list.</p></div>
+      </div>
+      <div class="staff-form-grid">
+        {% include "courses/builder/_field.html" with field=form.title %}
+        {% include "courses/builder/_field.html" with field=form.required %}
+      </div>
+
+      {% if typed_fields %}
+      <div class="form-section-heading">
+        <span class="form-section-number">02</span>
+        <div><h3>{{ spec.label }}</h3><p>The content students work through.</p></div>
+      </div>
+      <div class="staff-form-grid">
+        {% for field in typed_fields %}
+          {% if field.field.widget.input_type == 'select' or field.name == 'pass_percent' or field.name == 'duration' or field.name == 'video_id' %}
+            {% include "courses/builder/_field.html" %}
+          {% else %}
+            {% include "courses/builder/_field.html" with wide=True %}
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if spec.uses_coding_question %}
+      <div class="form-section-heading">
+        <span class="form-section-number">03</span>
+        <div><h3>Coding question</h3><p>Graded by the same judge as assessments. {% if step.step_type == 'FIX_BUG' %}Pick a question in “Fix the Bug” mode; students start from its buggy code.{% else %}Its test cases, starter code and limits are used as-is.{% endif %}</p></div>
+      </div>
+      {{ form.coding_question }}
+      <div class="cb-picker" data-picker data-search-url="{% url 'course_builder:search' %}?type=coding{% if step.step_type == 'FIX_BUG' %}&amp;mode=fix{% endif %}" data-target="#{{ form.coding_question.id_for_label }}">
+        <div class="cb-picked" data-picked{% if not step.coding_question %} hidden{% endif %}>
+          <i class="bi bi-code-slash"></i>
+          <span><b data-picked-title>{{ step.coding_question.title }}</b><small data-picked-meta>{% if step.coding_question %}{{ step.coding_question.get_coding_mode_display }} · {{ step.coding_question.topic }} · {{ step.coding_question.get_difficulty_display }}{% endif %}</small></span>
+          <button type="button" class="icon-link danger" data-picked-clear aria-label="Remove coding question"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cb-search">
+          <i class="bi bi-search"></i>
+          <input type="search" placeholder="Search coding questions by title or topic" data-search-input autocomplete="off" aria-label="Search coding questions">
+        </div>
+        <ul class="cb-results" data-results hidden></ul>
+      </div>
+      {% if form.coding_question.errors %}<span class="cb-field-error">{{ form.coding_question.errors|join:" " }}</span>{% endif %}
+
+      <div class="form-section-heading">
+        <span class="form-section-number">04</span>
+        <div><h3>Hints</h3><p>Unlocked one at a time after attempts: a nudge, then an approach, then a near-solution.</p></div>
+      </div>
+      <div class="cb-hints">
+        {% for field in hint_fields %}{% include "courses/builder/_field.html" with wide=True %}{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="form-section-heading">
+        <span class="form-section-number">{% if spec.uses_coding_question %}05{% else %}03{% endif %}</span>
+        <div><h3>Learning outcomes</h3><p>What this step practises. Coding tasks need at least one before publishing.</p></div>
+      </div>
+      {% include "courses/builder/_field.html" with field=form.outcomes wide=True empty_hint="This module has no outcomes yet. Add them on the module page." %}
+
+      <div class="form-footer">
+        <a class="staff-button secondary" href="{% url 'course_builder:lesson' lesson.pk %}">Back to lesson</a>
+        <button class="staff-button" type="submit"><i class="bi bi-check2"></i>Save step</button>
+      </div>
+    </form>
+
+    {% if spec.uses_mcqs %}
+    <section class="staff-panel" id="questions">
+      <div class="staff-panel-head">
+        <h3>Questions <span class="cb-count">{{ questions|length }}</span></h3>
+        <span class="form-note">From the MCQ bank · tag each one with an outcome</span>
+      </div>
+      <ol class="cb-outline" data-sortable data-reorder-url="{% url 'course_builder:reorder' 'questions' step.pk %}">
+        {% for sq in questions %}
+          <li class="cb-row" data-id="{{ sq.pk }}">
+            <span class="cb-handle" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+            <span class="cb-index">Q{{ sq.position }}</span>
+            <span class="cb-row-main"><b>{{ sq.mcq.title }}</b><small>{{ sq.mcq.topic }} · {{ sq.mcq.get_difficulty_display }}</small></span>
+            <select class="cb-outcome-select{% if not sq.outcome_id %} is-missing{% endif %}" data-question-outcome data-url="{% url 'course_builder:step_question_update' sq.pk %}" aria-label="Outcome for question {{ sq.position }}">
+              <option value="">Tag outcome…</option>
+              {% for o in module_outcomes %}<option value="{{ o.pk }}"{% if o.pk == sq.outcome_id %} selected{% endif %}>{{ o.code }}</option>{% endfor %}
+            </select>
+            <button type="button" class="icon-link danger" data-question-remove data-url="{% url 'course_builder:step_question_remove' sq.pk %}" aria-label="Remove question {{ sq.position }}"><i class="bi bi-x-lg"></i></button>
+          </li>
+        {% empty %}
+          <li class="cb-empty">No questions yet. Search the bank below.</li>
+        {% endfor %}
+      </ol>
+      <div class="cb-picker cb-picker-inline" data-picker data-search-url="{% url 'course_builder:search' %}?type=mcq" data-add-url="{% url 'course_builder:step_question_add' step.pk %}">
+        <div class="cb-search">
+          <i class="bi bi-search"></i>
+          <input type="search" placeholder="Search MCQs by title, topic or statement" data-search-input autocomplete="off" aria-label="Search MCQs">
+        </div>
+        <ul class="cb-results" data-results hidden></ul>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside>
+    <section class="staff-panel cb-readiness">
+      <div class="staff-panel-head"><h3>Ready to publish?</h3></div>
+      {% if problems %}
+        <ul>{% for p in problems %}<li><i class="bi bi-circle"></i>{{ p }}</li>{% endfor %}</ul>
+      {% else %}
+        <p class="cb-ready"><i class="bi bi-check2-circle"></i> This step is complete.</p>
+      {% endif %}
+      <p class="form-note">Drafts can be saved anytime; these only block publishing the course.</p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

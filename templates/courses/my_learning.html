@@ -1,0 +1,44 @@
+{% extends "courses/_layout.html" %}
+{% block title %}My learning · BashaByte{% endblock %}
+
+{% block content %}
+<header class="shell cx-head cx-head-tight">
+  <span class="kicker">My learning</span>
+  <h1 class="cx-title">Welcome back, {{ user.user_name }}.</h1>
+  <p class="cx-lede">{% if rows %}Pick up where you left off.{% else %}Your courses will appear here once you enroll.{% endif %}</p>
+</header>
+
+<div class="shell cx-catalog">
+  {% if rows %}
+    <ol class="cx-list cx-learning">
+      {% for row in rows %}
+        <li>
+          <div class="cx-item is-static">
+            <span class="cx-item-no" aria-hidden="true">{{ forloop.counter|stringformat:"02d" }}</span>
+            <span class="cx-item-body">
+              <a class="cx-item-title" href="{% url 'courses:course' row.course.slug %}">{{ row.course.title }}</a>
+              <span class="cx-item-meta">
+                <span>{{ row.course.category.title }}</span>
+                <span>{{ row.enrollment.lesson_count }} lesson{{ row.enrollment.lesson_count|pluralize }}</span>
+                <span>Enrolled {{ row.enrollment.started_at|date:"j M Y" }}</span>
+              </span>
+              {% if row.lesson %}<span class="cx-item-sub">Up next · {{ row.lesson.module.position }}.{{ row.lesson.position }} {{ row.lesson.title }}</span>{% endif %}
+            </span>
+            <span class="cx-item-tags">
+              {% if row.enrollment.status == 'completed' %}<span class="cx-tag is-on">Completed</span>{% endif %}
+              <a class="btn btn-primary btn-sm" href="{{ row.continue_url }}">Continue <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            </span>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <section class="cx-empty">
+      <i class="bi bi-mortarboard" aria-hidden="true"></i>
+      <h2>No courses yet</h2>
+      <p>Enroll in a course and it will live here, with your next lesson one click away.</p>
+      <a class="btn btn-orange" href="{% url 'courses:catalog' %}">Browse courses <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

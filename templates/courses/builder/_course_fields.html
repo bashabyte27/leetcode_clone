@@ -1,0 +1,13 @@
+{% if form.non_field_errors %}<div class="staff-message error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+<div class="staff-form-grid">
+  {% include "courses/builder/_field.html" with field=form.title %}
+  {% include "courses/builder/_field.html" with field=form.category %}
+  {% include "courses/builder/_field.html" with field=form.subtitle wide=True %}
+  {% include "courses/builder/_field.html" with field=form.level %}
+  {% include "courses/builder/_field.html" with field=form.est_weeks %}
+  {% include "courses/builder/_field.html" with field=form.access %}
+  {% include "courses/builder/_field.html" with field=form.thumbnail_url %}
+  {% include "courses/builder/_field.html" with field=form.description wide=True %}
+  {% include "courses/builder/_field.html" with field=form.capstone_brief wide=True %}
+  {% include "courses/builder/_field.html" with field=form.prerequisites wide=True empty_hint="No other courses yet." %}
+</div>

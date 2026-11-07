@@ -103,11 +103,11 @@ The project is organized as a single Django project with multiple apps. These ar
   Interaction: references Problem and users.Users; plan completion is tracked per problem/day
 
 - courses/
-  Responsibility: course catalog and media-uploaded education content
-  Important models: Courses
-  Important views: course_list
-  Important URLs: /courses/ via app include in project urls? The project root includes the app only if used; currently courses URLs are not included at root-level, so this is a partial/unfinished app in this repo
-  Interaction: independent content app, not deeply connected to problems/submissions yet
+  Responsibility: the Courses learning product (built in phases, see docs/courses/)
+  Important models: Category, Course, CareerPath, Module, Lesson, LearningOutcome, LessonStep, StepQuestion, StepHint
+  Important views: staff course builder (courses/staff_views.py) mounted at /staff/courses/
+  Important URLs: /staff/courses/ (staff only). Student URLs (courses/urls.py) are mounted in Phase 2.
+  Interaction: reuses assessment.McqQuestion (quiz/predict) and assessment.CodingQuestion (coding/fix-the-bug)
 
 - leetcode_project/
   Responsibility: project configuration and global URL routing
@@ -482,30 +482,38 @@ Relationships to users and problems:
 ==================================================
 7. COURSES MODULE
 ==================================================
-The current courses app is lightweight and simpler than the problems/submissions infrastructure.
+Courses is built phase by phase. Spec: docs/courses/MASTER_PROMPT.md. Design: docs/courses/ARCHITECTURE.md.
+History: docs/courses/CHANGELOG.md. The legacy courses.Courses model was removed in Phase 1.
 
-Course model:
-- courses.models.Courses stores title, description, duration, is_paid, price, rating, created_at, last_updated, thumbnail, intro_video, attachment.
-- Media fields point to uploads under media/courses/*.
+Status: Phase 2 done (catalog, course landing, enrollment, public lesson previews, My learning). Phase 3 (lesson player) is next.
 
-Current architecture:
-- The app is a catalog listing app rather than a fully integrated learning system.
-- It exposes a basic course list view and a course list template.
-- This is not deeply tied to Problem, Submission, or User progress yet.
+Student pages (courses/views.py, templates/courses/, static/css/courses.css):
+- /courses/ catalog, /courses/<slug>/ landing, /courses/<slug>/preview/<module>/<lesson>/ free previews,
+  POST /courses/<slug>/enroll/, /courses/my-learning/. Access rules live in courses/access.py only.
+- Enrollment(user, course, status, started_at, completed_at, last_lesson); unique per (user, course).
+- Catalog/syllabus reads in courses/catalog.py, cached COURSES_CACHE_SECONDS, busted by courses/signals.py.
+- Home and courses pages share templates/partials/site_nav.html and site_footer.html (styles in home.css).
 
-Important fields:
-- thumbnail uses ImageField
-- intro_video uses FileField
-- attachment uses FileField
-- price and is_paid support a paywall-style catalog flow, but no live enrollment logic is clearly evident in the current app
+Structure:
+- Course (slug + version, category, level, access free/premium, publish state) -> Module (ordered)
+  -> Lesson (ordered, 6 per module by design) -> LessonStep (ordered).
+- LearningOutcome belongs to a module (optionally a lesson), coded like PY-M3-L2-O1.
+- CareerPath orders courses through CareerPathCourse.
 
-Public-user workflow:
-- The course list is a simple listing page for a public user
-- There is no visible current enrollment/progress system in the app at present
+Steps (courses/steps.py registry):
+- 8 types: VIDEO, TEXT, PREDICT, PLAYGROUND, PARSONS, QUIZ, FIX_BUG, CODING.
+- Authored payload lives in LessonStep.content (JSON), validated per type on every save.
+- References are relational: StepQuestion -> assessment.McqQuestion (ordered, outcome tag),
+  LessonStep.coding_question -> assessment.CodingQuestion, StepHint (levels 1-3), outcome M2M.
 
-Relationship to other apps:
-- There is no strong course-to-problem mapping implemented in the currently visible code
-- The app is independent from the code execution flow and from the users auth flow beyond using the same Django auth context
+Staff workflow (/staff/courses/, is_staff only):
+- Build course -> modules -> lessons -> steps, drag to reorder, attach MCQs / coding questions, tag outcomes.
+- Preview a lesson as a student sees it; publish via a validation report (untagged questions block publishing).
+- Content source of truth: the Google Sheets course workbook (one tab per course), format in docs/courses/SHEET_FORMAT.md.
+  Import at /staff/courses/import/ or: python manage.py import_course_sheet file.xlsx --tab "Core Python" [--apply].
+  Dry run first, all-or-nothing, matched by code; creates MCQs/coding questions in the assessment bank.
+
+Rules: no uploaded media in course models (Render disk is wiped); store URLs / provider ids.
 
 ==================================================
 8. CONTESTS MODULE
@@ -706,11 +714,8 @@ Important management commands currently present:
     - Reads TestCases sheet and updates/inserts TestCase rows per problem+order_num
   This is the current data-loading path for the main problem set.
 
-- courses/management/commands/seed_courses.py
-  Purpose: bulk insert or seed course catalog entries
-
-- courses/management/commands/update_courses.py
-  Purpose: update course media metadata or file references in the DB
+- courses/management/commands/import_course_sheet.py
+  Purpose: check / import one course tab of the content workbook (dry run by default, --apply to write)
 
 Data import architecture:
 - Problems come from an Excel file rather than a custom management fixture
@@ -771,7 +776,7 @@ Documented limitations based on the actual code:
 - Some apps are intentionally minimal or uncompleted: contests, premium, study_plans, and courses have limited visible route and UI work compared to the problems and submissions flow.
 - The root project URLs include some app routes but not all app directories are equally complete; the app architecture is uneven across apps.
 - The registration flow currently bypasses email OTP verification in practice; email verification logic exists but is not enforced in the active path.
-- The courses app is not deeply integrated with users or problem progress.
+- The courses app has content + staff builder only (Phase 1); enrollment and progress arrive in Phases 2-3.
 - The premium app is modeled but not fully wired into actual access checks across all pages.
 - The contests app is modeled but the contest runtime and user interaction flow are not fully implemented in views.
 - The app uses a direct custom auth model and some session audit tables, but there is no fully central permissions layer beyond Django standard auth + role metadata.

@@ -1,0 +1,20 @@
+{% if field.is_hidden %}{{ field }}{% elif field.widget_type == 'checkbox' %}
+<label class="check-label{% if wide %} cb-wide{% endif %}">{{ field }} {{ field.label }}{% if field.help_text %} <span class="hint">{{ field.help_text }}</span>{% endif %}</label>
+{% elif field.widget_type == 'checkboxselectmultiple' %}
+<fieldset class="cb-choice-group{% if wide %} cb-wide{% endif %}">
+  <legend>{{ field.label }}{% if field.help_text %} <span class="hint">{{ field.help_text }}</span>{% endif %}</legend>
+  {% for choice in field %}
+    <label class="cb-choice">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>
+  {% empty %}
+    <p class="hint">{{ empty_hint|default:"Nothing to choose from yet." }}</p>
+  {% endfor %}
+  {% if field.errors %}<span class="cb-field-error">{{ field.errors|join:" " }}</span>{% endif %}
+</fieldset>
+{% else %}
+<label class="{% if wide %}cb-wide{% endif %}{% if field.errors %} has-error{% endif %}">
+  <span>{{ field.label }}{% if not field.field.required %} <span class="hint">Optional</span>{% endif %}</span>
+  {{ field }}
+  {% if field.help_text %}<span class="hint">{{ field.help_text }}</span>{% endif %}
+  {% if field.errors %}<span class="cb-field-error">{{ field.errors|join:" " }}</span>{% endif %}
+</label>
+{% endif %}

@@ -1,0 +1,61 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}{{ course.title }} | Courses | Staff{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">{{ course.category.title }} · v{{ course.version }} · {{ course.get_level_display }}</div>
+    <h2>{{ course.title }}</h2>
+    <p>{{ course.subtitle|default:"Add a subtitle in course settings." }}</p>
+  </div>
+  <div class="staff-actions">
+    {% include "courses/builder/_status.html" %}
+    <a class="staff-button" href="{% url 'course_builder:course_publish' course.pk %}">
+      <i class="bi bi-clipboard-check"></i>{% if course.is_published %}Review &amp; publish state{% else %}Check &amp; publish{% endif %}
+    </a>
+  </div>
+</div>
+
+<details class="staff-panel cb-settings"{% if open_settings %} open{% endif %}>
+  <summary class="staff-panel-head"><h3><i class="bi bi-sliders"></i> Course settings</h3><span class="form-note">Title, level, access, description, capstone</span></summary>
+  <div class="staff-form-panel">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "courses/builder/_course_fields.html" %}
+      <div class="form-footer"><button class="staff-button" type="submit"><i class="bi bi-check2"></i>Save settings</button></div>
+    </form>
+  </div>
+</details>
+
+<section class="staff-panel">
+  <div class="staff-panel-head">
+    <h3>Modules <span class="cb-count">{{ modules|length }}</span></h3>
+    <span class="form-note"><i class="bi bi-grip-vertical"></i> Drag to reorder</span>
+  </div>
+  <ol class="cb-outline" data-sortable data-reorder-url="{% url 'course_builder:reorder' 'modules' course.pk %}">
+    {% for module in modules %}
+      <li class="cb-row" data-id="{{ module.pk }}">
+        <span class="cb-handle" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+        <span class="cb-index">{{ module.position|stringformat:"02d" }}</span>
+        <a class="cb-row-main" href="{% url 'course_builder:module' module.pk %}">
+          <b>{{ module.title }}</b>
+          <small>{{ module.summary|default:"No summary yet"|truncatechars:110 }}</small>
+        </a>
+        <span class="cb-meta">
+          <span class="cb-pill{% if module.lesson_count != 6 %} is-warn{% endif %}" title="Modules are designed for 6 lessons">{{ module.lesson_count }} lesson{{ module.lesson_count|pluralize }}</span>
+          <span class="cb-pill">{{ module.outcome_count }} outcome{{ module.outcome_count|pluralize }}</span>
+          {% if module.is_free_preview %}<span class="cb-pill is-accent">Free preview</span>{% endif %}
+        </span>
+        <a class="icon-link" href="{% url 'course_builder:module' module.pk %}" aria-label="Open module {{ module.position }}"><i class="bi bi-chevron-right"></i></a>
+      </li>
+    {% empty %}
+      <li class="cb-empty">No modules yet. Add the first one below.</li>
+    {% endfor %}
+  </ol>
+  <form class="cb-quick-add" method="post" action="{% url 'course_builder:module_create' course.pk %}">
+    {% csrf_token %}
+    <label class="visually-hidden" for="new-module">New module title</label>
+    <input id="new-module" name="title" placeholder="New module title, e.g. Making Decisions" required maxlength="200">
+    <button class="staff-button secondary" type="submit"><i class="bi bi-plus-lg"></i>Add module</button>
+  </form>
+</section>
+{% endblock %}

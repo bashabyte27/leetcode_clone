@@ -1,0 +1,48 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}Publish {{ course.title }} | Staff{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">{{ course.title }} · Publishing</div>
+    <h2>{% if report.can_publish %}Ready to publish{% else %}{{ report.blocking|length }} thing{{ report.blocking|length|pluralize }} to finish{% endif %}</h2>
+    <p>Students only see published courses. Blocking items must be fixed first; warnings are worth a look but won't stop you.</p>
+  </div>
+  <div class="staff-actions">
+    {% include "courses/builder/_status.html" %}
+    <form method="post">
+      {% csrf_token %}
+      {% if course.is_published %}
+        <button class="staff-button secondary" type="submit" name="action" value="unpublish"><i class="bi bi-eye-slash"></i>Move to draft</button>
+      {% else %}
+        <button class="staff-button" type="submit" name="action" value="publish"{% if not report.can_publish %} disabled aria-disabled="true"{% endif %}><i class="bi bi-broadcast"></i>Publish course</button>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<section class="staff-panel cb-report">
+  <div class="staff-panel-head"><h3><i class="bi bi-x-octagon"></i> Blocking <span class="cb-count{% if report.blocking %} is-danger{% endif %}">{{ report.blocking|length }}</span></h3></div>
+  {% if report.blocking %}
+    <ul>
+      {% for issue in report.blocking %}
+        <li><span class="cb-where">{{ issue.where }}</span><span>{{ issue.message }}</span>{% if issue.url %}<a class="staff-link" href="{{ issue.url }}">Fix <i class="bi bi-arrow-right"></i></a>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="cb-ready"><i class="bi bi-check2-circle"></i> Nothing blocking.</p>
+  {% endif %}
+</section>
+
+<section class="staff-panel cb-report">
+  <div class="staff-panel-head"><h3><i class="bi bi-exclamation-triangle"></i> Warnings <span class="cb-count{% if report.warnings %} is-warn{% endif %}">{{ report.warnings|length }}</span></h3></div>
+  {% if report.warnings %}
+    <ul>
+      {% for issue in report.warnings %}
+        <li><span class="cb-where">{{ issue.where }}</span><span>{{ issue.message }}</span>{% if issue.url %}<a class="staff-link" href="{{ issue.url }}">Open <i class="bi bi-arrow-right"></i></a>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="cb-ready"><i class="bi bi-check2-circle"></i> No warnings.</p>
+  {% endif %}
+</section>
+{% endblock %}

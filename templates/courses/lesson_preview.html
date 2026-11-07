@@ -1,0 +1,118 @@
+{% extends "courses/_layout.html" %}
+{% load course_tags %}
+{% block title %}{{ lesson.title }} · {{ course.title }} · BashaByte{% endblock %}
+{% block description %}{{ lesson.summary|default:course.subtitle|truncatechars:280 }}{% endblock %}
+{% block og_title %}{{ lesson.title }} · {{ course.title }}{% endblock %}
+{% block og_description %}{{ lesson.summary|truncatechars:200 }}{% endblock %}
+
+{% block content %}
+{% if is_preview_only %}
+  <div class="cx-draft" role="note"><div class="shell"><i class="bi bi-eye" aria-hidden="true"></i><span><b>Staff view.</b> This lesson isn't a public preview; students open it in the lesson player.</span></div></div>
+{% endif %}
+
+<header class="shell cx-hero cx-hero-lesson">
+  <nav class="cx-crumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="{% url 'courses:catalog' %}">Courses</a></li>
+      <li><a href="{{ course_url }}">{{ course.title }}</a></li>
+      <li aria-current="page">{% if module.is_introduction %}Introduction{% else %}Module {{ module.position }}{% endif %}</li>
+    </ol>
+  </nav>
+  <p class="cx-eyebrow"><span class="is-accent">Free preview</span><span>Lesson {{ module.position }}.{{ lesson.position }}</span><span>{{ lesson.est_minutes }} min</span></p>
+  <h1 class="cx-title">{{ lesson.title }}</h1>
+  {% if lesson.summary %}<p class="cx-lede">{{ lesson.summary }}</p>{% endif %}
+</header>
+
+<div class="shell cx-layout cx-layout-lesson">
+  <article class="cx-col cx-lesson-article">
+    {% if outcomes %}
+      <section class="cx-goals" aria-labelledby="goals">
+        <h2 id="goals" class="cx-mono-h">By the end of this lesson you can</h2>
+        <ul>{% for o in outcomes %}<li><i class="bi bi-check2" aria-hidden="true"></i><span>{{ o.text|cut:"The student can "|capfirst }}</span></li>{% endfor %}</ul>
+      </section>
+    {% endif %}
+
+    {% for step in steps %}
+      <section class="cx-step" id="step-{{ step.position }}" aria-labelledby="step-title-{{ step.position }}">
+        <p class="cx-step-label"><span class="cx-step-no">{{ step.position|two_digits }}</span><i class="bi bi-{{ step.spec.icon }}" aria-hidden="true"></i>{{ step.spec.label }}</p>
+        <h2 class="cx-step-title" id="step-title-{{ step.position }}">{{ step.title }}</h2>
+
+        {% if step.step_type == 'TEXT' %}
+          <div class="cx-prose">{{ step.html|safe }}</div>
+          {% for kind, html in step.callout_html %}<aside class="cx-callout is-{{ kind }}"><b>{% if kind == 'mistake' %}Common mistakes{% elif kind == 'tip' %}Tip{% else %}Note{% endif %}</b>{{ html|safe }}</aside>{% endfor %}
+
+        {% elif step.step_type == 'VIDEO' %}
+          {% if step.content.video_id and step.content.provider == 'youtube' %}
+            <div class="cx-video"><iframe src="https://www.youtube-nocookie.com/embed/{{ step.content.video_id|urlencode }}?rel=0" title="{{ step.title }}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>
+          {% else %}
+            <div class="cx-video is-pending">
+              <i class="bi bi-camera-video" aria-hidden="true"></i>
+              <p><b>Video coming soon.</b>{% if step.duration_label %} About {{ step.duration_label }} long.{% endif %} The notes below cover everything in it.</p>
+            </div>
+          {% endif %}
+          {% if step.chapter_rows %}
+            <ol class="cx-chapters" aria-label="Chapters">{% for stamp, title in step.chapter_rows %}<li><code>{{ stamp }}</code><span>{{ title }}</span></li>{% endfor %}</ol>
+          {% endif %}
+
+        {% elif step.spec.uses_mcqs %}
+          {% if step.content.intro %}<p class="cx-step-intro">{{ step.content.intro }}</p>{% endif %}
+          {% for sq, statement_html in step.mcq_items %}
+            <div class="cx-q">
+              <div class="cx-q-head"><span class="cx-q-no">Q{{ forloop.counter }}</span><div class="cx-prose">{{ statement_html|safe }}</div></div>
+              {% if sq.mcq.code_snippet %}<pre class="cx-code"><code>{{ sq.mcq.code_snippet }}</code></pre>{% endif %}
+              <ol class="cx-options">{% for opt in sq.mcq.options.all %}<li><span class="cx-opt-key" aria-hidden="true">{{ forloop.counter|option_letter }}</span><span>{{ opt.text }}</span></li>{% endfor %}</ol>
+            </div>
+          {% endfor %}
+          <p class="cx-soon"><i class="bi bi-lightning-charge" aria-hidden="true"></i>You'll answer these in the lesson player, with an explanation after every choice.</p>
+
+        {% elif step.step_type == 'PLAYGROUND' %}
+          {% if step.content.instructions %}<div class="cx-prose">{{ step.content.instructions|linebreaks }}</div>{% endif %}
+          <div class="cx-editor"><div class="cx-editor-bar"><span>main.{% if step.content.language == 'python' %}py{% else %}{{ step.content.language }}{% endif %}</span><span class="cx-editor-run"><i class="bi bi-play-fill" aria-hidden="true"></i>Run</span></div><pre class="cx-code"><code>{{ step.content.starter_code }}</code></pre></div>
+          <p class="cx-soon"><i class="bi bi-lightning-charge" aria-hidden="true"></i>In the lesson player this runs in the BashaByte compiler.</p>
+
+        {% elif step.step_type == 'PARSONS' %}
+          {% if step.content.instructions %}<p class="cx-step-intro">{{ step.content.instructions }}</p>{% endif %}
+          <ul class="cx-parsons">{% for line in step.parsons_lines %}<li><i class="bi bi-grip-vertical" aria-hidden="true"></i><code>{{ line.text }}</code></li>{% endfor %}</ul>
+          <p class="cx-soon"><i class="bi bi-lightning-charge" aria-hidden="true"></i>In the lesson player you drag these into order{% if step.content.use_indentation %} and indent them{% endif %}.</p>
+
+        {% elif step.spec.uses_coding_question %}
+          {% if step.content.instructions %}<p class="cx-step-intro">{{ step.content.instructions }}</p>{% endif %}
+          {% if step.coding_question %}
+            <div class="cx-task">
+              <div class="cx-prose">{{ step.statement_html|safe }}</div>
+              {% for language, code in step.code_variants %}{% if code %}
+                <div class="cx-editor"><div class="cx-editor-bar"><span>{% if step.step_type == 'FIX_BUG' %}buggy.py{% else %}solution.py{% endif %} · {{ language }}</span><span class="cx-editor-run"><i class="bi bi-check2-square" aria-hidden="true"></i>Submit</span></div><pre class="cx-code"><code>{{ code }}</code></pre></div>
+              {% endif %}{% endfor %}
+            </div>
+          {% endif %}
+          <p class="cx-soon"><i class="bi bi-lightning-charge" aria-hidden="true"></i>In the lesson player your code is checked against hidden tests, with hints if you get stuck.</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+
+    <section class="cx-next" aria-label="Keep going">
+      {% if enrolled %}
+        <h2>You're enrolled</h2>
+        <p>Pick up where you left off from the course syllabus.</p>
+        <a class="btn btn-primary" href="{{ course_url }}#syllabus">Back to the syllabus <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      {% else %}
+        <h2>Like the way this lesson works?</h2>
+        <p>Enroll in {{ course.title }} to take every lesson with live practice and progress tracking.</p>
+        <a class="btn btn-orange" href="{{ course_url }}">See the full course <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      {% endif %}
+    </section>
+
+    <nav class="cx-pager" aria-label="Lessons">
+      {% if previous %}<a class="cx-pager-link" href="{{ previous.url|default:course_url }}{% if not previous.url %}#lesson-{{ previous.pk }}{% endif %}"><span><i class="bi bi-arrow-left" aria-hidden="true"></i> Previous</span><b>{{ previous.number }} {{ previous.title }}</b></a>{% else %}<span></span>{% endif %}
+      {% if next %}<a class="cx-pager-link is-next" href="{{ next.url|default:course_url }}{% if not next.url %}#lesson-{{ next.pk }}{% endif %}"><span>Next <i class="bi bi-arrow-right" aria-hidden="true"></i></span><b>{{ next.number }} {{ next.title }}</b></a>{% endif %}
+    </nav>
+  </article>
+
+  <aside class="cx-aside cx-toc" aria-label="In this lesson">
+    <div class="cx-toc-inner">
+      <p class="cx-mono-h">In this lesson</p>
+      <ol>{% for step in steps %}<li><a href="#step-{{ step.position }}" data-toc-link><i class="bi bi-{{ step.spec.icon }}" aria-hidden="true"></i><span>{{ step.title }}</span></a></li>{% endfor %}</ol>
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "staff/base.html" %}
+{% load static %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/course_builder.css' %}?v=5">{% endblock %}
+{% block extra_js %}{{ block.super }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js" defer></script>
+<script src="{% static 'js/course_builder.js' %}?v=1" defer></script>
+{% endblock %}
+{% block staff_content %}
+{% if crumbs %}{% include "courses/builder/_crumbs.html" %}{% endif %}
+{% block builder %}{% endblock %}
+{% endblock %}

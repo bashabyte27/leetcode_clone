@@ -30,6 +30,8 @@ urlpatterns = [
     path('submissions/', include('submissions.urls')),
     path('discussions/', include('discussions.urls')),
     path('leaderboard/', include('leaderboard.urls')),
+    path('courses/', include('courses.urls')),
+    path('staff/courses/', include('courses.staff_urls')),
     path('staff/', include('staff.urls')),
     path('assessments/', include('assessment.urls')),
 ] + static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

@@ -159,6 +159,8 @@ class McqOption(models.Model):
     )
     text = models.TextField()
     is_correct = models.BooleanField(default=False)
+    # Why this option is right/wrong; shown to learners after answering (courses).
+    explanation = models.TextField(blank=True, default="")
     position = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)]
     )

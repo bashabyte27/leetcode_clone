@@ -1,0 +1,71 @@
+{% load static %}{% comment %}
+Site header for the landing-style pages (home, courses). Styles live in home.css.
+  home_page   – show the landing page's in-page section links
+  nav_public  – show the primary links to logged-out visitors too
+  nav_active  – "courses" | "problems" | "leaderboard" marks the current section
+{% endcomment %}
+<header class="nav" id="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="{% url 'home' %}" aria-label="BashaByte home">
+      <img src="{% static 'images/logo.png' %}" alt="" width="28" height="28" />
+      <span>Basha<b>Byte</b></span>
+    </a>
+
+    {% if user.is_authenticated or nav_public %}
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="{% url 'problems:problem_list' %}"{% if nav_active == 'problems' %} class="is-active" aria-current="page"{% endif %}>Problems</a>
+      <a href="{% url 'courses:catalog' %}"{% if nav_active == 'courses' %} class="is-active" aria-current="page"{% endif %}>Courses</a>
+      {% if home_page %}
+      <a href="#platform">Platform</a>
+      <a href="#tracks">Tracks</a>
+      <a href="#faculty">For faculty</a>
+      {% endif %}
+      <a href="{% url 'leaderboard:leaderboard' %}"{% if nav_active == 'leaderboard' %} class="is-active" aria-current="page"{% endif %}>Leaderboard</a>
+
+      <div class="nav-mobile-actions">
+        {% if user.is_authenticated %}
+          <a href="{% url 'courses:my_learning' %}">My learning</a>
+          {% if is_faculty %}<a href="{% url 'assessment:dashboard' %}">Assessments</a>{% endif %}
+          <a href="{% url 'users:profile' user.user_name %}">Your profile</a>
+          <a href="{% url 'users:logout' %}">Log out</a>
+        {% else %}
+          <a href="{% url 'users:login' %}">Log in</a>
+          <a href="{% url 'users:register' %}">Create an account</a>
+        {% endif %}
+      </div>
+    </nav>
+    {% endif %}
+
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch theme">
+        <i class="bi bi-sun" id="themeIcon"></i>
+      </button>
+      {% if user.is_authenticated %}
+        {% if is_faculty %}
+          <a href="{% url 'assessment:dashboard' %}" class="nav-text hide-sm">Assessments</a>
+        {% endif %}
+        {% if not home_page %}
+          <a href="{% url 'courses:my_learning' %}" class="nav-text hide-sm"{% if nav_active == 'my_learning' %} aria-current="page"{% endif %}>My learning</a>
+        {% endif %}
+        <a href="{% url 'users:profile' user.user_name %}" class="avatar hide-sm" title="{{ user.user_name }}">
+          {{ user.user_name|first|upper }}
+        </a>
+        {% if home_page %}
+        <a href="{% url 'problems:problem_list' %}" class="btn btn-primary btn-sm">
+          Continue <i class="bi bi-arrow-right"></i>
+        </a>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'users:login' %}{% if not home_page %}?next={{ request.get_full_path|urlencode }}{% endif %}" class="nav-text">Log in</a>
+        <a href="{% url 'users:register' %}" class="btn btn-primary btn-sm">
+          Start free <i class="bi bi-arrow-right"></i>
+        </a>
+      {% endif %}
+      {% if user.is_authenticated or nav_public %}
+      <button class="icon-btn nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <i class="bi bi-list"></i>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</header>

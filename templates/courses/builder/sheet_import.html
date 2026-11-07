@@ -1,0 +1,88 @@
+{% extends "courses/builder/_base.html" %}
+{% block title %}Import from sheet | Courses | Staff{% endblock %}
+{% block builder %}
+<div class="staff-page-head">
+  <div>
+    <div class="staff-eyebrow">Courses · Import</div>
+    <h2>Import a course from the content sheet</h2>
+    <p>In Google Sheets choose <b>File → Download → Microsoft Excel (.xlsx)</b>, upload it here and pick the course tab. You get a full check first; nothing is saved until you press <b>Apply import</b>, and a tab is applied completely or not at all.</p>
+  </div>
+</div>
+
+<div class="cb-columns">
+  <div>
+    <section class="staff-panel staff-form-panel">
+      <h3 class="cb-side-title">1 · Upload the workbook</h3>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label class="upload-box">
+          <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
+          <span>{% if pending %}{{ pending.name }} is loaded. Choose another file to replace it.{% else %}Choose the course workbook (.xlsx) or a single tab saved as .csv (max 5 MB){% endif %}</span>
+          <input type="file" name="file" accept=".xlsx,.csv" required>
+        </label>
+        <div class="form-footer"><button class="staff-button{% if pending %} secondary{% endif %}" type="submit" name="action" value="upload"><i class="bi bi-upload"></i>Upload</button></div>
+      </form>
+    </section>
+
+    {% if pending %}
+      <section class="staff-panel staff-form-panel">
+        <h3 class="cb-side-title">2 · Pick the course tab and check it</h3>
+        <form method="post" class="cb-import-tab">
+          {% csrf_token %}
+          <label for="import-tab">Tab</label>
+          <select id="import-tab" name="tab" required>
+            {% for tab in pending.tabs %}<option value="{{ tab }}"{% if tab == pending.tab %} selected{% endif %}>{{ tab }}</option>{% endfor %}
+          </select>
+          <button class="staff-button" type="submit" name="action" value="check"><i class="bi bi-clipboard-check"></i>Check tab</button>
+        </form>
+      </section>
+    {% endif %}
+
+    {% if report %}
+      <section class="staff-panel cb-report" aria-live="polite">
+        <div class="staff-panel-head">
+          <h3>{% if report.ok %}<i class="bi bi-check2-circle"></i> {% if report.dry_run %}Check passed{% else %}Imported{% endif %}{% else %}<i class="bi bi-x-octagon"></i> {{ report.errors|length }} problem{{ report.errors|length|pluralize }} to fix in the sheet{% endif %}</h3>
+          <span class="form-note">{% if report.ok %}This is what applying will do.{% else %}Nothing was saved.{% endif %}</span>
+        </div>
+        {% if report.ok %}
+          <table class="cb-import-counts">
+            <thead><tr><th scope="col">Item</th><th scope="col">New</th><th scope="col">Updated</th></tr></thead>
+            <tbody>{% for label, created, updated in report.rows %}<tr><th scope="row">{{ label }}</th><td>{{ created }}</td><td>{{ updated }}</td></tr>{% endfor %}</tbody>
+          </table>
+          {% if report.statuses %}<p class="cb-import-status form-note">Row status: {% for status, n in report.status_rows %}{{ status }} {{ n }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+        {% endif %}
+        {% if report.errors %}
+          <ul>{% for error in report.errors %}<li class="cb-import-line"><i class="bi bi-x-circle cb-tone-danger" aria-hidden="true"></i><span>{{ error }}</span></li>{% endfor %}</ul>
+        {% endif %}
+        {% if report.warnings %}
+          <ul>{% for warning in report.warnings %}<li class="cb-import-line"><i class="bi bi-exclamation-triangle cb-tone-warn" aria-hidden="true"></i><span>{{ warning }}</span></li>{% endfor %}</ul>
+        {% endif %}
+        {% if digest %}
+          <form class="cb-import-apply" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="digest" value="{{ digest }}">
+            <span class="form-note"><i class="bi bi-file-earmark-check"></i> {{ pending.name }} · {{ pending.tab }}</span>
+            <button class="staff-button" type="submit" name="action" value="apply"><i class="bi bi-cloud-arrow-up"></i>Apply import</button>
+          </form>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+
+  <aside>
+    <section class="staff-panel staff-form-panel cb-import-help">
+      <h3 class="cb-side-title">Good to know</h3>
+      <dl>
+        <dt>Format</dt><dd>One tab is one course and one row is one item. The full contract is in <code>docs/courses/SHEET_FORMAT.md</code>.</dd>
+        <dt>Re-importing</dt><dd>Items are matched by <code>code</code>, so importing again updates them in place.</dd>
+        <dt>Removed rows</dt><dd>Never deleted here. The report lists them; delete them in the builder if you meant to.</dd>
+        <dt>Coding tasks</dt><dd>A CODING step with several problems becomes one coding step per problem.</dd>
+        <dt>Publishing</dt><dd>Importing never publishes. Students see a course only after you publish it from the course page.</dd>
+      </dl>
+      {% if pending %}
+        <form method="post">{% csrf_token %}<button class="staff-link" type="submit" name="action" value="reset">Clear the loaded file</button></form>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

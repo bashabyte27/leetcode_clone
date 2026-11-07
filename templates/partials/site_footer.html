@@ -1,0 +1,46 @@
+{% load static %}
+<footer class="footer">
+  <div class="shell footer-inner">
+    <div class="footer-brand">
+      <a class="brand" href="{% url 'home' %}">
+        <img src="{% static 'images/logo.png' %}" alt="" width="24" height="24" />
+        <span>Basha<b>Byte</b></span>
+      </a>
+      <p>The coding workspace for students who practice and faculty who assess.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <span class="mono-label">Practice</span>
+        <a href="{% url 'problems:problem_list' %}">Problems</a>
+        <a href="{% url 'problems:shuffle_problem' %}">Random problem</a>
+        <a href="{% url 'leaderboard:leaderboard' %}">Leaderboard</a>
+      </div>
+      <div>
+        <span class="mono-label">Learn</span>
+        <a href="{% url 'courses:catalog' %}">Courses</a>
+        {% if user.is_authenticated %}<a href="{% url 'courses:my_learning' %}">My learning</a>{% endif %}
+        <a href="{% url 'home' %}#platform">Platform</a>
+        <a href="{% url 'home' %}#tracks">Learning tracks</a>
+      </div>
+      <div>
+        <span class="mono-label">Faculty</span>
+        <a href="{% url 'home' %}#faculty">Assessments</a>
+        {% if is_faculty %}<a href="{% url 'assessment:dashboard' %}">Dashboard</a>{% endif %}
+      </div>
+      <div>
+        <span class="mono-label">Account</span>
+        {% if user.is_authenticated %}
+          <a href="{% url 'users:profile' user.user_name %}">Profile</a>
+          <a href="{% url 'users:logout' %}">Log out</a>
+        {% else %}
+          <a href="{% url 'users:login' %}">Log in</a>
+          <a href="{% url 'users:register' %}">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="shell footer-bottom">
+    <span>© {% now "Y" %} BashaByte. All rights reserved.</span>
+    <span class="mono-label">Made for the next commit</span>
+  </div>
+</footer>
