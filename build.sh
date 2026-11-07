@@ -16,3 +16,9 @@ python manage.py migrate
 
 # Import problems
 python manage.py import_problems
+
+# Load / refresh the 100-problem beginner curriculum (idempotent, order 15-114)
+python manage.py seed_curriculum
+
+# Keep solved-problem stats in sync and close stuck submissions (idempotent)
+python manage.py rebuild_progress

@@ -88,88 +88,89 @@ def execute_single(language_id, source_code, stdin=''):
     return _wait_for_result(token)
 
 
+# Judge0 CE upper bounds; anything above is rejected by the server.
+_MAX_LIMITS = {'cpu_time_limit': 15, 'wall_time_limit': 20, 'memory_limit': 512000}
+
+
+def _payload_item(s):
+    item = {
+        'language_id': int(s['language_id']),
+        'source_code': s['source_code'],
+        'stdin': s.get('stdin', ''),
+    }
+    for key, cap in _MAX_LIMITS.items():
+        if s.get(key):
+            item[key] = min(float(s[key]), cap) if key != 'memory_limit' else min(int(s[key]), cap)
+    return item
+
+
 def execute_batch(submissions):
     """
     Execute multiple code submissions at once via Judge0 batch API.
     Each item in submissions: {'language_id': int, 'source_code': str, 'stdin': str}
     Returns list of result dicts in the same order.
     """
-    payload = {
-        'submissions': [
-            {
-                'language_id': int(s['language_id']),
-                'source_code': s['source_code'],
-                'stdin': s.get('stdin', ''),
-            } for s in submissions
-        ]
-    }
+    payload = {'submissions': [_payload_item(s) for s in submissions]}
     url = f"{JUDGE0_BASE}/submissions/batch?base64_encoded=false&wait=false"
     try:
         resp = requests.post(url, json=payload, headers=_headers(), timeout=10)
         resp.raise_for_status()
         resp_data = resp.json()
         # Judge0 batch API returns a list directly, or may return {"submissions": [...]}
-        if isinstance(resp_data, list):
-            tokens = [item['token'] for item in resp_data]
-        else:
-            tokens = [item['token'] for item in resp_data.get('submissions', [])]
-    except requests.RequestException as e:
+        items = resp_data if isinstance(resp_data, list) else resp_data.get('submissions', [])
+        # An item without a token was rejected by Judge0 (e.g. bad language id)
+        tokens = [item.get('token') if isinstance(item, dict) else None for item in items]
+    except (requests.RequestException, ValueError) as e:
         logger.error("Judge0 batch submit error: %s", e)
-        return [
-            {
-                'status': {'id': 13, 'description': 'Internal Error'},
-                'stdout': '',
-                'stderr': f'Failed to submit batch to Judge0: {e}',
-                'time': None,
-                'memory': None,
-            } for _ in submissions
-        ]
+        return [_error_result(f'Failed to submit batch to Judge0: {e}') for _ in submissions]
 
-    # Poll all tokens until judged or timeout
-    results = {}
+    results = {i: _error_result('Judge0 rejected this test case.') for i, t in enumerate(tokens) if not t}
+    pending = {i: t for i, t in enumerate(tokens) if t}
+
+    # Poll every pending token with ONE request per round (batch status endpoint)
     deadline = time.time() + JUDGE0_TIMEOUT
-    pending = list(enumerate(tokens))
-
     while pending and time.time() < deadline:
-        still_pending = []
-        for idx, token in pending:
-            if idx in results:
-                continue
-            try:
-                r = requests.get(
-                    f"{JUDGE0_BASE}/submissions/{token}?base64_encoded=false",
-                    headers=_headers(), timeout=5,
-                )
-                r.raise_for_status()
-                d = r.json()
-                status_id = d.get('status', {}).get('id', 1)
-                if status_id >= 3:
-                    results[idx] = d
-                else:
-                    still_pending.append((idx, token))
-            except requests.RequestException:
-                still_pending.append((idx, token))
-        pending = still_pending
+        for idx, data in _fetch_batch(pending).items():
+            if data.get('status', {}).get('id', 1) >= 3:
+                results[idx] = data
+                pending.pop(idx, None)
         if pending:
             time.sleep(0.3)
 
-    # Grab final state for any still-pending submissions
-    for idx, token in pending:
-        if idx not in results:
-            try:
-                r = requests.get(
-                    f"{JUDGE0_BASE}/submissions/{token}?base64_encoded=false",
-                    headers=_headers(), timeout=5,
-                )
-                results[idx] = r.json()
-            except requests.RequestException:
-                results[idx] = {
-                    'status': {'id': 13, 'description': 'Internal Error (timeout)'},
-                    'stdout': '',
-                    'stderr': 'Polling timed out.',
-                    'time': None,
-                    'memory': None,
-                }
+    # Whatever is still queued after the deadline is reported as a timeout
+    for idx in pending:
+        results[idx] = _error_result('Judging timed out. The judge is busy, please try again.')
 
-    # Return in original order
-    return [results[i] for i in range(len(tokens))]
+    count = max(len(tokens), len(submissions))
+    return [results.get(i) or _error_result('No result returned from Judge0.') for i in range(count)]
+
+
+_FIELDS = 'token,status,stdout,stderr,compile_output,time,memory'
+
+
+def _fetch_batch(pending):
+    """GET /submissions/batch for all pending tokens; returns {index: result} for those received."""
+    order = list(pending.items())
+    try:
+        r = requests.get(
+            f"{JUDGE0_BASE}/submissions/batch",
+            params={'tokens': ','.join(t for _, t in order), 'base64_encoded': 'false', 'fields': _FIELDS},
+            headers=_headers(), timeout=10,
+        )
+        r.raise_for_status()
+        rows = r.json().get('submissions', [])
+    except (requests.RequestException, ValueError) as e:
+        logger.warning("Judge0 batch poll error: %s", e)
+        return {}
+    by_token = {row.get('token'): row for row in rows if isinstance(row, dict)}
+    return {idx: by_token[t] for idx, t in order if t in by_token}
+
+
+def _error_result(message):
+    return {
+        'status': {'id': 13, 'description': 'Internal Error'},
+        'stdout': '',
+        'stderr': message,
+        'time': None,
+        'memory': None,
+    }

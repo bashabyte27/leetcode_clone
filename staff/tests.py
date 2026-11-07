@@ -153,8 +153,8 @@ class StaffAccessTests(TestCase):
         target = Users.objects.create_user('profile@example.com', 'profile_user', 'Password123!')
 
         default_page = self.client.get(reverse('staff:user_detail', args=[target.id]))
-        self.assertContains(default_page, 'Edit User')
-        self.assertContains(default_page, 'Delete User')
+        self.assertContains(default_page, 'Edit user')
+        self.assertContains(default_page, 'bi-trash')
         self.assertNotContains(default_page, 'Save account changes')
 
         edit_page = self.client.get(reverse('staff:user_detail', args=[target.id]), {'edit': '1'})

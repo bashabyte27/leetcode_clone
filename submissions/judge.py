@@ -84,14 +84,18 @@ def _get_judge_id(language):
     return None
 
 
-def is_code_safe(code):
+def is_code_safe(code, language=None):
     """
     Basic safety check for student code.
-    Judge0 runs code in a sandbox, so we only check for
-    input() with prompt strings (which break stdin piping).
-    Returns (is_safe, reason).
+    Judge0 runs code in a sandbox, so we only check for Python's input() with a
+    prompt string (the prompt gets printed and breaks the output comparison).
+    Other languages are not checked. Returns (is_safe, reason).
     """
-    if re.search(r'input\s*\(\s*["\']', code):
+    slug = (getattr(language, 'slug', None) or str(language or 'python')).lower()
+    if not slug.startswith('python'):
+        return True, None
+    code_only = re.sub(r'#.*', '', code)  # a prompt inside a comment is harmless
+    if re.search(r'(?<![\w.])input\s*\(\s*[fFrRbBuU]?["\']', code_only):
         return False, "Do not use input() with a prompt string. Use input() without arguments."
     return True, None
 
@@ -119,6 +123,13 @@ _INPUT_PATTERNS = [
     r'(?:std::)?io::stdin',                  # Rust: io::stdin() / std::io::stdin()
     r'read_line\s*\(',                       # Rust: io::stdin().read_line()
     r'BufReader::new',                       # Rust: BufReader::new(io::stdin())
+    r'\bstdin\b',                            # sys.stdin, fgets(.., stdin), os.Stdin, io::stdin
+    r'\bgetline\s*\(',                       # C++: getline(cin, s)
+    r'\bget(?:char|s)\s*\(',                  # C: getchar(), gets()
+    r'\bopen\s*\(\s*0\b',                     # Python: open(0)
+    r'readFileSync',                         # JS: fs.readFileSync(0 | '/dev/stdin')
+    r'/dev/stdin',
+    r'BufferedReader',                       # Java: BufferedReader(new InputStreamReader(System.in))
 ]
 
 
@@ -128,6 +139,54 @@ def _code_reads_input(code):
         if re.search(pattern, code):
             return True
     return False
+
+
+def _summarise(result):
+    """Turn one Judge0 result into (actual_output, runtime_ms, error_or_none, status_string)."""
+    runtime_ms = _parse_decimal(result.get('time'))
+    runtime_ms = (runtime_ms * 1000).quantize(Decimal('0.01')) if runtime_ms is not None else Decimal('0.00')
+    status = _map_judge0_status(result)
+    stdout = (result.get('stdout') or '').strip()
+    stderr = (result.get('stderr') or '').strip()
+    compile_output = (result.get('compile_output') or '').strip()
+    if status == SubmissionStatusChoices.ACCEPTED:
+        return stdout, runtime_ms, None, 'accepted'
+    if status == SubmissionStatusChoices.TIME_LIMIT_EXCEEDED:
+        return None, runtime_ms, 'TIME_LIMIT_EXCEEDED', 'tle'
+    if status == SubmissionStatusChoices.COMPILE_ERROR:
+        return None, runtime_ms, compile_output or stderr or 'Compilation Error', 'compile_error'
+    if status in (SubmissionStatusChoices.RUNTIME_ERROR, SubmissionStatusChoices.INTERNAL_ERROR):
+        return None, runtime_ms, stderr or compile_output or 'Runtime Error', 'runtime_error'
+    return stdout, runtime_ms, None, 'wrong_answer'
+
+
+# Slower runtimes get more time per test (JVM start-up, interpreters).
+TIME_MULTIPLIER = {'java': 2.0, 'javascript': 1.5, 'go': 1.5}
+
+
+def judge_limits(problem, language):
+    """Per-test-case Judge0 limits for this problem and language."""
+    if problem is None:
+        return {}
+    slug = (getattr(language, 'slug', '') or '').lower()
+    cpu = float(problem.time_limit_seconds or 2) * TIME_MULTIPLIER.get(slug, 1.0)
+    return {
+        'cpu_time_limit': round(cpu, 1),
+        'wall_time_limit': round(cpu * 2 + 1, 1),
+        'memory_limit': int(problem.memory_limit_mb or 256) * 1024,
+    }
+
+
+def run_many(code, language, inputs, problem=None):
+    """Run code once per input in a single Judge0 batch (Run mode). Same tuple shape as run_code."""
+    judge_id = _get_judge_id(language)
+    if judge_id is None:
+        return [(None, Decimal('0.00'), 'Language not supported for execution.', 'runtime_error') for _ in inputs]
+    limits = judge_limits(problem, language)
+    results = judge0_client.execute_batch([
+        {'language_id': judge_id, 'source_code': code, 'stdin': stdin, **limits} for stdin in inputs
+    ])
+    return [_summarise(r) for r in results]
 
 
 def run_code(code, language, input_data=''):
@@ -170,6 +229,19 @@ def run_code(code, language, input_data=''):
 
 
 def judge_submission(submission_id):
+    """Judge a submission; never leaves it stuck in PENDING/RUNNING if something blows up."""
+    try:
+        return _judge_submission(submission_id)
+    except Exception:
+        logger.exception("Judging failed for submission %s", submission_id)
+        Submission.objects.filter(
+            id=submission_id,
+            status__in=[SubmissionStatusChoices.PENDING, SubmissionStatusChoices.RUNNING],
+        ).update(status=SubmissionStatusChoices.INTERNAL_ERROR)
+        return Submission.objects.filter(id=submission_id).first()
+
+
+def _judge_submission(submission_id):
     """
     Judge a full submission (Submit mode) against ALL test cases via Judge0 batch API.
     Creates SubmissionResult for each test case.
@@ -181,7 +253,7 @@ def judge_submission(submission_id):
         return None
 
     # ── Step 1: Safety Check ──
-    is_safe, reason = is_code_safe(submission.code)
+    is_safe, reason = is_code_safe(submission.code, submission.language)
     if not is_safe:
         submission.status = SubmissionStatusChoices.RUNTIME_ERROR
         submission.save(update_fields=['status'])
@@ -235,6 +307,7 @@ def judge_submission(submission_id):
         return submission
 
     # ── Step 6: Build batch submissions ──
+    limits = judge_limits(submission.problem, submission.language)
     batch_items = []
     for tc in test_cases:
         input_data = normalize_case_text(tc.input_data)
@@ -242,6 +315,7 @@ def judge_submission(submission_id):
             'language_id': judge_id,
             'source_code': submission.code,
             'stdin': input_data,
+            **limits,
         })
 
     # ── Step 7: Execute batch via Judge0 ──
@@ -251,6 +325,7 @@ def judge_submission(submission_id):
     max_runtime = Decimal('0.00')
     max_memory = Decimal('0.00')
     final_status = SubmissionStatusChoices.ACCEPTED
+    result_rows = []
 
     for i, tc in enumerate(test_cases):
         if i >= len(results):
@@ -307,7 +382,7 @@ def judge_submission(submission_id):
 
         expected_output = comparable_case_text(tc.expected_output)
 
-        SubmissionResult.objects.create(
+        result_rows.append(SubmissionResult(
             submission=submission,
             test_case=tc,
             status=tc_status,
@@ -315,15 +390,36 @@ def judge_submission(submission_id):
             expected_output=expected_output,
             runtime_ms=runtime_ms,
             memory_kb=memory_kb,
-        )
+        ))
 
         if tc_status != SubmissionStatusChoices.ACCEPTED:
             break  # Stop at first failure
+
+    SubmissionResult.objects.bulk_create(result_rows)
 
     # ── Step 9: Update final submission ──
     submission.status = final_status
     submission.runtime_ms = max_runtime
     submission.memory_kb = max_memory if max_memory > 0 else None
-    submission.save(update_fields=['status', 'runtime_ms', 'memory_kb'])
+    if final_status == SubmissionStatusChoices.ACCEPTED:
+        _set_percentiles(submission)
+    submission.save(update_fields=['status', 'runtime_ms', 'memory_kb', 'runtime_percentile', 'memory_percentile'])
 
     return submission
+
+
+def _set_percentiles(submission):
+    """'Beats X%': share of other accepted submissions (same problem + language) that were slower / heavier."""
+    others = Submission.objects.filter(
+        problem_id=submission.problem_id,
+        language_id=submission.language_id,
+        status=SubmissionStatusChoices.ACCEPTED,
+    ).exclude(id=submission.id)
+    timed = others.exclude(runtime_ms__isnull=True)
+    if timed.exists():
+        slower = timed.filter(runtime_ms__gt=submission.runtime_ms).count()
+        submission.runtime_percentile = Decimal(slower * 100 / timed.count()).quantize(Decimal('0.01'))
+    sized = others.exclude(memory_kb__isnull=True)
+    if submission.memory_kb and sized.exists():
+        heavier = sized.filter(memory_kb__gt=submission.memory_kb).count()
+        submission.memory_percentile = Decimal(heavier * 100 / sized.count()).quantize(Decimal('0.01'))

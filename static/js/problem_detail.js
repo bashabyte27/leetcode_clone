@@ -528,45 +528,108 @@
     } catch (e) {
       cases = [];
     }
+    cases.forEach(function (c) { c.input_data = normalizeCaseText(c.input_data); });
 
     if (cases.length === 0) {
       cases = [{ order_num: 1, input_data: customInput.value || '', expected_output: '' }];
     }
 
-    let activeIdx = 0;
+    /* ── One custom test case: the student's own input, remembered per problem ── */
+    const customKey = 'custom_case_' + USER_ID + '_' + PROBLEM_SLUG;
+    const addCustomBtn = document.getElementById('btn-add-custom-case');
+    function readCustom() { try { return localStorage.getItem(customKey); } catch (_) { return null; } }
+    function writeCustom(v) { try { v === null ? localStorage.removeItem(customKey) : localStorage.setItem(customKey, v); } catch (_) {} }
 
-    customInput.addEventListener('input', function () {
+    let activeIdx = 0;
+    window.__bbCases = cases;  // read by the Run button (students may edit inputs)
+
+    function customIndex() {
+      return cases.findIndex(function (c) { return c.custom; });
+    }
+
+    function syncActive() {
       if (cases[activeIdx]) {
         cases[activeIdx].input_data = customInput.value;
+        if (cases[activeIdx].custom) writeCustom(customInput.value);
       }
-    });
+    }
 
-    pillsRow.querySelectorAll('.case-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const idx = parseInt(pill.dataset.caseIndex, 10);
-        if (isNaN(idx) || idx === activeIdx || !cases[idx]) return;
-
-        if (cases[activeIdx]) {
-          cases[activeIdx].input_data = customInput.value;
-        }
-
-        pillsRow.querySelectorAll('.case-pill').forEach(function (p) {
-          p.classList.remove('active');
-        });
-        pill.classList.add('active');
-
-        activeIdx = idx;
-        const curCase = cases[activeIdx];
-        customInput.value = curCase.input_data || '';
-
-        if (expectedOutputEl) {
-          expectedOutputEl.textContent = normalizeCaseText(curCase.expected_output);
-        }
-        if (expectedCard) {
-          expectedCard.style.display = curCase.expected_output ? 'block' : 'none';
-        }
+    function selectCase(idx) {
+      if (!cases[idx]) return;
+      activeIdx = idx;
+      pillsRow.querySelectorAll('.case-pill').forEach(function (p) {
+        p.classList.toggle('active', parseInt(p.dataset.caseIndex, 10) === idx);
       });
+      const curCase = cases[idx];
+      customInput.value = curCase.input_data || '';
+      customInput.placeholder = curCase.custom
+        ? 'Type your own input here, exactly as the program would read it...'
+        : 'Enter custom input here...';
+      if (expectedOutputEl) {
+        expectedOutputEl.textContent = curCase.custom ? '' : normalizeCaseText(curCase.expected_output);
+      }
+      if (expectedCard) {
+        expectedCard.style.display = (!curCase.custom && curCase.expected_output) ? 'block' : 'none';
+      }
+      if (curCase.custom) customInput.focus();
+    }
+
+    function renderCustomPill() {
+      const old = pillsRow.querySelector('.case-pill-custom');
+      if (old) old.remove();
+      const idx = customIndex();
+      if (addCustomBtn) addCustomBtn.hidden = idx >= 0;
+      if (idx < 0) return;
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'case-pill case-pill-custom';
+      pill.dataset.caseIndex = String(idx);
+      pill.innerHTML = '<i class="bi bi-pencil-square"></i> Custom' +
+        '<span class="case-pill-remove" role="button" aria-label="Remove custom case" title="Remove custom case">&times;</span>';
+      if (addCustomBtn) pillsRow.insertBefore(pill, addCustomBtn); else pillsRow.appendChild(pill);
+    }
+
+    function addCustomCase(initial) {
+      if (customIndex() >= 0) { selectCase(customIndex()); return; }
+      syncActive();
+      cases.push({
+        order_num: cases.length + 1, label: 'Custom', custom: true,
+        input_data: initial != null ? initial : (cases[0] ? cases[0].input_data : ''), expected_output: '',
+      });
+      writeCustom(cases[cases.length - 1].input_data);
+      renderCustomPill();
+      selectCase(cases.length - 1);
+    }
+
+    function removeCustomCase() {
+      const idx = customIndex();
+      if (idx < 0) return;
+      const wasActive = activeIdx === idx;
+      cases.splice(idx, 1);  // the custom case is always last, so other indexes stay valid
+      writeCustom(null);
+      renderCustomPill();
+      selectCase(wasActive ? 0 : activeIdx);
+    }
+
+    customInput.addEventListener('input', syncActive);
+
+    pillsRow.addEventListener('click', function (e) {
+      if (e.target.closest('.case-pill-remove')) { e.stopPropagation(); removeCustomCase(); return; }
+      if (e.target.closest('#btn-add-custom-case')) { addCustomCase(); return; }
+      const pill = e.target.closest('.case-pill');
+      if (!pill) return;
+      const idx = parseInt(pill.dataset.caseIndex, 10);
+      if (isNaN(idx) || idx === activeIdx) return;
+      syncActive();
+      selectCase(idx);
     });
+
+    // Bring back the student's saved custom input
+    const savedCustom = readCustom();
+    if (savedCustom !== null) {
+      cases.push({ order_num: cases.length + 1, label: 'Custom', custom: true, input_data: savedCustom, expected_output: '' });
+      renderCustomPill();
+    }
 
     if (copyInputBtn) {
       copyInputBtn.addEventListener('click', function () {
@@ -849,11 +912,12 @@
       '</div></div>';
   }
 
-  function casePillHTML(num, passed, active, runtime) {
+  function casePillHTML(num, passed, active, runtime, label) {
     return '<button type="button" class="result-case-pill ' +
       (passed ? 'pill-passed' : 'pill-failed') +
       (active ? ' active' : '') +
-      '" data-index="' + (num - 1) + '"><i class="bi ' + (passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill') + '"></i>Case ' + num +
+      '" data-index="' + (num - 1) + '"><i class="bi ' + (passed ? 'bi-check-circle-fill' : 'bi-x-circle-fill') + '"></i>' +
+      (label ? escapeHtml(label) : 'Case ' + num) +
       (runtime ? '<small>' + formatMs(runtime) + '</small>' : '') + '</button>';
   }
 
@@ -922,7 +986,7 @@
 
     var pillsHTML = '<div class="result-case-pills">';
     for (var p = 0; p < results.length; p++) {
-      pillsHTML += casePillHTML(results[p].tc_num, isPass(results[p].status), p === activeResultIndex, results[p].runtime_ms);
+      pillsHTML += casePillHTML(results[p].tc_num, isPass(results[p].status), p === activeResultIndex, results[p].runtime_ms, results[p].label);
     }
     pillsHTML += '</div>';
 
@@ -976,8 +1040,10 @@
       var showDiff = !passed && cls === 'wrong';
       panel.innerHTML =
         ioCard('Input', normalizeCaseText(tc.input)) +
-        ioCard('Output', actual, showDiff ? diffLines(actual, expected) : null, passed ? 'io-pass' : 'io-fail') +
-        ioCard('Expected', expected);
+        ioCard('Output', actual, showDiff ? diffLines(actual, expected) : null, tc.custom ? '' : (passed ? 'io-pass' : 'io-fail')) +
+        (tc.custom
+          ? '<div class="empty-state">Custom input: there is no expected answer to compare with, so check the output yourself.</div>'
+          : ioCard('Expected', expected));
       panel.querySelectorAll('.copy-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var text = btn.dataset.copy;
@@ -1511,17 +1577,19 @@
           body: JSON.stringify({
             code: getEditorCode(),
             language: getSelectedLanguage(),
-            custom_input: (document.getElementById('custom-input') || {}).value || '',
+            cases: (window.__bbCases || []).map(function (c, i) {
+              return { tc_num: c.order_num || (i + 1), input: c.input_data || '', label: c.label || '' };
+            }),
             selected_case: (document.querySelector('.case-pill.active') || {}).textContent.replace(/\D/g, '') || null,
           }),
         });
 
+        const bodyText = await res.text().catch(function () { return ''; });
         let data;
         try {
-          data = await res.json();
+          data = JSON.parse(bodyText);
         } catch (_) {
           // Server returned non-JSON (e.g. HTML error page) — show what we can
-          const bodyText = await res.text().catch(function () { return ''; });
           const snippet = bodyText.substring(0, 200);
           if (container) container.innerHTML = '<div class="result-status-banner compile">' +
             '<div class="result-banner-title">Server error (' + res.status + ')</div>' +
@@ -1553,6 +1621,25 @@
     });
   }
 
+  /* Poll a queued submission until it has a final status (max ~3 minutes). */
+  async function waitForVerdict(url) {
+    var delay = 700;
+    var deadline = Date.now() + 180000;
+    while (Date.now() < deadline) {
+      await new Promise(function (r) { setTimeout(r, delay); });
+      delay = Math.min(delay + 300, 2000);
+      try {
+        var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) continue;
+        var data = await res.json();
+        if (!data.pending) return data;
+      } catch (_) { /* network blip: keep waiting */ }
+    }
+    return { status: 'internal_error', accepted: 0, total: 0,
+             actual: 'Judging is taking longer than usual. Check the Submissions tab in a minute.',
+             code: getEditorCode(), language: getSelectedLanguage() };
+  }
+
   /* ══════════════════════════
      SUBMIT BUTTON
   ══════════════════════════ */
@@ -1581,11 +1668,11 @@
           }),
         });
 
+        const bodyText = await res.text().catch(function () { return ''; });
         let data;
         try {
-          data = await res.json();
+          data = JSON.parse(bodyText);
         } catch (_) {
-          const bodyText = await res.text().catch(function () { return ''; });
           const snippet = bodyText.substring(0, 200);
           renderSubmissionStatus({ status: 'compile_error', accepted: 0, total: 0, actual: snippet, code: getEditorCode(), language: getSelectedLanguage() });
           try { clearErrorHighlights(); } catch (_) {}
@@ -1600,6 +1687,10 @@
           const subTab = document.getElementById('tab-submissions');
           if (subTab) subTab.classList.remove('loaded');
           return;
+        }
+        // Judging runs in the background: poll until the verdict is ready
+        if (data.queued) {
+          data = await waitForVerdict(data.poll_url || ('/submissions/detail/' + data.submission_id + '/'));
         }
         data._fresh = true;
         renderSubmissionStatus(data);

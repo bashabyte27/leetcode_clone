@@ -14,7 +14,6 @@ from leaderboard import services as leaderboard_services
 from .stats import acceptance_percent, annotate_acceptance, practice_calendar, todays_pick
 
 
-
 def problem_list(request):
     user = request.user if request.user.is_authenticated else None
 
@@ -139,6 +138,7 @@ def problem_detail(request, problemname):
         'title': problem.title,
         'description': problem.description,
         'tags': tags,
+        'hints': problem.hints.all(),
         'sample_cases': sample_cases,
         'prev_problem': prev_problem,
         'next_problem': next_problem,
@@ -166,18 +166,9 @@ def shuffle_problem(request):
 
 def problem_get_list(request):
     #left side view of problems list
-    all_problems = Problem.objects.all()
+    all_problems = Problem.objects.filter(is_active=True).order_by('order_num')
 
     return render(request,'problems/partials/problem_list_panel.html',{'all_problems':all_problems})
-
-def discussion(request,problemname):
-    #for every problem one discussion table
-    if user_has_active_exam(request.user):
-        return HttpResponse(
-            "Discussion content is unavailable during an assessment.",
-            status=403,
-        )
-    return HttpResponse("Discussion tab is Under development")
 
 
 def editorial(request, problemname):
@@ -189,16 +180,3 @@ def editorial(request, problemname):
     problem = get_object_or_404(Problem, slug=problemname)
     editorial = getattr(problem, 'editorial', None)
     return render(request, 'problems/partials/editorial.html', {'editorial': editorial})
-
-def submission_history(request, problemname):
-    submissions = Submission.objects.filter(
-        user=request.user, problem__slug=problemname
-    ).order_by('-created_at')
-    return render(request, 'problems/partials/submissions.html', {'submissions': submissions})
-
-def get_solution(request, problemname):
-    return HttpResponse("solution under development")
-
-def problem_page(request):
-    all_problems = Problem.objects.all()
-    return render(request,'problems/partials/problem_list.html',{'all_problems':all_problems})

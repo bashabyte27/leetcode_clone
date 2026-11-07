@@ -140,7 +140,7 @@
               <b class="lb-medal" aria-label="Rank {{ row.rank }}">{{ row.rank }}</b>
             </div>
             <h3 class="lb-pod-name">
-              {% if request.user.is_authenticated %}<a href="{% url 'users:profile_legacy' row.username %}">{{ row.username }}</a>{% else %}<span>{{ row.username }}</span>{% endif %}
+              {% if request.user.is_authenticated %}<a href="{% url 'users:profile' row.username %}">{{ row.username }}</a>{% else %}<span>{{ row.username }}</span>{% endif %}
               {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
             </h3>
             <span class="lb-tier tier-{{ row.tier.css }}">{{ row.tier.name }}</span>
@@ -193,7 +193,7 @@
                 </span>
                 <div class="lb-user-text">
                   <div class="lb-name-line">
-                    {% if request.user.is_authenticated %}<a href="{% url 'users:profile_legacy' row.username %}" class="lb-name">{{ row.username }}</a>{% else %}<span class="lb-name">{{ row.username }}</span>{% endif %}
+                    {% if request.user.is_authenticated %}<a href="{% url 'users:profile' row.username %}" class="lb-name">{{ row.username }}</a>{% else %}<span class="lb-name">{{ row.username }}</span>{% endif %}
                     {% if row.is_me %}<span class="lb-you">You</span>{% endif %}
                   </div>
                   <div class="lb-sub-line">

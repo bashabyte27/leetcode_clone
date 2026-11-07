@@ -258,30 +258,32 @@ class AssessmentAdminFlowTests(TestCase):
         )
         self.assertRedirects(
             response,
-            f"{add_tab_url}?tab=questions#section-{self.section.pk}",
+            f"{add_tab_url}?tab=sections#section-{self.section.pk}",
         )
         assignment = AssessmentQuestion.objects.get(
             assessment=self.assessment,
             coding_question=self.question,
         )
         self.assertEqual(assignment.section, self.section)
-        detail_response = self.client.get(add_tab_url, {"tab": "questions"})
-        self.assertEqual(detail_response.context["question_count"], 1)
-        self.assertContains(detail_response, "Questions")
-        self.assertContains(detail_response, "assessment-question-count")
+        # Questions tab: the flat list of every assigned question
+        questions_tab = self.client.get(add_tab_url, {"tab": "questions"})
+        self.assertEqual(questions_tab.context["question_count"], 1)
+        self.assertContains(questions_tab, "1 question")
+        self.assertContains(questions_tab, "Add question")
+        self.assertContains(questions_tab, self.question.title)
+        # Sections tab: per-section management (add / preview / remove)
+        sections_tab = self.client.get(add_tab_url, {"tab": "sections"})
         self.assertContains(
-            detail_response,
+            sections_tab,
             reverse(
                 "assessment:section_question_add",
                 args=[self.assessment.pk, self.section.pk],
             ),
         )
-        self.assertContains(detail_response, "Add question")
-        self.assertContains(detail_response, self.question.title)
-        self.assertContains(detail_response, "assessment-section-collapse")
-        self.assertNotContains(detail_response, "Import in bulk")
-        self.assertContains(detail_response, "Preview")
-        self.assertContains(detail_response, "Remove")
+        self.assertContains(sections_tab, self.question.title)
+        self.assertNotContains(sections_tab, "Import in bulk")
+        self.assertContains(sections_tab, "Preview")
+        self.assertContains(sections_tab, "Remove")
         unavailable = self.client.get(
             search_url,
             {"q": self.question.title, "type": "coding"},

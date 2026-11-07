@@ -168,7 +168,7 @@ class ViewTests(LeaderboardTestBase):
         self.client.force_login(me)
         r = self.client.get(self.url)
         self.assertContains(r, 'lb-row-me')
-        self.assertContains(r, 'href="/users/me/"')
+        self.assertContains(r, 'href="/users/profile/me/"')
         self.assertIsNone(r.context['my_standing'])
 
     def test_current_user_off_page_gets_rank_strip(self):

@@ -55,11 +55,6 @@ def verify_otp(entered_otp, stored_otp, expires_at, attempts):
     return False, 'Wrong OTP.'
 
 
-def user_list(request):
-    all_users = Users.objects.all()
-    return render(request, 'users/users_list.html', {'users': all_users})
-
-
 def register_view(request):
     form = RegisterForm()
 

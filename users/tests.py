@@ -75,3 +75,14 @@ class AdminUserCreationTests(TestCase):
 		response = self.client.get(reverse('admin:users_users_change', args=[self.admin.pk]))
 		self.assertEqual(response.status_code, 200)
 		self.assertNotContains(response, 'name="password"')
+
+
+class RemovedPublicRoutesTests(TestCase):
+	"""Routes that exposed data or were dead placeholders must stay gone."""
+
+	def test_removed_urls_return_404(self):
+		Users.objects.create_user('a@example.com', 'someone', 'Password123!')
+		for url in ('/users/', '/users/someone/', '/problems/problems',
+					'/problems/two-sum/submissions', '/contests/', '/premium/', '/study-plans/'):
+			with self.subTest(url=url):
+				self.assertEqual(self.client.get(url).status_code, 404)

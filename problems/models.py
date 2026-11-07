@@ -137,6 +137,9 @@ class Problem(models.Model):
     dislikes = models.PositiveIntegerField(default=0)
     is_premium = models.BooleanField(default=False, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
+    # Judge limits (per test case). Slower runtimes get a multiplier, see submissions.judge.
+    time_limit_seconds = models.DecimalField(max_digits=4, decimal_places=1, default=2)
+    memory_limit_mb = models.PositiveIntegerField(default=256)
 
     tags = models.ManyToManyField(Tag, through='ProblemTag', related_name='problems')
     companies = models.ManyToManyField(Company, through='ProblemCompany', related_name='problems')

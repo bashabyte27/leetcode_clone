@@ -568,7 +568,7 @@ class AssessmentManagementViewTests(TestCase):
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 302)
-                self.assertTrue(response.url.startswith("/accounts/login/?next="))
+                self.assertTrue(response.url.startswith("/users/login/?next="))
 
         self._login(self.student)
         role_only_urls = {
@@ -1161,7 +1161,7 @@ class AssessmentManagementViewTests(TestCase):
         self.assertRedirects(
             response,
             f"{reverse('assessment:assessment_detail', args=[self.assessment.pk])}"
-            f"?tab=questions#section-{self.section.pk}",
+            f"?tab=sections#section-{self.section.pk}",
         )
 
         self.assertEqual(
@@ -1219,7 +1219,7 @@ class AssessmentManagementViewTests(TestCase):
         self.assertRedirects(
             response,
             f"{reverse('assessment:assessment_detail', args=[self.assessment.pk])}"
-            f"?tab=questions#section-{self.section.pk}",
+            f"?tab=sections#section-{self.section.pk}",
         )
         self.assertEqual(
             AssessmentQuestion.objects.filter(

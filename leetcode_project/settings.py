@@ -180,3 +180,9 @@ AUTH_USER_MODEL = 'users.Users'
 JUDGE0_URL = os.getenv('JUDGE0_URL', 'http://localhost:2358')
 JUDGE0_AUTH_TOKEN = os.getenv('JUDGE0_AUTH_TOKEN', '')
 JUDGE0_TIMEOUT = int(os.getenv('JUDGE0_TIMEOUT', '10'))  # seconds
+
+# Judge submissions in a background thread pool so web workers stay free.
+# Off automatically under `manage.py test` (test DB transactions are not visible to other threads).
+import sys as _sys
+JUDGE_ASYNC = os.getenv("JUDGE_ASYNC", "True") == "True" and "test" not in _sys.argv[1:2]
+JUDGE_WORKERS = int(os.getenv("JUDGE_WORKERS", "4"))
